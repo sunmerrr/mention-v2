@@ -1,0 +1,277 @@
+/* Product layout only. Controls, typography, tables and dialogs use Radix Themes. */
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: var(--default-font-family);
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+.radix-themes {
+  --default-font-family:
+    Inter, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+    "Noto Sans KR", sans-serif;
+  min-height: 100vh;
+  background: #edf1f6;
+}
+.workspace {
+  display: grid;
+  grid-template-columns: 218px minmax(0, 1fr);
+  min-height: 100vh;
+}
+.sidebar {
+  background: var(--color-panel-solid);
+  border-right: 1px solid var(--gray-5);
+  padding: 30px 18px;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 9px 40px;
+}
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  border-radius: 8px;
+  background: var(--accent-9);
+  color: white;
+  font-size: 22px;
+  font-weight: 700;
+}
+.nav-caption {
+  padding: 0 12px;
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 12px;
+  border-radius: 7px;
+  font-size: 13px;
+  color: var(--gray-11);
+  margin: 3px 0;
+}
+.nav-item.active {
+  background: var(--accent-3);
+  color: var(--accent-11);
+  font-weight: 600;
+}
+.nav-item:hover {
+  background: var(--gray-3);
+}
+.sidebar-bottom {
+  margin-top: auto;
+  padding: 20px 10px 0;
+}
+.main {
+  padding: 24px 36px 48px;
+  max-width: 1550px;
+  width: 100%;
+  min-width: 0;
+}
+.workspace-bar {
+  min-height: 27px;
+}
+.page-heading {
+  margin-bottom: 24px;
+}
+.scope-controls .rt-TextFieldRoot {
+  max-width: 162px;
+}
+.metric-grid {
+  margin-bottom: 24px;
+}
+.metric-grid > .rt-Card {
+  padding: 20px;
+}
+.section-card {
+  padding: 22px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 2px #24355005;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+.rt-TableCell {
+  vertical-align: middle;
+}
+.conversation-table {
+  min-width: 720px;
+}
+.conversation-table td:nth-child(1) {
+  width: 185px;
+}
+.conversation-table td:nth-child(3) {
+  width: 180px;
+}
+.conversation-link {
+  display: block;
+  padding: 5px 0;
+}
+.preview-copy {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.75;
+}
+.conversation-link:hover .preview-copy {
+  color: var(--accent-11);
+}
+.room-name {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sentiment-track {
+  display: flex;
+  height: 7px;
+  background: var(--gray-4);
+  border-radius: 10px;
+  overflow: hidden;
+  max-width: 350px;
+}
+.sentiment-fill.positive {
+  background: var(--jade-8);
+}
+.sentiment-fill.negative {
+  background: var(--red-8);
+}
+.sentiment-fill.neutral {
+  background: var(--slate-8);
+}
+.sentiment-fill.mixed {
+  background: var(--violet-8);
+}
+.sentiment-fill.uncertain {
+  background: var(--amber-8);
+}
+.evaluation-card {
+  flex: 1 1 240px;
+  max-width: 500px;
+  padding: 18px;
+}
+.message-copy {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.85;
+}
+.message {
+  border-bottom: 1px solid var(--gray-4);
+}
+.phase-divider {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--gray-5);
+  margin-top: 16px;
+  text-align: center;
+}
+.background-message {
+  background: var(--gray-2);
+  border: 1px solid var(--gray-4);
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin: 7px 0;
+  font-size: 12px;
+  color: var(--gray-11);
+}
+.background-message summary,
+.review-history summary {
+  cursor: pointer;
+}
+.review-history {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--gray-11);
+}
+.review-history > div {
+  border-bottom: 1px solid var(--gray-4);
+}
+@media (min-width: 1700px) {
+  .main {
+    margin: auto;
+  }
+}
+@media (max-width: 1000px) {
+  .workspace {
+    grid-template-columns: 185px minmax(0, 1fr);
+  }
+  .sidebar {
+    padding-inline: 12px;
+  }
+  .main {
+    padding-inline: 24px;
+  }
+}
+@media (max-width: 760px) {
+  .workspace {
+    display: block;
+  }
+  .sidebar {
+    height: auto;
+    position: static;
+    padding: 16px;
+    gap: 14px;
+  }
+  .brand {
+    margin: 0;
+  }
+  .nav-caption,
+  .sidebar-bottom {
+    display: none;
+  }
+  .sidebar nav {
+    display: flex;
+    gap: 5px;
+  }
+  .nav-item {
+    padding: 9px 10px;
+    font-size: 12px;
+    gap: 6px;
+  }
+  .main {
+    padding: 18px 16px 32px;
+  }
+  .workspace-bar {
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+  .workspace-bar > span {
+    display: none;
+  }
+  .page-heading {
+    gap: 18px;
+  }
+  .scope-controls {
+    width: 100%;
+  }
+  .metric-grid > .rt-Card {
+    padding: 18px;
+  }
+  .section-card {
+    padding: 16px;
+  }
+  .conversation-table {
+    min-width: 650px;
+  }
+  .evaluation-card {
+    max-width: none;
+  }
+  .rt-Heading {
+    overflow-wrap: anywhere;
+  }
+}

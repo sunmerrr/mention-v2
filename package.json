@@ -1,0 +1,46 @@
+{
+  "name": "mention",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=24.14 <27"
+  },
+  "scripts": {
+    "dev": "bash scripts/dev.sh start",
+    "build": "vite build && vite build --ssr src/entry-server.tsx --outDir ../../dist/server",
+    "start": "MENTION_PRODUCTION=1 bash scripts/dev.sh start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "biome check .",
+    "test:e2e": "playwright test",
+    "stop": "bash scripts/dev.sh stop"
+  },
+  "dependencies": {
+    "@fastify/compress": "9.3.0",
+    "@fastify/middie": "9.3.6",
+    "@fastify/static": "10.1.10",
+    "@radix-ui/themes": "3.3.0",
+    "@tanstack/react-query": "5.106.1",
+    "fastify": "5.12.8",
+    "lucide-react": "0.468.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-error-boundary": "4.1.2",
+    "react-router-dom": "7.18.5",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.5",
+    "@playwright/test": "1.65.0",
+    "@types/node": "24.19.2",
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "@vitejs/plugin-react": "6.2.1",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vite": "8.3.6",
+    "vitest": "4.1.12"
+  }
+}
