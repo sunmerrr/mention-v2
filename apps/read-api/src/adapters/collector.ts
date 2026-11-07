@@ -1,14 +1,13 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Correction } from "../../../../packages/contracts/src/api";
 import { UpstreamError } from "./legacy";
 export class CollectorTransport {
   constructor(
     private readonly legacyRoot: string,
     private readonly writesEnabled = false,
   ) {}
-  request(endpoint: string, input?: Correction): Promise<unknown> {
+  request(endpoint: string, input?: unknown, local = false): Promise<unknown> {
     const bridge = fileURLToPath(
       new URL("./collector_bridge.py", import.meta.url),
     );
@@ -24,7 +23,7 @@ export class CollectorTransport {
         failed = true;
         child.kill();
         reject(new UpstreamError("수집기 응답 시간이 초과됐습니다."));
-      }, 22000);
+      }, 135000);
       child.stdout.on("data", (chunk) => {
         output += chunk.toString();
         if (output.length > 20 * 1024 * 1024) {
@@ -48,8 +47,14 @@ export class CollectorTransport {
             throw new UpstreamError(
               result.code === "REVIEW_CONFLICT"
                 ? "다른 화면에서 평가가 변경됐습니다."
-                : "수집기에서 데이터를 가져오지 못했습니다.",
-              result.code === "REVIEW_CONFLICT" ? 409 : 502,
+                : typeof result.message === "string"
+                  ? result.message
+                  : "수집기에서 데이터를 가져오지 못했습니다.",
+              result.code === "REVIEW_CONFLICT"
+                ? 409
+                : typeof result.status === "number"
+                  ? result.status
+                  : 502,
             );
           resolve(result.data);
         } catch (error) {
@@ -66,6 +71,7 @@ export class CollectorTransport {
           path: endpoint,
           input,
           writesEnabled: this.writesEnabled,
+          local,
         }),
       );
     });
