@@ -10,6 +10,7 @@ import {
 } from "@radix-ui/themes";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Info, MessagesSquare } from "lucide-react";
+import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   Failure,
@@ -19,10 +20,18 @@ import {
   time,
 } from "../components/ui";
 import { detailQuery } from "../queries";
+import {
+  BookmarkSource,
+  ContextActions,
+  Relevance,
+  UndoReview,
+} from "./manage/ConversationTools";
+import { Highlight } from "./manage/Records";
 export default function Detail() {
   const { id = "" } = useParams(),
     navigate = useNavigate(),
     query = useQuery(detailQuery(id));
+  const [undoIds, setUndoIds] = useState<unknown[]>([]);
   if (query.isPending) return <Pending />;
   if (query.isError)
     return <Failure error={query.error} retry={query.refetch} />;
@@ -55,7 +64,10 @@ export default function Detail() {
           {c.room} · {time(c.at)}
         </Text>
       </Box>
-      <Flex gap="3" wrap="wrap" mb="5">
+      <ContextActions id={id} conversation />
+      <UndoReview ids={undoIds} onDone={() => setUndoIds([])} />
+      <BookmarkSource id={id} kind="conversation" />
+      <Flex gap="3" wrap="wrap" mb="5" mt="5">
         {Object.entries(c.evaluations).map(([name, e]) => (
           <Card key={name} className="evaluation-card">
             <Flex align="center" justify="between" gap="4">
@@ -108,8 +120,36 @@ export default function Detail() {
                 </Text>
               </Flex>
               <Text as="p" size="2" className="message-copy" mt="2">
-                {m.text || "본문이 없는 첨부 메시지"}
+                <Highlight
+                  value={m.text || "본문이 없는 첨부 메시지"}
+                  keywords={Object.keys(c.keywords)}
+                />
               </Text>
+              <Flex gap="3" wrap="wrap" mt="3">
+                {m.photos?.map((photo) => (
+                  <a
+                    href={photo.url}
+                    key={photo.url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <img
+                      className="chat-photo"
+                      src={photo.thumbnail || photo.url}
+                      alt="저장된 첨부 이미지"
+                      loading="lazy"
+                    />
+                  </a>
+                ))}
+              </Flex>
+              {!m.anchor && (
+                <Relevance
+                  id={id}
+                  logId={m.id}
+                  conversation
+                  onReview={setUndoIds}
+                />
+              )}
             </>
           );
           return (
@@ -138,6 +178,18 @@ export default function Detail() {
             </Box>
           );
         })}
+      </Card>
+      <Card className="section-card">
+        <Heading size="4" mb="3">
+          포함된 언급 대화
+        </Heading>
+        <Flex direction="column" gap="3">
+          {query.data.episodes?.map((e) => (
+            <Link key={e.id} to={`/episode?id=${e.id}`}>
+              {e.title}
+            </Link>
+          ))}
+        </Flex>
       </Card>
     </>
   );

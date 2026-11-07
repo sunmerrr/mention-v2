@@ -5,13 +5,19 @@ import compress from "@fastify/compress";
 import middie from "@fastify/middie";
 import fastifyStatic from "@fastify/static";
 import Fastify from "fastify";
+import { WorkspaceQueries } from "../../../packages/application/src/workspace";
 import { CollectorTransport } from "./adapters/collector";
 import { LegacyReader } from "./adapters/legacy";
 import { registerApi } from "./routes";
+import { isLocalRequest, registerWorkspace } from "./workspace-routes";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url)),
   production = process.argv.includes("--production");
-let deployment: { legacyRoot?: string; publicOrigin?: string } = {};
+let deployment: {
+  legacyRoot?: string;
+  publicOrigin?: string;
+  writesEnabled?: boolean;
+} = {};
 try {
   deployment = JSON.parse(
     await readFile(path.join(root, "runtime/deployment.json"), "utf8"),
@@ -20,26 +26,41 @@ try {
 const port = Number(process.env.MENTION_PORT || 8790),
   host = "127.0.0.1",
   origin = `http://${host}:${port}`,
-  writesEnabled = process.env.MENTION_ENABLE_WRITES === "1";
+  writesEnabled =
+    process.env.MENTION_ENABLE_WRITES !== undefined
+      ? process.env.MENTION_ENABLE_WRITES === "1"
+      : deployment.writesEnabled === true;
 const app = Fastify({
   logger: { level: "info" },
-  bodyLimit: 16000,
+  bodyLimit: 131072,
   trustProxy: false,
 });
 if (production) await app.register(compress);
+const transport = deployment.legacyRoot
+  ? new CollectorTransport(deployment.legacyRoot, writesEnabled)
+  : undefined;
+const workspace = transport ? new WorkspaceQueries(transport) : undefined;
 const reader = new LegacyReader(
   process.env.MENTION_LEGACY_URL || "http://127.0.0.1:8766",
   (message) => app.log.warn({ event: "snapshot_refresh_failed" }, message),
   30000,
-  deployment.legacyRoot
-    ? new CollectorTransport(deployment.legacyRoot, writesEnabled)
-    : undefined,
+  transport,
 );
 const queries = registerApi(app, reader, reader, {
   origin,
   writesEnabled,
   publicOrigin: deployment.publicOrigin,
 });
+if (workspace)
+  registerWorkspace(
+    app,
+    workspace,
+    { origin, publicOrigin: deployment.publicOrigin, writesEnabled },
+    () => {
+      reader.invalidate();
+      return queries.refresh();
+    },
+  );
 app.addHook("onRequest", async (request, reply) => {
   if (
     request.headers.host !== `${host}:${port}` &&
@@ -70,6 +91,12 @@ if (!production) {
     wildcard: false,
     index: false,
   });
+app.get("/conversation", async (request, reply) => {
+  const id = new URL(request.url, origin).searchParams.get("id");
+  return reply.redirect(
+    id ? `/conversations/${encodeURIComponent(id)}` : "/conversations",
+  );
+});
 app.get("/*", async (request, reply) => {
   if (request.url.startsWith("/api/"))
     return reply.code(404).send({
@@ -96,7 +123,13 @@ app.get("/*", async (request, reply) => {
     const entry = production
       ? await import(path.join(root, "dist/server/entry-server.js"))
       : await vite?.ssrLoadModule("/src/entry-server.tsx");
-    const page = await entry.render(request.url, queries, writesEnabled);
+    const page = await entry.render(
+      request.url,
+      queries,
+      writesEnabled,
+      workspace,
+      isLocalRequest(request),
+    );
     const state = JSON.stringify(page.state)
       .replace(/</g, "\\u003c")
       .replace(/>/g, "\\u003e")

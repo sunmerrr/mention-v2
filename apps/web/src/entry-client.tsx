@@ -15,11 +15,14 @@ async function hydrate() {
   const state = JSON.parse(element.textContent || "") as {
     queryState: DehydratedState;
     writesEnabled: boolean;
+    local: boolean;
   };
   await preloadRoute(location.pathname);
   hydrateRoot(
     root,
-    <RuntimeContext.Provider value={{ writesEnabled: state.writesEnabled }}>
+    <RuntimeContext.Provider
+      value={{ writesEnabled: state.writesEnabled, local: state.local }}
+    >
       <QueryClientProvider client={createQueryClient()}>
         <HydrationBoundary state={state.queryState}>
           <BrowserRouter>

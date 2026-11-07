@@ -28,6 +28,7 @@ export interface Target {
   name: string;
   aliases: string[];
   mentions: number;
+  aliasCounts?: Record<string, number>;
 }
 export interface Dataset {
   conversations: Conversation[];

@@ -275,3 +275,82 @@ a {
     overflow-wrap: anywhere;
   }
 }
+
+/* Monitoring management views share the existing Radix surface and controls. */
+.sidebar {
+  overflow-y: auto;
+}
+.brand {
+  margin-bottom: 24px;
+}
+.nav-section {
+  margin-bottom: 18px;
+}
+.nav-section-label {
+  padding: 0 12px;
+  margin-bottom: 7px;
+}
+.nav-item {
+  padding-block: 8px;
+}
+.management-filters {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 22px;
+}
+.management-filters > div {
+  width: fit-content;
+  padding: 14px;
+  background: var(--color-panel-solid);
+  border: 1px solid var(--gray-5);
+  border-radius: var(--radius-3);
+}
+.chat-photo {
+  max-width: 220px;
+  max-height: 240px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.alias-editor {
+  width: 100%;
+  margin-top: 14px;
+  min-height: 100px;
+}
+mark {
+  background: var(--amber-4);
+  color: var(--gray-12);
+  border-radius: 2px;
+}
+@media (max-width: 760px) {
+  .sidebar nav {
+    flex-wrap: wrap;
+  }
+  .management-filters,
+  .management-filters > div {
+    width: 100%;
+  }
+  .chat-photo {
+    max-width: 100%;
+  }
+}
+
+.plain-fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.mobile-navigation {
+  display: none;
+}
+@media (max-width: 760px) {
+  .mobile-navigation {
+    display: block;
+  }
+  .sidebar nav {
+    display: none;
+  }
+}

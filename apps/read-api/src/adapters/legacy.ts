@@ -33,7 +33,7 @@ const groupSchema = z.object({
   id: z.string(),
   room: z.string(),
   anchor_ms: z.number(),
-  members: z.array(z.object({ title: z.string() })),
+  members: z.array(z.object({ id: z.string().default(""), title: z.string() })),
   services: z.array(z.string()),
   evaluations: z.record(z.string(), evaluationSchema),
   keyword_counts: z.record(z.string(), z.number()),
@@ -46,6 +46,7 @@ const snapshotSchema = z.object({
       name: z.string(),
       keywords: z.array(z.string()),
       message_count: z.number(),
+      keyword_counts: z.record(z.string(), z.number()).optional(),
     }),
   ),
   coverage_summary: z
@@ -155,6 +156,7 @@ export class LegacyReader implements MonitoringReader, ClassificationWriter {
           name: g.name,
           aliases: g.keywords,
           mentions: g.message_count,
+          aliasCounts: g.keyword_counts,
         })),
         capturedAt: new Date().toISOString(),
         source: "legacy",
@@ -190,11 +192,19 @@ export class LegacyReader implements MonitoringReader, ClassificationWriter {
             time_ms: z.number(),
             phase: z.string().default("discussion"),
             context_folded: z.boolean().optional(),
+            relation: z.string().optional(),
+            role: z.string().optional(),
+            photos: z
+              .array(
+                z.object({ url: z.string(), thumbnail: z.string().nullish() }),
+              )
+              .optional(),
             own: z.union([z.boolean(), z.literal(0), z.literal(1)]).optional(),
           }),
         ),
         context_summary: z.object({ limited: z.boolean() }).optional(),
         phase_counts: z.record(z.string(), z.number()),
+        dialogue_phase_counts: z.record(z.string(), z.number()).optional(),
       })
       .parse(raw);
     const messages: Message[] = detail.messages.map((m) => ({
@@ -205,14 +215,18 @@ export class LegacyReader implements MonitoringReader, ClassificationWriter {
       phase: m.phase,
       background: !!m.context_folded,
       own: !!m.own,
+      relation: m.relation,
+      anchor: m.role === "anchor",
+      photos: m.photos,
     }));
     return {
       conversation: normalize(group),
       messages,
       limited: !!detail.context_summary?.limited,
-      before: detail.phase_counts.before || 0,
-      after: detail.phase_counts.after || 0,
+      before: (detail.dialogue_phase_counts || detail.phase_counts).before || 0,
+      after: (detail.dialogue_phase_counts || detail.phase_counts).after || 0,
       source: "legacy",
+      episodes: group.members,
     };
   }
   async classifications(): Promise<Classification[]> {
@@ -291,6 +305,10 @@ export class LegacyReader implements MonitoringReader, ClassificationWriter {
     } finally {
       this.classificationFlight = undefined;
     }
+  }
+  invalidate() {
+    this.classificationsCache = undefined;
+    this.snapshot = undefined;
   }
   async correct(input: Correction): Promise<void> {
     await this.request("/classification-save", input);

@@ -7,6 +7,7 @@ import {
 import { renderToPipeableStream } from "react-dom/server";
 import { StaticRouter } from "react-router-dom";
 import type { MonitoringQueries } from "../../../packages/application/src/queries";
+import type { WorkspaceQueries } from "../../../packages/application/src/workspace";
 import { listSchema } from "../../../packages/contracts/src/api";
 import { App, preloadRoute } from "./App";
 import {
@@ -18,10 +19,13 @@ import {
 } from "./queries";
 import { createQueryClient } from "./query-client";
 import { RuntimeContext } from "./runtime";
+import { routeFeature, workspaceQuery } from "./workspace-query";
 export async function render(
   url: string,
   queries: MonitoringQueries,
   writesEnabled: boolean,
+  workspace?: WorkspaceQueries,
+  local = false,
 ) {
   const requestUrl = new URL(url, "http://localhost"),
     scope = scopeFrom(requestUrl.search),
@@ -30,7 +34,13 @@ export async function render(
   await preloadRoute(requestUrl.pathname);
   const listInput = listSchema.parse({ ...scope, label });
   const detail = /^\/conversations\/([^/]+)$/.exec(requestUrl.pathname);
-  if (detail)
+  const feature = routeFeature(requestUrl.pathname);
+  if (feature && workspace) {
+    await client.fetchQuery({
+      ...workspaceQuery(feature, requestUrl.search),
+      queryFn: () => workspace.read(feature, requestUrl.search, local),
+    });
+  } else if (detail)
     await client.fetchQuery({
       ...detailQuery(detail[1]),
       queryFn: () => queries.detail(detail[1]),
@@ -52,9 +62,30 @@ export async function render(
           }),
     ]);
   }
+  if (workspace) {
+    const extra: { feature: "bookmarks" | "delivery"; search: string }[] = [];
+    if (requestUrl.pathname === "/briefing")
+      extra.push({ feature: "delivery", search: "" });
+    const sourceId =
+      detail?.[1] ||
+      (feature === "episode" ? requestUrl.searchParams.get("id") : null);
+    if (sourceId)
+      extra.push({
+        feature: "bookmarks",
+        search: `?kind=${detail ? "conversation" : "episode"}&source_id=${sourceId}`,
+      });
+    await Promise.all(
+      extra.map(({ feature, search }) =>
+        client.fetchQuery({
+          ...workspaceQuery(feature, search),
+          queryFn: () => workspace.read(feature, search, local),
+        }),
+      ),
+    );
+  }
   const state = dehydrate(client);
   const tree = (
-    <RuntimeContext.Provider value={{ writesEnabled }}>
+    <RuntimeContext.Provider value={{ writesEnabled, local }}>
       <QueryClientProvider client={client}>
         <HydrationBoundary state={state}>
           <StaticRouter location={url}>
@@ -90,7 +121,7 @@ export async function render(
   client.clear();
   return {
     html,
-    state: { queryState: state, writesEnabled },
+    state: { queryState: state, writesEnabled, local },
     queryBytes: Buffer.byteLength(JSON.stringify(state)),
   };
 }

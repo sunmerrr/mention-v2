@@ -5,40 +5,89 @@ import {
   Callout,
   Flex,
   Heading,
+  Select,
   Separator,
   Text,
   Theme,
 } from "@radix-ui/themes";
 import { useQueryClient } from "@tanstack/react-query";
-import { BarChart3, CheckCheck, MessagesSquare, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { lazy, Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { Link, NavLink, Route, Routes, useLocation } from "react-router-dom";
+import {
+  Link,
+  Navigate,
+  NavLink,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { Failure, Pending } from "./components/ui";
 import { api } from "./queries";
 import { useRuntime } from "./runtime";
+import { routeFeature } from "./workspace-query";
 
 const imports = {
   overview: () => import("./pages/Overview"),
   conversations: () => import("./pages/Conversations"),
   reviews: () => import("./pages/Reviews"),
   detail: () => import("./pages/Detail"),
+  workspace: () => import("./pages/Workspace"),
 };
 const Overview = lazy(imports.overview),
   Conversations = lazy(imports.conversations),
   Reviews = lazy(imports.reviews),
-  Detail = lazy(imports.detail);
+  Detail = lazy(imports.detail),
+  Workspace = lazy(imports.workspace);
 export async function preloadRoute(path: string) {
-  if (path.startsWith("/conversations/")) await imports.detail();
+  if (routeFeature(path)) await imports.workspace();
+  else if (path.startsWith("/conversations/")) await imports.detail();
   else if (path === "/reviews") await imports.reviews();
   else if (path === "/conversations") await imports.conversations();
   else await imports.overview();
 }
-const links = [
-  { path: "/", label: "여론·동향", Icon: BarChart3 },
-  { path: "/conversations", label: "대화 목록", Icon: MessagesSquare },
-  { path: "/reviews", label: "분류 검토", Icon: CheckCheck },
+const navGroups = [
+  {
+    label: "분석·브리핑",
+    links: [
+      ["/", "여론·동향"],
+      ["/trends", "동향 분석"],
+      ["/briefing", "일일 브리핑"],
+    ],
+  },
+  {
+    label: "대화·반응",
+    links: [
+      ["/conversations", "대화 목록"],
+      ["/reviews", "분류 검토"],
+      ["/bookmarks", "중요 대화"],
+      ["/campaigns", "반응 관찰"],
+      ["/responses", "반응 비교"],
+      ["/messages", "메시지 기록"],
+    ],
+  },
+  {
+    label: "관리",
+    links: [
+      ["/keywords", "키워드 관리"],
+      ["/aliases", "새 별칭 후보"],
+      ["/rooms", "수집 대상"],
+      ["/guide", "카톡 가이드 관리"],
+      ["/operations", "수집·백업"],
+    ],
+  },
 ];
+function PreviousConversation() {
+  const { search } = useLocation();
+  const id = new URLSearchParams(search).get("id");
+  return (
+    <Navigate
+      replace
+      to={id ? `/conversations/${encodeURIComponent(id)}` : "/conversations"}
+    />
+  );
+}
 function Refresh() {
   const client = useQueryClient();
   return (
@@ -58,7 +107,8 @@ function Refresh() {
 }
 export function App() {
   const { writesEnabled } = useRuntime(),
-    location = useLocation();
+    location = useLocation(),
+    navigate = useNavigate();
   return (
     <Theme
       accentColor="iris"
@@ -79,19 +129,59 @@ export function App() {
           <Text size="1" color="gray" className="nav-caption">
             WORKSPACE
           </Text>
+          <Box className="mobile-navigation">
+            <Select.Root
+              value={
+                navGroups
+                  .flatMap((g) => g.links)
+                  .some(([path]) => path === location.pathname)
+                  ? location.pathname
+                  : "/conversations"
+              }
+              onValueChange={navigate}
+            >
+              <Select.Trigger
+                aria-label="페이지 이동"
+                style={{ width: "100%" }}
+              />
+              <Select.Content>
+                {navGroups.map((group) => (
+                  <Select.Group key={group.label}>
+                    <Select.Label>{group.label}</Select.Label>
+                    {group.links.map(([path, label]) => (
+                      <Select.Item key={path} value={path}>
+                        {label}
+                      </Select.Item>
+                    ))}
+                  </Select.Group>
+                ))}
+              </Select.Content>
+            </Select.Root>
+          </Box>
           <nav aria-label="주 메뉴">
-            {links.map(({ path, label, Icon }) => (
-              <NavLink
-                key={path}
-                to={path}
-                end={path === "/"}
-                className={({ isActive }) =>
-                  `nav-item ${isActive ? "active" : ""}`
-                }
-              >
-                <Icon size={17} />
-                {label}
-              </NavLink>
+            {navGroups.map((group) => (
+              <div className="nav-section" key={group.label}>
+                <Text
+                  as="p"
+                  size="1"
+                  color="gray"
+                  className="nav-section-label"
+                >
+                  {group.label}
+                </Text>
+                {group.links.map(([path, label]) => (
+                  <NavLink
+                    key={path}
+                    to={path}
+                    end={path === "/"}
+                    className={({ isActive }) =>
+                      `nav-item ${isActive ? "active" : ""}`
+                    }
+                  >
+                    {label}
+                  </NavLink>
+                ))}
+              </div>
             ))}
           </nav>
           <Box className="sidebar-bottom">
@@ -103,7 +193,7 @@ export function App() {
               맥락을 읽고, 반응을 이해하세요.
             </Text>
             <Text as="p" size="1" color="gray" mt="4">
-              1차 구현 · 운영 화면과 분리
+              기존 수집기 연결 유지
             </Text>
           </Box>
         </aside>
@@ -119,7 +209,7 @@ export function App() {
             </Text>
             <Flex align="center" gap="4">
               <Badge color={writesEnabled ? "jade" : "gray"} variant="soft">
-                {writesEnabled ? "수정 가능" : "조회 전용 미리보기"}
+                {writesEnabled ? "수정 가능" : "조회 전용"}
               </Badge>
               <Refresh />
             </Flex>
@@ -136,6 +226,26 @@ export function App() {
                 <Route path="/conversations" element={<Conversations />} />
                 <Route path="/conversations/:id" element={<Detail />} />
                 <Route path="/reviews" element={<Reviews />} />
+                <Route
+                  path="/conversation"
+                  element={<PreviousConversation />}
+                />
+                {Object.keys({
+                  keywords: 1,
+                  rooms: 1,
+                  guide: 1,
+                  messages: 1,
+                  trends: 1,
+                  campaigns: 1,
+                  responses: 1,
+                  briefing: 1,
+                  bookmarks: 1,
+                  aliases: 1,
+                  operations: 1,
+                  episode: 1,
+                }).map((path) => (
+                  <Route key={path} path={`/${path}`} element={<Workspace />} />
+                ))}
                 <Route
                   path="*"
                   element={

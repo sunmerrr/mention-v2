@@ -44,6 +44,9 @@ export interface Message {
   phase: string;
   background: boolean;
   own: boolean;
+  relation?: string;
+  anchor?: boolean;
+  photos?: { url: string; thumbnail?: string | null }[];
 }
 export interface Detail {
   conversation: Conversation;
@@ -52,6 +55,7 @@ export interface Detail {
   before: number;
   after: number;
   source: "legacy" | "synthetic";
+  episodes?: { id: string; title: string }[];
 }
 export interface Classification {
   id: string;
