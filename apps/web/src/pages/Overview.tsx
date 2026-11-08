@@ -12,8 +12,8 @@ import {
 } from "@radix-ui/themes";
 import { useQuery } from "@tanstack/react-query";
 import {
-  ArrowDownRight,
   ArrowRight,
+  ArrowUpRight,
   ChevronDown,
   Layers3,
   MessagesSquare,
@@ -142,7 +142,7 @@ export default function Overview() {
                         }}
                       >
                         {t.name}
-                        <ArrowDownRight size={12} />
+                        <ArrowUpRight size={12} />
                       </Button>
                       <Popover.Root>
                         <Popover.Trigger>

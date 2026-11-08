@@ -30,6 +30,7 @@ test("hydration reuses data and navigation retains the document", async ({
     () => document.documentElement.dataset.hydrated === "true",
   );
   expect(apis).toBe(0);
+  await page.getByLabel("대화·반응 메뉴", { exact: true }).click();
   await page.getByRole("link", { name: "분류 검토", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "분류 검토", exact: true }),

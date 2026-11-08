@@ -4,15 +4,20 @@ import {
   Button,
   Callout,
   Flex,
-  Heading,
   Select,
   Separator,
   Text,
   Theme,
 } from "@radix-ui/themes";
 import { useQueryClient } from "@tanstack/react-query";
-import { RefreshCw } from "lucide-react";
-import { lazy, Suspense } from "react";
+import {
+  BarChart3,
+  ChevronDown,
+  MessagesSquare,
+  RefreshCw,
+  Settings2,
+} from "lucide-react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import {
   Link,
@@ -50,6 +55,7 @@ export async function preloadRoute(path: string) {
 const navGroups = [
   {
     label: "분석·브리핑",
+    Icon: BarChart3,
     links: [
       ["/", "여론·동향"],
       ["/trends", "동향 분석"],
@@ -58,6 +64,7 @@ const navGroups = [
   },
   {
     label: "대화·반응",
+    Icon: MessagesSquare,
     links: [
       ["/conversations", "대화 목록"],
       ["/reviews", "분류 검토"],
@@ -69,6 +76,7 @@ const navGroups = [
   },
   {
     label: "관리",
+    Icon: Settings2,
     links: [
       ["/keywords", "키워드 관리"],
       ["/aliases", "새 별칭 후보"],
@@ -78,6 +86,51 @@ const navGroups = [
     ],
   },
 ];
+function NavigationGroup({ group }: { group: (typeof navGroups)[number] }) {
+  const { pathname } = useLocation();
+  const active =
+    group.links.some(([path]) =>
+      path === "/"
+        ? pathname === "/"
+        : pathname === path || pathname.startsWith(`${path}/`),
+    ) ||
+    (pathname === "/episode" && group.label === "대화·반응");
+  const [open, setOpen] = useState(active);
+  const activePath = active ? pathname : null;
+  useEffect(() => {
+    if (activePath !== null) setOpen(true);
+  }, [activePath]);
+  const Icon = group.Icon;
+  return (
+    <details
+      className={`nav-section ${active ? "has-active-page" : ""}`}
+      open={open}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
+      <summary aria-label={`${group.label} 메뉴`}>
+        <Icon size={16} aria-hidden="true" />
+        <span>{group.label}</span>
+        <ChevronDown
+          size={15}
+          className="nav-section-chevron"
+          aria-hidden="true"
+        />
+      </summary>
+      <div className="nav-section-links">
+        {group.links.map(([path, label]) => (
+          <NavLink
+            key={path}
+            to={path}
+            end={path === "/"}
+            className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
+          >
+            {label}
+          </NavLink>
+        ))}
+      </div>
+    </details>
+  );
+}
 function PreviousConversation() {
   const { search } = useLocation();
   const id = new URLSearchParams(search).get("id");
@@ -119,12 +172,15 @@ export function App() {
     >
       <div className="workspace">
         <aside className="sidebar">
-          <Link to="/" className="brand">
-            <span className="brand-mark">m</span>
-            <Heading size="5">Mention</Heading>
-            <Badge size="1" variant="soft" color="gray">
-              새 버전
-            </Badge>
+          <Link to="/" className="brand" aria-label="Mention 홈">
+            <img
+              className="brand-mark"
+              src="/brand.svg"
+              alt=""
+              width="34"
+              height="34"
+            />
+            <span className="brand-name">Mention</span>
           </Link>
           <Text size="1" color="gray" className="nav-caption">
             WORKSPACE
@@ -160,28 +216,7 @@ export function App() {
           </Box>
           <nav aria-label="주 메뉴">
             {navGroups.map((group) => (
-              <div className="nav-section" key={group.label}>
-                <Text
-                  as="p"
-                  size="1"
-                  color="gray"
-                  className="nav-section-label"
-                >
-                  {group.label}
-                </Text>
-                {group.links.map(([path, label]) => (
-                  <NavLink
-                    key={path}
-                    to={path}
-                    end={path === "/"}
-                    className={({ isActive }) =>
-                      `nav-item ${isActive ? "active" : ""}`
-                    }
-                  >
-                    {label}
-                  </NavLink>
-                ))}
-              </div>
+              <NavigationGroup key={group.label} group={group} />
             ))}
           </nav>
           <Box className="sidebar-bottom">
