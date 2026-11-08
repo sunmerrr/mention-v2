@@ -22,13 +22,13 @@ import {
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { stances } from "../../../../packages/domain/src/model";
 import { Filters } from "../components/Filters";
-import { Empty, Failure, labels, Pending } from "../components/ui";
+import { Empty, Failure, labels, Pending, Sentiment } from "../components/ui";
 import { overviewQuery, scopeFrom } from "../queries";
-import Conversations from "./Conversations";
+
 export default function Overview() {
   const { search } = useLocation(),
     scope = scopeFrom(search),
-    query = useQuery(overviewQuery(scope));
+    query = useQuery({ ...overviewQuery(scope), refetchInterval: 15000 });
   const [params, setParams] = useSearchParams();
   if (query.isPending) return <Pending />;
   if (query.isError)
@@ -164,6 +164,9 @@ export default function Overview() {
                             {t.aliases.map((a) => (
                               <Badge color="gray" key={a}>
                                 {a}
+                                {t.aliasCounts?.[a] !== undefined
+                                  ? ` · ${t.aliasCounts[a]}`
+                                  : ""}
                               </Badge>
                             ))}
                           </Flex>
@@ -229,7 +232,52 @@ export default function Overview() {
         </Box>
         {!overview.targets.length && <Empty>선택한 대상이 없습니다.</Empty>}
       </Card>
-      <Conversations embedded />
+      <Card className="section-card">
+        <Flex justify="between" align="center" gap="3" wrap="wrap" mb="4">
+          <Box>
+            <Heading size="4">주요 대화</Heading>
+            <Text as="p" size="2" color="gray" mt="1">
+              확정 요약과 맥락이 있는 대화에서 대상·반응별 사례를 최대 4개
+              선정합니다. 전체 여론을 대표한다는 의미는 아닙니다.
+            </Text>
+          </Box>
+          <Button asChild variant="soft" size="2">
+            <Link to={`/conversations${search}`}>
+              전체 대화 보기 <ArrowRight size={14} />
+            </Link>
+          </Button>
+        </Flex>
+        <Grid columns={{ initial: "1", md: "2" }} gap="3">
+          {overview.highlights.map((item) => (
+            <Card key={item.id}>
+              <Flex align="center" gap="2" mb="3">
+                <Badge color="gray">{item.target}</Badge>
+                <Sentiment label={item.label} />
+              </Flex>
+              <Link
+                to={`/conversations/${item.id}${search}`}
+                className="conversation-link"
+              >
+                <Text as="p" size="3" weight="medium">
+                  {item.summary}
+                </Text>
+              </Link>
+              <Text as="p" size="1" color="gray" mt="3">
+                선정 이유: {item.reason}
+              </Text>
+              <Text as="p" size="1" color="gray" mt="1">
+                {item.room}
+              </Text>
+            </Card>
+          ))}
+        </Grid>
+        {!overview.highlights.length && (
+          <Empty>
+            확정 요약과 충분한 맥락을 갖춘 대화가 아직 없습니다. 전체 대화에서
+            확인해 주세요.
+          </Empty>
+        )}
+      </Card>
       <Flex justify="between" gap="3" wrap="wrap" mt="5">
         <Text size="1" color="gray">
           조회 기준{" "}

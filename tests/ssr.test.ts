@@ -15,7 +15,7 @@ describe("native React SSR", () => {
     expect(result.html).toContain("합성 분류 근거");
     expect(
       result.state.queryState.queries.map((q) => q.queryKey[0]).sort(),
-    ).toEqual(["conversations", "overview"]);
+    ).toEqual(["overview"]);
     expect(result.queryBytes).toBeLessThan(25000);
   });
   it("keeps query state isolated between server requests", async () => {

@@ -63,6 +63,48 @@ export function scopedConversations(
       (!scope.target || c.targets.includes(scope.target)),
   );
 }
+export function selectHighlights(dataset: Dataset, scope: Scope) {
+  const candidates = scopedConversations(dataset, scope).flatMap(
+    (conversation) =>
+      Object.entries(conversation.evaluations)
+        .filter(
+          ([target, evaluation]) =>
+            (!scope.target || target === scope.target) &&
+            !evaluation.stale &&
+            evaluation.label !== "unreviewed" &&
+            evaluation.label !== "uncertain" &&
+            evaluation.summary.trim().length > 0 &&
+            conversation.messageCount >= 3,
+        )
+        .map(([target, evaluation]) => ({ conversation, target, evaluation })),
+  );
+  // Cover distinct target/stance pairs before adding more of the same reaction.
+  candidates.sort(
+    (a, b) =>
+      b.conversation.messageCount - a.conversation.messageCount ||
+      b.conversation.at - a.conversation.at ||
+      a.conversation.id.localeCompare(b.conversation.id),
+  );
+  const seen = new Set<string>(),
+    ids = new Set<string>();
+  return candidates
+    .filter(({ conversation, target, evaluation }) => {
+      const key = `${target}:${evaluation.label}`;
+      if (seen.has(key) || ids.has(conversation.id)) return false;
+      seen.add(key);
+      ids.add(conversation.id);
+      return true;
+    })
+    .slice(0, 4)
+    .map(({ conversation, target, evaluation }) => ({
+      id: conversation.id,
+      room: conversation.room,
+      target,
+      label: evaluation.label,
+      summary: evaluation.summary,
+      reason: `${target}의 ${evaluation.label === "positive" ? "긍정" : evaluation.label === "negative" ? "부정" : evaluation.label === "mixed" ? "혼합" : "중립"} 반응 사례 · 저장된 맥락 ${conversation.messageCount}개`,
+    }));
+}
 export function summarize(dataset: Dataset, scope: Scope) {
   const conversations = scopedConversations(dataset, scope);
   const targets = dataset.targets
@@ -90,6 +132,7 @@ export function summarize(dataset: Dataset, scope: Scope) {
         b.conversations - a.conversations || a.name.localeCompare(b.name),
     );
   return {
+    highlights: selectHighlights(dataset, scope),
     targets,
     conversations: conversations.length,
     classified: targets.reduce((sum, t) => sum + t.classified, 0),

@@ -51,15 +51,17 @@ export async function render(
         ...overviewQuery(scope),
         queryFn: () => queries.overview(scope),
       }),
-      requestUrl.pathname === "/reviews"
-        ? client.fetchInfiniteQuery({
-            ...classificationQuery(scope, label),
-            queryFn: () => queries.classifications(listInput),
-          })
-        : client.fetchInfiniteQuery({
-            ...conversationsQuery(scope, label),
-            queryFn: () => queries.conversations(listInput),
-          }),
+      requestUrl.pathname === "/"
+        ? Promise.resolve()
+        : requestUrl.pathname === "/reviews"
+          ? client.fetchInfiniteQuery({
+              ...classificationQuery(scope, label),
+              queryFn: () => queries.classifications(listInput),
+            })
+          : client.fetchInfiniteQuery({
+              ...conversationsQuery(scope, label),
+              queryFn: () => queries.conversations(listInput),
+            }),
     ]);
   }
   if (workspace) {
