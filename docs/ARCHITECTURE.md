@@ -34,3 +34,16 @@ A facade that fetches the legacy ~945 KB response and slices it is only a tempor
 compatibility adapter. It is not the completion of backend pagination or latency
 work. Prefer precomputed/query-efficient read models inside an explicitly designed
 boundary, without adding an uncoordinated production SQLite writer.
+
+## Existing monitoring capability adapter
+
+`WorkspaceQueries` depends on `WorkspacePort` and a finite read/action catalog. The
+Fastify boundary enforces writes/origin/local capability checks. CollectorTransport
+and collector_bridge.py validate allowed paths, carry explicit public/local scope,
+and preserve binary bytes and upstream error statuses. Existing collector
+validators remain authoritative for these compatibility commands. No arbitrary
+URL proxy, private assistant endpoint or collector lifecycle operation is exposed.
+SSR preloads only the active route, plus briefing delivery or source bookmark
+metadata actually rendered by that route. Request scope includes local capability
+and is hydrated unchanged. Monitoring data edits invalidate derived read caches;
+a committed write is never reported failed merely because a later refresh failed.

@@ -60,3 +60,15 @@ measurement/audit output are development artifacts, not committed transcripts.
 - All three browser integration tests also passed through the new Cloudflare URL,
   including JavaScript-disabled SSR, repeated navigation, context and mobile bounds.
 - New preview remains read-only; full legacy feature parity remains incomplete.
+
+## Subsequent full monitoring UI restoration — 2026-11-06
+
+The read-only/four-screen statements above describe the initial slice. All
+monitoring menus, source details and existing actions/exports are now connected
+in the replacement. Monitoring edits are enabled in the deployed instance.
+Current verification: strict typecheck, Biome, production build, 23 unit/contract
+tests and 7 browser tests pass. Live read/download smoke and public-scope checks
+passed; sends/settings writes in browser tests were intercepted. No real message
+was sent, no user classification was edited, and no backup was created merely to
+test the UI. Collector PID/service identity remained unchanged and monitoring.
+See FEATURE-PARITY.md for the complete feature table and limits.

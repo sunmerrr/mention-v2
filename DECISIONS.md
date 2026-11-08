@@ -53,6 +53,27 @@ must be recorded with its actual authorization, not inferred from a template.
 
 ## Current rollout
 
-Four new route views run locally in production-build preview, read-only by default.
-Full legacy parity and production cutover are not complete. Source API costs on
-cold reads remain visible in docs/VERIFICATION.md.
+All monitoring routes are deployed with native React SSR and monitoring edits
+enabled in the active instance. Local delivery/backup restrictions are preserved.
+The initial four-view read-only slice is superseded by the restoration described
+below. Cold source-query costs remain; see docs/FEATURE-PARITY.md.
+
+## Monitoring parity restoration (2026-11-06)
+
+The user explicitly required preserving every existing monitoring feature in the
+replacement. All monitoring routes now have native React views; the collector
+retains domain validation, writes, receipts and ownership. A narrow WorkspacePort
+adapts the existing public/local endpoints and binary assets. Private assistant,
+poster-worker and lifecycle endpoints are not exposed by this port.
+
+Monitoring writes are now enabled in the active deployment. Local delivery and
+backup actions require a local request and local origin; forwarded/Cloudflare
+requests cannot upgrade themselves by spoofing Origin. Default source configuration
+remains read-only. Mutation retries remain disabled, and classification writes
+serialize the existing evidence check/audit sequence across bridge processes.
+
+The monitoring-specific automatic refresh is preserved only for the active views:
+messages/guide every 5 seconds, campaigns/overview every 15 seconds, rooms every
+minute. Historical message pages and other management views do not poll. Form
+editing pauses workspace polling. This is an explicit monitoring requirement, not
+a new global fetch default.

@@ -48,7 +48,7 @@ keep promotional/media background inspectable without pretending it was read.
 Do not begin by copying SQLite files or adding a second collector. Do not mark a
 stage complete without the associated code and verification evidence.
 
-## Implementation status: 2026-11-06
+## Initial slice status: 2026-11-06 (superseded by restoration below)
 
 - Stage 1 complete: charter, decisions and boundaries recorded.
 - Stage 2 complete for the first slice: React SSR, hydration, lazy routes and real
@@ -63,3 +63,19 @@ stage complete without the associated code and verification evidence.
   remains off in the preview and no real classification was edited in tests.
 - Stages 6 and 7 not complete. Management, exports, campaign/briefing features,
   true source pagination, and a production cutover remain with the legacy app.
+
+## Feature parity restoration: 2026-11-06
+
+The user rejected replacing the operational UI with an incomplete preview. All
+listed monitoring screens and existing mutations/exports are now connected in
+React routes, with SSR/hydration and the same collector/state boundary. Monitoring
+writes are enabled in the active deployment. Local delivery/backup restrictions,
+request identifiers, receipts and evidence guards remain in force. No collector
+restart, private-worker change or live test send was used for this restoration.
+
+Stage 5 is enabled and synthetic-contract tested; no real user classification was
+changed merely for testing. Stage 6 UI/integration parity is implemented and
+deployed, with read/download smoke tests and intercepted browser mutation tests.
+Source-query pagination and cold-query optimization in stage 3 remain incomplete;
+UI parity does not imply that work has been completed. Public hosting remains the
+existing temporary tunnel. See FEATURE-PARITY.md for exact verification limits.

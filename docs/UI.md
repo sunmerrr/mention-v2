@@ -37,3 +37,18 @@ classification origin/history and collection coverage.
 
 Linear is a visual reference; Sprout Social and Brand24 are workflow references.
 These do not grant permission to copy proprietary implementation or assets.
+
+## Navigation grouping correction — 2026-11-09
+
+Keep three clearly separated, independently collapsible sidebar categories:
+analysis/briefing, conversations/reactions, and management. Category headers show
+an icon and disclosure arrow; child links have an indented connector. The user
+subsequently rejected menu-count badges and boxed category backgrounds; keep
+category headers unfilled and do not reintroduce those badges.
+The active route category starts open in SSR and opens after client navigation.
+Users can still close it or open other categories independently. Native details/
+summary provides keyboard disclosure without another component dependency.
+Mobile retains the compact grouped Radix page selector. Browser verification
+covered Enter-key collapse/reopen, route navigation, hydration and mobile bounds.
+Only the new web process was redeployed; the collector identity/connection stayed
+unchanged. Do not regress these categories into faint static captions.

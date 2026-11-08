@@ -3,21 +3,30 @@
 React SSR replacement for the Kakao open-chat sentiment and trend dashboard.
 Workspace: `/Users/we/mention`. Legacy service remains separate and unchanged.
 
-## Implemented first slice
+## Restored monitoring workspace
 
-- Native React SSR and hydration with the same component tree, without jsdom.
-- Client-side navigation with React Router and route-level lazy loading.
-- Radix Themes components for buttons, selects, tables, cards, popovers and dialogs.
-- Sentiment overview, date/target filters, cursor-paged conversations, selected
-  conversation context, and confirmed-classification review/correction UI.
-- Thin public read adapter to the existing service, validation and request
-  coalescing. Upstream data is normalized into separate summary/list/detail DTOs.
-- Correction validation and upstream conflict forwarding, disabled by default in
-  the running preview. No automatic mutation retries.
-- Request-scoped SSR query clients and TanStack hydration without duplicate reads.
+The existing monitoring features now run in the replacement React SSR application:
 
-The preview runs at **http://127.0.0.1:8790/**. The origin is loopback-only and read-only. A user-authorized Cloudflare quick tunnel now exposes this new preview; see `runtime/deployment.json` or `./scripts/tunnel.sh status` for its current URL.
-It is not a production cutover or a migration of all fifteen legacy screens.
+- Sentiment overview, meaningful reaction examples, dated trends and evidence.
+- Cursor-paged conversations, keyword highlights, photos, context expansion,
+  relevance review/undo and source episode/campaign evaluation.
+- Confirmed-classification editing with evidence/conflict checks and audit history.
+- Include/exclude keywords, manual target/alias groups and automatic suggestions.
+- Room exclusions, compact guide management and per-room rules/references.
+- Searchable message/photo records, date-specific message/context CSV and JSON.
+- Reaction observation/feedback comparison, daily brief versions and image exports.
+- Bookmarks/owners/workflow, alias candidate decisions and reconsideration.
+- Collection-gap/recovery evidence and existing backup/restore verification actions.
+- Local-only campaign delivery, briefing recipients/schedules/delivery and backups
+  retain the existing collector restrictions and durable receipts.
+
+Local UI: **http://127.0.0.1:8790/**. The existing user-authorized Cloudflare tunnel
+serves this same application; `runtime/deployment.json` records its public origin.
+The deployed instance now has monitoring writes enabled, as requested for feature
+parity. Default code configuration remains read-only; `MENTION_ENABLE_WRITES`
+overrides the local deployment setting. Chat sends and backup actions remain local.
+This does not enable a private assistant, change workers, log in or reconnect Kakao.
+See [feature parity and verification](docs/FEATURE-PARITY.md).
 
 ## Run
 
@@ -36,7 +45,9 @@ MENTION_PRODUCTION=1 ./scripts/dev.sh start
 The lifecycle script starts only this new web process. It never launches or
 restarts the legacy collector. It records the web PID and private logs in ignored
 `runtime/`. Set `MENTION_LEGACY_URL` to the existing loopback dashboard (default
-`http://127.0.0.1:8766`). Never substitute a public remote source or credentials.
+`http://127.0.0.1:8766`). The deployed instance uses the collector Unix socket via
+its configured legacyRoot, not that retired TCP port. Never substitute a public
+remote source or credentials.
 `MENTION_ENABLE_WRITES=1` opts into existing confirmed-classification corrections
 at process start; it does not authorize chat sending or other collector actions.
 
@@ -50,8 +61,8 @@ npx --yes pnpm@9.15.9 audit
 npx --yes pnpm@9.15.9 test:e2e
 ```
 
-Browser integration checks require the read-only preview and existing source to
-be running. macOS uses installed Google Chrome; `MENTION_CHROME` overrides its
+Browser integration checks require the replacement and existing source to
+be running. Live writes in browser tests are intercepted with synthetic responses. macOS uses installed Google Chrome; `MENTION_CHROME` overrides its
 path. Other systems can install Playwright Chromium. Tests never save live edits.
 
 ## Performance boundary
@@ -102,6 +113,6 @@ MENTION_PRODUCTION=1 ./scripts/dev.sh restart  # load the new public origin
 
 The new tunnel targets only port 8790 with the expected Host header. Existing
 unrelated tunnels and private workers are not managed by these scripts. Public
-refresh is restricted to the configured origin; the preview still rejects all
-classification writes. Quick-tunnel addresses are temporary and can change when
+refresh and monitoring writes are restricted to configured origins; delivery and
+backup actions retain local-only scope. Quick-tunnel addresses are temporary and can change when
 recreated. The old Cloudflare address is retired.
