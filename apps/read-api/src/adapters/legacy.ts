@@ -28,6 +28,8 @@ const evaluationSchema = z.object({
   summary: z.string().default(""),
   source: z.string(),
   needs_review: z.boolean(),
+  previous_verdict: labelSchema.optional(),
+  previous_origin: z.enum(["ai", "human"]).optional(),
 });
 const groupSchema = z.object({
   id: z.string(),
@@ -38,6 +40,19 @@ const groupSchema = z.object({
   evaluations: z.record(z.string(), evaluationSchema),
   keyword_counts: z.record(z.string(), z.number()),
   message_count: z.number(),
+  last_message_ms: z.number().optional(),
+  context_preview: z
+    .array(
+      z.object({
+        id: z.string(),
+        author: z.string(),
+        text: z.string(),
+        at: z.number(),
+        own: z.boolean().optional(),
+        truncated: z.boolean().optional(),
+      }),
+    )
+    .optional(),
 });
 const snapshotSchema = z.object({
   conversations: z.array(groupSchema),
@@ -69,6 +84,14 @@ function normalize(group: Group): Conversation {
             ? "ai"
             : "human",
       stale: e.needs_review,
+      ...(e.needs_review &&
+      e.previous_verdict &&
+      e.previous_verdict !== "unreviewed" &&
+      e.previous_origin
+        ? {
+            previous: { label: e.previous_verdict, origin: e.previous_origin },
+          }
+        : {}),
     };
   return {
     id: group.id,
@@ -79,6 +102,8 @@ function normalize(group: Group): Conversation {
     evaluations,
     keywords: group.keyword_counts,
     messageCount: group.message_count,
+    lastAt: group.last_message_ms,
+    contextPreview: group.context_preview,
   };
 }
 export class UpstreamError extends Error {
@@ -219,8 +244,24 @@ export class LegacyReader implements MonitoringReader, ClassificationWriter {
       anchor: m.role === "anchor",
       photos: m.photos,
     }));
+    const conversation = normalize(group);
+    if (
+      Object.values(conversation.evaluations).some(
+        (evaluation) => evaluation.stale,
+      )
+    ) {
+      const previous = await this.classifications();
+      for (const item of previous.filter(
+        (item) =>
+          item.conversationId === group.id && item.label !== "unreviewed",
+      )) {
+        const evaluation = conversation.evaluations[item.target];
+        if (evaluation?.stale && item.label !== "unreviewed")
+          evaluation.previous = { label: item.label, origin: item.origin };
+      }
+    }
     return {
-      conversation: normalize(group),
+      conversation,
       messages,
       limited: !!detail.context_summary?.limited,
       before: (detail.dialogue_phase_counts || detail.phase_counts).before || 0,

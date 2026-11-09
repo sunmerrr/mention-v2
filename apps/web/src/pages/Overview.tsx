@@ -1,15 +1,3 @@
-import {
-  Badge,
-  Box,
-  Button,
-  Card,
-  Flex,
-  Grid,
-  Heading,
-  Popover,
-  Table,
-  Text,
-} from "@radix-ui/themes";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
@@ -22,7 +10,21 @@ import {
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { stances } from "../../../../packages/domain/src/model";
 import { Filters } from "../components/Filters";
-import { Empty, Failure, labels, Pending, Sentiment } from "../components/ui";
+import { OverviewConversations } from "../components/OverviewConversations";
+import { Empty, Failure, labels, Pending } from "../components/ui";
+import {
+  Badge,
+  Box,
+  Button,
+  Card,
+  Flex,
+  Grid,
+  Heading,
+  PageHeader,
+  Popover,
+  Table,
+  Text,
+} from "../design-system";
 import { overviewQuery, scopeFrom } from "../queries";
 
 export default function Overview() {
@@ -37,21 +39,11 @@ export default function Overview() {
     lead = overview.targets.find((t) => t.conversations > 0);
   return (
     <>
-      <Flex
-        className="page-heading"
-        justify="between"
-        align="center"
-        gap="4"
-        wrap="wrap"
-      >
-        <Box>
-          <Heading size="6">여론·동향</Heading>
-          <Text as="p" color="gray" size="2" mt="1">
-            우리 서비스에 어떤 이야기가 오가는지, 맥락과 함께 살펴보세요.
-          </Text>
-        </Box>
-        <Filters metadata={metadata} />
-      </Flex>
+      <PageHeader
+        title="여론·동향"
+        description="우리 서비스에 어떤 이야기가 오가는지, 맥락과 함께 살펴보세요."
+        actions={<Filters metadata={metadata} />}
+      />
       <Grid columns={{ initial: "1", sm: "3" }} gap="4" className="metric-grid">
         <Card>
           <Flex align="center" gap="2">
@@ -113,9 +105,35 @@ export default function Overview() {
               대상에 포함됩니다.
             </Text>
           </Box>
-          <Badge color="gray" variant="soft">
-            확정 분류 기준
-          </Badge>
+          <Box>
+            <Badge color="gray" variant="soft">
+              확정 분류 기준
+            </Badge>
+            <Text as="p" size="1" color="gray" mt="2">
+              집계{" "}
+              {new Intl.DateTimeFormat("ko-KR", {
+                timeZone: "Asia/Seoul",
+                month: "numeric",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              }).format(new Date(overview.capturedAt))}
+            </Text>
+          </Box>
+        </Flex>
+        <Flex gap="4" wrap="wrap" mb="3" aria-label="반응 분포 색상 범례">
+          {stances.map((stance) => (
+            <Flex key={stance} align="center" gap="2">
+              <span
+                className={`sentiment-dot sentiment-fill ${stance}`}
+                aria-hidden="true"
+              />
+              <Text size="1" color="gray">
+                {labels[stance]}
+              </Text>
+            </Flex>
+          ))}
         </Flex>
         <Box className="table-scroll">
           <Table.Root variant="surface">
@@ -203,9 +221,15 @@ export default function Overview() {
                           {stances
                             .filter((s) => t.counts[s] > 0)
                             .map((s) => (
-                              <Text size="1" color="gray" key={s}>
-                                {labels[s]} {t.counts[s]}
-                              </Text>
+                              <Flex align="center" gap="1" key={s}>
+                                <span
+                                  className={`sentiment-dot sentiment-fill ${s}`}
+                                  aria-hidden="true"
+                                />
+                                <Text size="1" color="gray">
+                                  {labels[s]} {t.counts[s]}
+                                </Text>
+                              </Flex>
                             ))}
                         </Flex>
                       </Box>
@@ -232,52 +256,10 @@ export default function Overview() {
         </Box>
         {!overview.targets.length && <Empty>선택한 대상이 없습니다.</Empty>}
       </Card>
-      <Card className="section-card">
-        <Flex justify="between" align="center" gap="3" wrap="wrap" mb="4">
-          <Box>
-            <Heading size="4">주요 대화</Heading>
-            <Text as="p" size="2" color="gray" mt="1">
-              확정 요약과 맥락이 있는 대화에서 대상·반응별 사례를 최대 4개
-              선정합니다. 전체 여론을 대표한다는 의미는 아닙니다.
-            </Text>
-          </Box>
-          <Button asChild variant="soft" size="2">
-            <Link to={`/conversations${search}`}>
-              전체 대화 보기 <ArrowRight size={14} />
-            </Link>
-          </Button>
-        </Flex>
-        <Grid columns={{ initial: "1", md: "2" }} gap="3">
-          {overview.highlights.map((item) => (
-            <Card key={item.id}>
-              <Flex align="center" gap="2" mb="3">
-                <Badge color="gray">{item.target}</Badge>
-                <Sentiment label={item.label} />
-              </Flex>
-              <Link
-                to={`/conversations/${item.id}${search}`}
-                className="conversation-link"
-              >
-                <Text as="p" size="3" weight="medium">
-                  {item.summary}
-                </Text>
-              </Link>
-              <Text as="p" size="1" color="gray" mt="3">
-                선정 이유: {item.reason}
-              </Text>
-              <Text as="p" size="1" color="gray" mt="1">
-                {item.room}
-              </Text>
-            </Card>
-          ))}
-        </Grid>
-        {!overview.highlights.length && (
-          <Empty>
-            확정 요약과 충분한 맥락을 갖춘 대화가 아직 없습니다. 전체 대화에서
-            확인해 주세요.
-          </Empty>
-        )}
-      </Card>
+      <OverviewConversations
+        sections={overview.conversationSections}
+        search={search}
+      />
       <Flex justify="between" gap="3" wrap="wrap" mt="5">
         <Text size="1" color="gray">
           조회 기준{" "}

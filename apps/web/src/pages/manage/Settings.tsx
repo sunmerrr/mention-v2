@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Badge,
   Box,
@@ -9,9 +11,7 @@ import {
   Text,
   TextArea,
   TextField,
-} from "@radix-ui/themes";
-import { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+} from "../../design-system";
 import {
   ActionForm,
   Choice,

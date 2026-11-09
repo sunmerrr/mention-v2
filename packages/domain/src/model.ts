@@ -13,6 +13,15 @@ export interface Evaluation {
   summary: string;
   origin: Origin | null;
   stale: boolean;
+  previous?: { label: Stance; origin: Origin };
+}
+export interface ContextPreview {
+  id: string;
+  author: string;
+  text: string;
+  at: number;
+  own?: boolean;
+  truncated?: boolean;
 }
 export interface Conversation {
   id: string;
@@ -23,6 +32,8 @@ export interface Conversation {
   evaluations: Record<string, Evaluation>;
   keywords: Record<string, number>;
   messageCount: number;
+  lastAt?: number;
+  contextPreview?: ContextPreview[];
 }
 export interface Target {
   name: string;
@@ -45,13 +56,14 @@ export interface Scope {
 export interface ConversationFilter extends Scope {
   label: string;
 }
+const koreanDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Seoul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
 export function koreanDay(timestamp: number): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(timestamp);
+  return koreanDateFormatter.format(timestamp);
 }
 export function scopedConversations(
   dataset: Dataset,
@@ -105,6 +117,96 @@ export function selectHighlights(dataset: Dataset, scope: Scope) {
       reason: `${target}의 ${evaluation.label === "positive" ? "긍정" : evaluation.label === "negative" ? "부정" : evaluation.label === "mixed" ? "혼합" : "중립"} 반응 사례 · 저장된 맥락 ${conversation.messageCount}개`,
     }));
 }
+export function selectConversationSections(dataset: Dataset, scope: Scope) {
+  const preview = (c: Conversation) =>
+    (c.contextPreview || []).slice(0, 3).map((m) => ({
+      ...m,
+      text: m.text.slice(0, 180),
+      truncated: !!m.truncated || m.text.length > 180,
+    }));
+  const scoped = scopedConversations(dataset, scope);
+  const latest = scoped
+    .filter(
+      (c) => c.contextPreview === undefined || c.contextPreview.length > 0,
+    )
+    .sort(
+      (a, b) =>
+        (b.lastAt ?? b.at) - (a.lastAt ?? a.at) || b.id.localeCompare(a.id),
+    )
+    .slice(0, 4)
+    .map((c) => ({
+      id: c.id,
+      room: c.room,
+      at: c.lastAt ?? c.at,
+      title: c.title,
+      targets: c.targets,
+      messageCount: c.messageCount,
+      contextPreview: preview(c),
+      opinions: Object.entries(c.evaluations)
+        .filter(
+          ([target, e]) =>
+            (!scope.target || target === scope.target) &&
+            !e.stale &&
+            e.label !== "unreviewed" &&
+            !!e.summary.trim(),
+        )
+        .map(([target, e]) => ({
+          target,
+          label: e.label,
+          summary: e.summary,
+          origin: e.origin,
+        })),
+    }));
+  function reaction(label: "positive" | "negative") {
+    const candidates = scoped.flatMap((conversation) =>
+      Object.entries(conversation.evaluations)
+        .filter(
+          ([target, e]) =>
+            (!scope.target || target === scope.target) &&
+            !e.stale &&
+            e.label === label &&
+            !!e.summary.trim() &&
+            conversation.messageCount >= 3,
+        )
+        .map(([target, evaluation]) => ({
+          id: conversation.id,
+          target,
+          label,
+          summary: evaluation.summary,
+          origin: evaluation.origin,
+          room: conversation.room,
+          at: conversation.lastAt ?? conversation.at,
+          messageCount: conversation.messageCount,
+          contextPreview: preview(conversation),
+        })),
+    );
+    candidates.sort(
+      (a, b) =>
+        b.messageCount - a.messageCount ||
+        b.at - a.at ||
+        a.id.localeCompare(b.id),
+    );
+    const chosen: typeof candidates = [],
+      ids = new Set<string>(),
+      targets = new Set<string>();
+    // First cover targets, then fill remaining places with different conversations.
+    for (const diverse of [true, false])
+      for (const candidate of candidates) {
+        if (chosen.length === 4) break;
+        if (ids.has(candidate.id) || (diverse && targets.has(candidate.target)))
+          continue;
+        ids.add(candidate.id);
+        targets.add(candidate.target);
+        chosen.push(candidate);
+      }
+    return chosen;
+  }
+  return {
+    latest,
+    positive: reaction("positive"),
+    negative: reaction("negative"),
+  };
+}
 export function summarize(dataset: Dataset, scope: Scope) {
   const conversations = scopedConversations(dataset, scope);
   const targets = dataset.targets
@@ -133,6 +235,7 @@ export function summarize(dataset: Dataset, scope: Scope) {
     );
   return {
     highlights: selectHighlights(dataset, scope),
+    conversationSections: selectConversationSections(dataset, scope),
     targets,
     conversations: conversations.length,
     classified: targets.reduce((sum, t) => sum + t.classified, 0),

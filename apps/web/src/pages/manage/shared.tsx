@@ -1,3 +1,17 @@
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  isValidElement,
+  type ReactNode,
+  useEffect,
+  useId,
+  useState,
+} from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import type {
+  RecordData,
+  WorkspaceAction,
+} from "../../../../../packages/application/src/workspace";
+import { pageFormId, usePageSave } from "../../components/PageSave";
 import {
   Badge,
   Box,
@@ -11,14 +25,8 @@ import {
   Text,
   TextArea,
   TextField,
-} from "@radix-ui/themes";
-import { useQueryClient } from "@tanstack/react-query";
-import { isValidElement, type ReactNode, useId, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import type {
-  RecordData,
-  WorkspaceAction,
-} from "../../../../../packages/application/src/workspace";
+} from "../../design-system";
+import { relatedHref, useMenuOrigin } from "../../navigation";
 import { api } from "../../queries";
 import { useRuntime } from "../../runtime";
 export type Row = RecordData;
@@ -205,6 +213,7 @@ export function ActionForm({
   build,
   children,
   submit = "변경 저장",
+  submitDisabled = false,
   localOnly = false,
   onResult,
 }: {
@@ -212,35 +221,52 @@ export function ActionForm({
   build: (form: FormData) => Row;
   children?: ReactNode;
   submit?: string;
+  submitDisabled?: boolean;
   localOnly?: boolean;
   onResult?: (result: Row) => void;
 }) {
   const state = useAction(),
     runtime = useRuntime();
-  const disabled = !runtime.writesEnabled || (localOnly && !runtime.local);
+  const pageSave = usePageSave();
+  const inHeader = pageSave?.actions.some((item) => item.action === action);
+  const reportNotice = pageSave?.reportNotice;
+  useEffect(() => {
+    if (inHeader) reportNotice?.(action, state.notice, state.error);
+  }, [inHeader, reportNotice, action, state.notice, state.error]);
+  const disabled =
+    submitDisabled || !runtime.writesEnabled || (localOnly && !runtime.local);
   return (
     <form
+      id={inHeader ? pageFormId(action) : undefined}
       onSubmit={async (e) => {
         e.preventDefault();
-        const result = await state.run(
-          action,
-          build(new FormData(e.currentTarget)),
-        );
-        if (result) onResult?.(result);
+        if (disabled || state.busy) return;
+        const input = build(new FormData(e.currentTarget));
+        if (inHeader) pageSave?.setBusy(action, true);
+        try {
+          const result = await state.run(action, input);
+          if (result) onResult?.(result);
+        } finally {
+          if (inHeader) pageSave?.setBusy(action, false);
+        }
       }}
     >
       <Flex direction="column" gap="4">
         {children}
       </Flex>
-      <Button mt="4" type="submit" loading={state.busy} disabled={disabled}>
-        {submit}
-      </Button>
+      {!inHeader && (
+        <Flex justify="end" mt="4">
+          <Button type="submit" loading={state.busy} disabled={disabled}>
+            {submit}
+          </Button>
+        </Flex>
+      )}
       {localOnly && !runtime.local && (
         <Text as="p" size="1" color="gray" mt="2">
           로컬 대시보드에서 실행할 수 있습니다.
         </Text>
       )}
-      <Notice state={state} />
+      {!inHeader && <Notice state={state} />}
     </form>
   );
 }
@@ -388,10 +414,11 @@ export function SourceLink({
   item: Row;
   children?: ReactNode;
 }) {
+  const menu = useMenuOrigin();
   return (
     <Link
       className="conversation-link"
-      to={href(item.href || `/episode?id=${text(item.id)}`)}
+      to={relatedHref(href(item.href || `/episode?id=${text(item.id)}`), menu)}
     >
       {children || text(item.title) || "원문 대화 보기"}
     </Link>

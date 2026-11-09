@@ -79,3 +79,21 @@ deployed, with read/download smoke tests and intercepted browser mutation tests.
 Source-query pagination and cold-query optimization in stage 3 remain incomplete;
 UI parity does not imply that work has been completed. Public hosting remains the
 existing temporary tunnel. See FEATURE-PARITY.md for exact verification limits.
+
+## Public read path improvement: 2026-11-09
+
+Stage 3 now includes a durable overview read model and real indexed SQL keyset
+pagination over conversation previews in the new web runtime. Reopening the web
+process uses the retained generation immediately. Full source insights grouping
+moves to a coalesced background rebuild; it has not become incremental. Cold
+briefing/trend/classification-history reads still follow their existing adapters.
+See VERIFICATION.md for process-restart measurements and source-rebuild limits.
+
+## Shared aggregation producer: 2026-11-09
+
+The next stage replaces whole insights socket recomputation for public read views
+with a read-only allowlisted source snapshot and shared aggregation worker. Trends,
+briefing and classification history now reuse the grouped dataset. Unchanged room
+calculations and unchanged result generations are retained. Source writes/deliveries
+still use the collector; no source schema/index migration or collector restart was
+performed. Public table scanning and changed-room history rebuild remain limitations.

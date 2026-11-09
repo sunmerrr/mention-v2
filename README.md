@@ -67,14 +67,41 @@ path. Other systems can install Playwright Chromium. Tests never save live edits
 
 ## Performance boundary
 
-The browser receives only the summary and first cursor page. It does not download
-all transcripts and hide most rows. However, the compatibility adapter still
-fetches/normalizes the legacy full response on a cold read and keeps a public-only
-30-second snapshot in memory. Stale snapshots remain available while a single
-refresh runs. Warm latency measurements do not establish cold-query performance.
-Source-query pagination/materialized read models remain a separate milestone.
-The explicit refresh action waits for a fresh source result; no speculative API
-prefetch, focus refetch, or default polling has been added.
+The overview and conversation list now read a durable, rebuildable public projection
+at ignored `runtime/public-read-model.db`. Overview counts/highlights are prepared
+outside page requests. Conversation filters, counts and keyset pagination run in
+SQLite and decode only the requested page. A web restart serves the last committed
+generation immediately while the existing public collector API refreshes it in the
+background every 30 seconds (one in-flight rebuild). The overview shows the actual
+aggregation time. Failed rebuilds retain the last successful generation; an empty
+installation must complete its first rebuild before returning data.
+
+This DB contains only the public monitoring read model. A separate read-only Python
+analytics worker now opens the source DB with `mode=ro`/`query_only`, copies an
+explicit allowlist of public monitoring tables into process memory and releases
+the source transaction before computation. Only keyword/group settings are read;
+private assistant/guide/outbox/token tables are excluded. Operational Store/Context/
+Coverage constructors are never executed by this worker. All original writes,
+detail/media access, deliveries and lifecycle operations remain with the collector.
+
+The worker reuses existing quality/grouping/review/briefing rules. Public-input
+fingerprints skip unchanged aggregates; room fingerprints retain unchanged episode
+and grouping results when another room changes. Overview, trends, briefing and
+classification listing share grouped conversations instead of regrouping for each
+widget or page. Korean dates, keyword exclusions, manual corrections, evidence
+signatures, saved brief versions/staleness and classification audit history remain
+unchanged. One serialized worker handles these public read operations and coalesces
+identical concurrent requests. Its bounded caches stay in process memory; only the
+existing concise public read model is persisted under ignored runtime/.
+
+The first generation still takes seconds. An unchanged file/audit version can
+reuse a retained result immediately; otherwise reads include a public-source
+snapshot/fingerprint cost (currently about a second end to end). This is not yet
+row-level change-stream processing: public tables are still scanned on a read, and
+a changed room can require rebuilding all its historical candidates. Explicit
+refresh waits for that work. Briefing save/send/image creation and other mutations
+still run through the authoritative collector and can retain its computation cost.
+No automatic mutation retries or additional Kakao session are introduced.
 
 ## Project documents
 
@@ -96,7 +123,8 @@ Cloudflare tunnel were stopped at the user's explicit request. The collector
 is still the same running owner and was not restarted. The new app now uses
 `CollectorTransport` with a small Python compatibility bridge over that owner's
 Unix socket. It reuses the existing public data/classification contracts and
-history without opening a monitoring DB connection or creating a Kakao session.
+history without creating a Kakao session. The analytics worker described above
+adds a separate read-only public-table snapshot; it never opens the DB for writes.
 
 `runtime/deployment.json` records `legacyRoot` and the current public origin.
 The bridge imports only the existing transport and classification adapter; no
@@ -116,3 +144,5 @@ unrelated tunnels and private workers are not managed by these scripts. Public
 refresh and monitoring writes are restricted to configured origins; delivery and
 backup actions retain local-only scope. Quick-tunnel addresses are temporary and can change when
 recreated. The old Cloudflare address is retired.
+
+Design system: [rules and component ownership](docs/DESIGN-SYSTEM.md), with a synthetic interactive catalog at `/design-system`. All UI changes must actively use it.

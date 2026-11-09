@@ -1,6 +1,6 @@
-import { Box, Flex, Heading, Text } from "@radix-ui/themes";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
+import { PageSaveLayout, type PageSaveSpec } from "../components/PageSave";
 import { Failure, Pending } from "../components/ui";
 import { routeFeature, workspaceQuery } from "../workspace-query";
 import { Campaigns, Responses } from "./manage/Campaigns";
@@ -82,7 +82,7 @@ export default function Workspace() {
         document.activeElement?.closest("input,textarea,[role=combobox],form")
       )
         return false;
-      if (feature === "rooms") return 60000;
+      if (feature === "rooms" || feature === "aliases") return 60000;
       if (feature === "guide") return 5000;
       if (feature === "messages" && !new URLSearchParams(search).has("before"))
         return 5000;
@@ -95,25 +95,47 @@ export default function Workspace() {
     return <Failure error={query.error} retry={query.refetch} />;
   const page = pages[feature as keyof typeof pages],
     Component = page.Component;
+  const actions: PageSaveSpec[] = [];
+  if (feature === "keywords")
+    actions.push({ action: "keyword-settings", label: "변경 저장" });
+  if (
+    feature === "guide" &&
+    new URLSearchParams(search).has("room") &&
+    Array.isArray(query.data.guides) &&
+    query.data.guides.some(
+      (g: unknown) =>
+        g &&
+        typeof g === "object" &&
+        "room_id" in g &&
+        g.room_id === new URLSearchParams(search).get("room"),
+    )
+  )
+    actions.push({ action: "guide-settings", label: "가이드 설정 저장" });
+  if (feature === "briefing")
+    actions.push({
+      action: "briefing-delivery-settings",
+      label: "발송 설정 저장",
+      localOnly: true,
+    });
+  if (feature === "episode") {
+    actions.push(
+      { action: "episode-review", label: "여론 평가 저장" },
+      { action: "episode-quality", label: "분석 분류 저장" },
+    );
+    if (query.data.kind === "mention")
+      actions.push({ action: "mention-correction", label: "키워드 판정 저장" });
+  }
   return (
-    <>
-      <Flex
-        className="page-heading"
-        justify="between"
-        align="center"
-        wrap="wrap"
-      >
-        <Box>
-          <Heading size="6">{page.title}</Heading>
-          <Text as="p" size="2" color="gray" mt="2">
-            {page.description}
-          </Text>
-        </Box>
-      </Flex>
+    <PageSaveLayout
+      key={`${feature}:${feature === "guide" ? search : ""}`}
+      title={page.title}
+      description={page.description}
+      actions={actions}
+    >
       <Component
         key={`${feature}:${feature === "guide" ? search : ""}`}
         data={query.data}
       />
-    </>
+    </PageSaveLayout>
   );
 }

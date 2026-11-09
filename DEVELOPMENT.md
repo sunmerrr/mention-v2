@@ -55,3 +55,7 @@ browser scripts inside jsdom or hiding a second DOM until replay is complete.
 
 Keep secrets and real transcripts out of fixtures and logs. Do not copy the legacy
 working tree, production state or historical test counts as proof for this project.
+
+## UI foundation
+
+The project design system is mandatory. Read [DESIGN-SYSTEM.md](docs/DESIGN-SYSTEM.md), import controls from `apps/web/src/design-system`, reuse its tokens and patterns, and update the synthetic `/design-system` catalog for new shared elements. Feature files must not import vendor controls directly.

@@ -1,10 +1,9 @@
-import { PassThrough } from "node:stream";
 import {
   dehydrate,
   HydrationBoundary,
   QueryClientProvider,
 } from "@tanstack/react-query";
-import { renderToPipeableStream } from "react-dom/server";
+import { renderToReadableStream } from "react-dom/server.browser";
 import { StaticRouter } from "react-router-dom";
 import type { MonitoringQueries } from "../../../packages/application/src/queries";
 import type { WorkspaceQueries } from "../../../packages/application/src/workspace";
@@ -97,29 +96,21 @@ export async function render(
       </QueryClientProvider>
     </RuntimeContext.Provider>
   );
-  const html = await new Promise<string>((resolve, reject) => {
-    const output = new PassThrough();
-    let body = "";
-    output.on("data", (chunk) => {
-      body += chunk.toString();
-    });
-    output.on("end", () => resolve(body));
-    output.on("error", reject);
-    const stream = renderToPipeableStream(tree, {
-      onAllReady() {
-        stream.pipe(output);
-      },
-      onShellError: reject,
-      onError(error) {
-        reject(error);
-      },
-    });
-    const timer = setTimeout(() => {
-      stream.abort();
-      reject(new Error("SSR timeout"));
-    }, 10000);
-    output.on("close", () => clearTimeout(timer));
+  // React 18's Node byte-packing path can insert NUL padding between Korean
+  // characters. Its Web Streams renderer encodes strings before packing bytes.
+  let renderError: unknown;
+  const stream = await renderToReadableStream(tree, {
+    signal: AbortSignal.timeout(10000),
+    onError(error) {
+      renderError = error;
+    },
   });
+  await stream.allReady;
+  if (renderError) {
+    await stream.cancel();
+    throw renderError;
+  }
+  const html = await new Response(stream).text();
   client.clear();
   return {
     html,

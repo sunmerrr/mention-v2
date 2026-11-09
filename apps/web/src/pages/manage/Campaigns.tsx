@@ -1,3 +1,6 @@
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { labels, time } from "../../components/ui";
 import {
   Box,
   Button,
@@ -6,10 +9,7 @@ import {
   Flex,
   Grid,
   Text,
-} from "@radix-ui/themes";
-import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { labels, time } from "../../components/ui";
+} from "../../design-system";
 import { useRuntime } from "../../runtime";
 import {
   Choice,

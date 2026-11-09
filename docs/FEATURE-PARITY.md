@@ -54,3 +54,14 @@ validators and receipts. A connected collector does not establish complete histo
 recovery. Source API cold reads remain expensive (observed overview/trend about
 4 seconds, briefing about 7 seconds); this restoration does not claim query-cost
 optimization or a replacement database. The public URL is still a temporary tunnel.
+
+## Subsequent read-path improvement (2026-11-09)
+
+Overview and conversation previews now use a rebuildable public runtime SQLite
+projection. Summary computation is outside request handling, and conversation
+filters/cursors execute in indexed SQL before loading preview JSON. The operational
+collector DB remains separate. This supersedes the overview snapshot limitation
+above, while full-source regeneration and other compatibility read paths remain.
+Page save actions are SSR-rendered at the sticky upper right for keyword/guide/
+briefing settings and episode assessments. Bar legends and saved aggregation time
+are visible. See VERIFICATION.md for measurements and tests.

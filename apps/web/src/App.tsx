@@ -1,14 +1,3 @@
-import {
-  Badge,
-  Box,
-  Button,
-  Callout,
-  Flex,
-  Select,
-  Separator,
-  Text,
-  Theme,
-} from "@radix-ui/themes";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3,
@@ -22,31 +11,45 @@ import { ErrorBoundary } from "react-error-boundary";
 import {
   Link,
   Navigate,
-  NavLink,
   Route,
   Routes,
   useLocation,
   useNavigate,
 } from "react-router-dom";
 import { Failure, Pending } from "./components/ui";
+import {
+  Badge,
+  Box,
+  Button,
+  Callout,
+  DesignSystemProvider,
+  Flex,
+  Select,
+  Separator,
+  Text,
+} from "./design-system";
+import { useMenuOrigin } from "./navigation";
 import { api } from "./queries";
 import { useRuntime } from "./runtime";
 import { routeFeature } from "./workspace-query";
 
 const imports = {
+  designSystem: () => import("./design-system/Catalog"),
   overview: () => import("./pages/Overview"),
   conversations: () => import("./pages/Conversations"),
   reviews: () => import("./pages/Reviews"),
   detail: () => import("./pages/Detail"),
   workspace: () => import("./pages/Workspace"),
 };
-const Overview = lazy(imports.overview),
+const DesignSystemCatalog = lazy(imports.designSystem),
+  Overview = lazy(imports.overview),
   Conversations = lazy(imports.conversations),
   Reviews = lazy(imports.reviews),
   Detail = lazy(imports.detail),
   Workspace = lazy(imports.workspace);
 export async function preloadRoute(path: string) {
-  if (routeFeature(path)) await imports.workspace();
+  if (path === "/design-system") await imports.designSystem();
+  else if (routeFeature(path)) await imports.workspace();
   else if (path.startsWith("/conversations/")) await imports.detail();
   else if (path === "/reviews") await imports.reviews();
   else if (path === "/conversations") await imports.conversations();
@@ -83,11 +86,12 @@ const navGroups = [
       ["/rooms", "수집 대상"],
       ["/guide", "카톡 가이드 관리"],
       ["/operations", "수집·백업"],
+      ["/design-system", "디자인 시스템"],
     ],
   },
 ];
 function NavigationGroup({ group }: { group: (typeof navGroups)[number] }) {
-  const { pathname } = useLocation();
+  const pathname = useMenuOrigin();
   const active =
     group.links.some(([path]) =>
       path === "/"
@@ -118,14 +122,14 @@ function NavigationGroup({ group }: { group: (typeof navGroups)[number] }) {
       </summary>
       <div className="nav-section-links">
         {group.links.map(([path, label]) => (
-          <NavLink
+          <Link
             key={path}
             to={path}
-            end={path === "/"}
-            className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
+            aria-current={pathname === path ? "page" : undefined}
+            className={`nav-item ${pathname === path ? "active" : ""}`}
           >
             {label}
-          </NavLink>
+          </Link>
         ))}
       </div>
     </details>
@@ -161,15 +165,10 @@ function Refresh() {
 export function App() {
   const { writesEnabled } = useRuntime(),
     location = useLocation(),
-    navigate = useNavigate();
+    navigate = useNavigate(),
+    menu = useMenuOrigin();
   return (
-    <Theme
-      accentColor="iris"
-      grayColor="slate"
-      radius="medium"
-      scaling="100%"
-      panelBackground="solid"
-    >
+    <DesignSystemProvider>
       <div className="workspace">
         <aside className="sidebar">
           <Link to="/" className="brand" aria-label="Mention 홈">
@@ -186,20 +185,17 @@ export function App() {
             WORKSPACE
           </Text>
           <Box className="mobile-navigation">
-            <Select.Root
-              value={
-                navGroups
-                  .flatMap((g) => g.links)
-                  .some(([path]) => path === location.pathname)
-                  ? location.pathname
-                  : "/conversations"
-              }
-              onValueChange={navigate}
-            >
+            <Select.Root value={menu} onValueChange={navigate}>
               <Select.Trigger
                 aria-label="페이지 이동"
                 style={{ width: "100%" }}
-              />
+              >
+                {
+                  navGroups
+                    .flatMap((group) => group.links)
+                    .find(([path]) => path === menu)?.[1]
+                }
+              </Select.Trigger>
               <Select.Content>
                 {navGroups.map((group) => (
                   <Select.Group key={group.label}>
@@ -257,6 +253,10 @@ export function App() {
           >
             <Suspense fallback={<Pending />}>
               <Routes>
+                <Route
+                  path="/design-system"
+                  element={<DesignSystemCatalog />}
+                />
                 <Route path="/" element={<Overview />} />
                 <Route path="/conversations" element={<Conversations />} />
                 <Route path="/conversations/:id" element={<Detail />} />
@@ -297,6 +297,6 @@ export function App() {
           </ErrorBoundary>
         </main>
       </div>
-    </Theme>
+    </DesignSystemProvider>
   );
 }

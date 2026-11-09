@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render } from "../apps/web/src/entry-server";
 import { MonitoringQueries } from "../packages/application/src/queries";
+import { WorkspaceQueries } from "../packages/application/src/workspace";
 import { FakeReader } from "./fakes";
 
 describe("native React SSR", () => {
@@ -42,5 +43,54 @@ describe("native React SSR", () => {
     expect(result.state.queryState.queries.map((q) => q.queryKey[0])).toEqual([
       "conversation",
     ]);
+  });
+  it("preserves Korean form values across streamed SSR chunks and renders external save controls without JS", async () => {
+    const keywords = Array.from(
+      { length: 90 },
+      (_, i) => `러너포커 합성 키워드 ${i}`,
+    );
+    const workspace = new WorkspaceQueries({
+      request: async () => ({
+        keywords,
+        exclude_keywords: [],
+        keyword_groups: [],
+      }),
+    });
+    const result = await render(
+      "/keywords",
+      new MonitoringQueries(new FakeReader()),
+      true,
+      workspace,
+      true,
+    );
+    expect(result.html).not.toContain("�");
+    expect(result.html).not.toContain("\0");
+    expect(result.html).toContain(keywords.join("\n"));
+    expect(result.html).toContain('form="page-save-keyword-settings"');
+    expect(result.html).toContain('id="page-save-keyword-settings"');
+  });
+  it("does not inject NUL characters at production SSR buffer boundaries", async () => {
+    for (let count = 20; count < 30; count++) {
+      const keywords = Array.from(
+        { length: count },
+        (_, i) => `러너포커 합성 키워드 ${i}`,
+      );
+      const workspace = new WorkspaceQueries({
+        request: async () => ({
+          keywords,
+          exclude_keywords: [],
+          keyword_groups: [],
+        }),
+      });
+      const result = await render(
+        "/keywords",
+        new MonitoringQueries(new FakeReader()),
+        true,
+        workspace,
+        true,
+      );
+      expect(result.html).not.toContain("\0");
+      expect(result.html).toContain(keywords.join("\n"));
+    }
   });
 });

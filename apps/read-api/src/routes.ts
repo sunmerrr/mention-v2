@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type {
   ClassificationWriter,
+  MonitoringProjection,
   MonitoringReader,
 } from "../../../packages/application/src/ports";
 import {
@@ -19,8 +20,9 @@ export function registerApi(
   reader: MonitoringReader,
   writer: ClassificationWriter,
   options: { origin: string; writesEnabled: boolean; publicOrigin?: string },
+  projection?: MonitoringProjection,
 ) {
-  const queries = new MonitoringQueries(reader);
+  const queries = new MonitoringQueries(reader, projection);
   app.setErrorHandler((error, _request, reply) => {
     const status =
       error instanceof z.ZodError || error instanceof InvalidCursor
@@ -82,6 +84,14 @@ export function registerApi(
       error: null,
     }),
   );
+  app.get<{ Params: { id: string } }>(
+    "/api/conversations/:id/classifications",
+    async (request) => ({
+      success: true,
+      data: await queries.conversationClassifications(request.params.id),
+      error: null,
+    }),
+  );
   app.get("/api/classifications", async (request) => ({
     success: true,
     data: await queries.classifications(listSchema.parse(request.query)),
@@ -115,6 +125,7 @@ export function registerApi(
       });
     const input = correctionSchema.parse(request.body);
     await writer.correct(input);
+    if (projection) void queries.refresh().catch(() => {});
     return { success: true, data: { saved: true }, error: null };
   });
   return queries;

@@ -1,6 +1,16 @@
-import { Badge, Box, Button, Card, Flex, Grid, Text } from "@radix-ui/themes";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { time } from "../../components/ui";
+import {
+  Badge,
+  Box,
+  Button,
+  Card,
+  Flex,
+  Grid,
+  Select,
+  Text,
+} from "../../design-system";
 import {
   Action,
   ActionForm,
@@ -402,61 +412,155 @@ export function Bookmarks({ data }: { data: Row }) {
     </>
   );
 }
+function AliasCandidate({
+  candidate: a,
+  groups,
+}: {
+  candidate: Row;
+  groups: Row[];
+}) {
+  const proposed = groups.find((g) => g.id === a.group_id);
+  const [selected, setSelected] = useState(proposed ? text(proposed.id) : "");
+  const related = a.method === "cooccurrence";
+  return (
+    <Panel
+      title={`${text(a.token)} → ${proposed ? text(proposed.name) : "대상 미정"}`}
+    >
+      <Flex gap="2" align="center" wrap="wrap" mb="3">
+        <Badge color={related ? "gray" : "iris"}>
+          {related
+            ? "함께 언급된 표현"
+            : a.method === "spelling"
+              ? "철자 유사"
+              : "표기 후보"}
+        </Badge>
+        <Text size="2">
+          {proposed
+            ? related
+              ? `${text(proposed.name)}과 함께 등장한 표현입니다.`
+              : a.method === "spelling"
+                ? `${text(proposed.name)}의 ${strings(a.similar_to).length ? `‘${strings(a.similar_to).join("’, ‘")}’` : "기존 표현"}과 철자가 비슷해 제안됐습니다.`
+                : `${text(proposed.name)}의 다른 표기로 검토할 후보입니다.`
+            : "어느 대상의 별칭인지 불분명합니다. 직접 대상을 선택해 주세요."}
+        </Text>
+      </Flex>
+      <Text as="p" size="2" color="gray">
+        {text(a.reason)}
+      </Text>
+      <Text as="p" size="1" color="gray" mt="2">
+        홍보 제외 대화 {num(a.occurrences)}건 · 서로 다른 본문{" "}
+        {num(a.distinct_texts)}개 · 참여자 {num(a.authors)}명
+      </Text>
+      <details className="alias-evidence">
+        <summary>근거 대화 {rows(a.examples).length}개 보기</summary>
+        <Evidence items={a.examples} />
+      </details>
+      <Box mt="4">
+        <ActionForm
+          action="alias-decision"
+          submit="선택한 대상의 별칭으로 추가"
+          submitDisabled={!selected}
+          build={(f) => ({
+            token: a.token,
+            decision: "applied",
+            group_id: f.get("group_id"),
+          })}
+        >
+          <Box>
+            <Text as="div" size="2" weight="medium" mb="2">
+              추가할 대상
+            </Text>
+            <Select.Root
+              name="group_id"
+              value={selected}
+              onValueChange={setSelected}
+            >
+              <Select.Trigger
+                aria-label={`${text(a.token)}을 추가할 대상`}
+                placeholder="대상을 직접 선택하세요"
+              >
+                {text(groups.find((g) => g.id === selected)?.name) || undefined}
+              </Select.Trigger>
+              <Select.Content>
+                {groups.map((g) => (
+                  <Select.Item key={text(g.id)} value={text(g.id)}>
+                    {text(g.name)}
+                  </Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
+          </Box>
+        </ActionForm>
+      </Box>
+      <Box mt="3">
+        <Action
+          action="alias-decision"
+          input={{ token: a.token, decision: "dismissed" }}
+        >
+          별칭 아님 · 제외
+        </Action>
+      </Box>
+    </Panel>
+  );
+}
 export function Aliases({ data }: { data: Row }) {
+  const candidates = rows(data.candidates),
+    groups = rows(data.groups);
+  const primary = candidates.filter(
+      (a) =>
+        a.method !== "cooccurrence" && groups.some((g) => g.id === a.group_id),
+    ),
+    related = candidates.filter((a) => !primary.includes(a));
   return (
     <>
-      <Text as="p" size="2" color="gray" mb="5">
-        {text(data.note)} · 최근 {num(data.days)}일 · {num(data.scanned)}개 검사
+      <Text as="p" size="2" color="gray" mb="2">
+        {text(data.note)}
       </Text>
-      {rows(data.candidates).map((a) => (
-        <Panel
-          key={text(a.token)}
-          title={`${text(a.token)} · ${num(a.occurrences)}회`}
-        >
-          <Text size="2">{text(a.reason)}</Text>
-          <Evidence items={a.examples} />
-          <Box mt="4">
-            <ActionForm
-              action="alias-decision"
-              submit="선택한 대상의 별칭으로 추가"
-              build={(f) => ({
-                token: a.token,
-                decision: "applied",
-                group_id: f.get("group_id"),
-              })}
-            >
-              <Choice
-                name="group_id"
-                label="대상"
-                value={text(a.group_id)}
-                options={Object.fromEntries(
-                  rows(data.groups).map((g) => [text(g.id), text(g.name)]),
-                )}
-              />
-            </ActionForm>
-          </Box>
-          <Box mt="3">
-            <Action
-              action="alias-decision"
-              input={{ token: a.token, decision: "dismissed" }}
-            >
-              별칭 아님 · 제외
-            </Action>
-          </Box>
-        </Panel>
+      <Text as="p" size="1" color="gray" mb="5">
+        최근 {num(data.days)}일 · 대화 {num(data.scanned)}개 검사 · 홍보·안내{" "}
+        {num(data.promotion_messages_excluded)}개 제외 · 기존 키워드로 인식되는
+        표현 {num(data.already_recognized_excluded)}개 제외
+        {data.captured_at
+          ? ` · 생성 ${time(Date.parse(text(data.captured_at)))}`
+          : ""}
+      </Text>
+      {primary.map((a) => (
+        <AliasCandidate
+          key={`${text(a.token)}:${text(a.group_id)}`}
+          candidate={a}
+          groups={groups}
+        />
       ))}
-      {!rows(data.candidates).length && (
+      {!!related.length && (
+        <details className="alias-related">
+          <summary>대상 확인이 필요한 표현 {related.length}개</summary>
+          <Text as="p" size="2" color="gray" my="3">
+            제안 대상이 불명확하거나 단순히 함께 언급된 표현입니다. 어느 대상의
+            실제 별칭인지 확인한 뒤 추가해 주세요.
+          </Text>
+          {related.map((a) => (
+            <AliasCandidate
+              key={`${text(a.token)}:${text(a.group_id)}`}
+              candidate={a}
+              groups={groups}
+            />
+          ))}
+        </details>
+      )}
+      {!candidates.length && (
         <Panel title="새 별칭 후보">
           <Text size="2" color="gray">
-            현재 조건에서 새 후보가 없습니다.
+            홍보를 제외한 대화에서 현재 검토할 후보가 없습니다.
           </Text>
         </Panel>
       )}
+      <Paging data={data} />
       <Panel title="처리한 후보">
         <DataTable
-          columns={["표현", "결과", "변경"]}
+          columns={["표현", "대상", "결과", "변경"]}
           items={rows(data.decisions).map((d) => [
             text(d.token),
+            text(groups.find((g) => g.id === d.group_id)?.name) || "—",
             d.decision === "applied" ? "추가됨" : "제외됨",
             d.decision === "dismissed" ? (
               <Action

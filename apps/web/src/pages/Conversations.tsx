@@ -1,14 +1,3 @@
-import {
-  Badge,
-  Box,
-  Button,
-  Card,
-  Flex,
-  Heading,
-  Select,
-  Table,
-  Text,
-} from "@radix-ui/themes";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { ArrowDown, ArrowUpRight, MessageSquareText } from "lucide-react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
@@ -19,13 +8,25 @@ import type {
 import { Filters } from "../components/Filters";
 import {
   Empty,
+  EvaluationStatus,
   Failure,
   labels,
-  OriginBadge,
   Pending,
-  Sentiment,
   time,
 } from "../components/ui";
+import {
+  Badge,
+  Box,
+  Button,
+  Card,
+  Flex,
+  Heading,
+  PageHeader,
+  Select,
+  Table,
+  Text,
+} from "../design-system";
+import { relatedHref, useMenuOrigin } from "../navigation";
 import { conversationsQuery, overviewQuery, scopeFrom } from "../queries";
 export function selectedEvaluation(
   item: Conversation,
@@ -45,6 +46,7 @@ export default function Conversations({
 }: {
   embedded?: boolean;
 }) {
+  const menu = useMenuOrigin();
   const { search } = useLocation(),
     scope = scopeFrom(search),
     [params, setParams] = useSearchParams(),
@@ -62,21 +64,11 @@ export default function Conversations({
   return (
     <>
       {!embedded && (
-        <Flex
-          className="page-heading"
-          justify="between"
-          align="center"
-          gap="4"
-          wrap="wrap"
-        >
-          <Box>
-            <Heading size="6">대화 목록</Heading>
-            <Text as="p" color="gray" size="2" mt="1">
-              기준 발언과 앞뒤 맥락을 한 대화로 읽습니다.
-            </Text>
-          </Box>
-          <Filters metadata={metadata.data?.metadata} />
-        </Flex>
+        <PageHeader
+          title="대화 목록"
+          description="기준 발언과 앞뒤 맥락을 한 대화로 읽습니다."
+          actions={<Filters metadata={metadata.data?.metadata} />}
+        />
       )}
       <Card className="section-card">
         <Flex align="center" justify="between" gap="3" mb="4" wrap="wrap">
@@ -130,22 +122,16 @@ export default function Conversations({
                           </Flex>
                           <Flex align="center" gap="2">
                             {evaluation && (
-                              <Sentiment
-                                label={
-                                  evaluation[1].stale
-                                    ? "unreviewed"
-                                    : evaluation[1].label
-                                }
-                              />
+                              <EvaluationStatus evaluation={evaluation[1]} />
                             )}
-                            <OriginBadge
-                              origin={evaluation?.[1].origin || null}
-                            />
                           </Flex>
                         </Table.Cell>
                         <Table.Cell>
                           <Link
-                            to={`/conversations/${item.id}${search}`}
+                            to={relatedHref(
+                              `/conversations/${item.id}${search}`,
+                              menu,
+                            )}
                             className="conversation-link"
                           >
                             <Text as="p" size="1" color="gray" mb="1">

@@ -1,7 +1,8 @@
-import { Box, Button, Checkbox, Flex, Grid, Text } from "@radix-ui/themes";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { labels, time } from "../../components/ui";
+import { Box, Button, Checkbox, Flex, Grid, Text } from "../../design-system";
 import { workspaceQuery } from "../../workspace-query";
 import { Highlight } from "./Records";
 import {
@@ -20,6 +21,58 @@ import {
   text,
   useAction,
 } from "./shared";
+export function useContextExpansion(id: string, conversation = false) {
+  const state = useAction();
+  const [result, setResult] = useState("");
+  const [direction, setDirection] = useState<"before" | "after">("before");
+  async function expand(next: "before" | "after") {
+    setDirection(next);
+    setResult("");
+    const r = await state.run("context-expand", {
+      id,
+      conversation,
+      direction: next,
+      minutes: next === "before" ? 30 : 15,
+    });
+    if (r)
+      setResult(
+        `${num(next === "before" ? r.added_before : r.added_after)}개 추가 · ${r.complete ? "조회 범위 확인" : "일부 구간 미확인 또는 다음 수신 대기"}`,
+      );
+  }
+  return { state, result, direction, expand };
+}
+export function ContextExpandButton({
+  controller,
+  direction,
+}: {
+  controller: ReturnType<typeof useContextExpansion>;
+  direction: "before" | "after";
+}) {
+  const active = controller.direction === direction;
+  return (
+    <Box className="context-expand">
+      <Button
+        intent="quiet"
+        loading={active && controller.state.busy}
+        disabled={controller.state.busy}
+        onClick={() => controller.expand(direction)}
+      >
+        {direction === "before" ? (
+          <ChevronUp size={14} />
+        ) : (
+          <ChevronDown size={14} />
+        )}
+        {direction === "before" ? "이전" : "이후"} 대화 더 불러오기
+      </Button>
+      {active && (
+        <>
+          <Notice state={controller.state} />
+          <ContextResult value={controller.result} />
+        </>
+      )}
+    </Box>
+  );
+}
 export function ContextActions({
   id,
   conversation = false,
@@ -27,39 +80,12 @@ export function ContextActions({
   id: string;
   conversation?: boolean;
 }) {
-  const state = useAction(),
-    [result, setResult] = useState("");
+  const controller = useContextExpansion(id, conversation);
   return (
-    <Box mb="4">
-      <Flex gap="3" wrap="wrap">
-        {["before", "after"].map((direction) => (
-          <Button
-            key={direction}
-            variant="soft"
-            loading={state.busy}
-            onClick={async () => {
-              const r = await state.run("context-expand", {
-                id,
-                conversation,
-                direction,
-                minutes: direction === "before" ? 30 : 15,
-              });
-              if (r) {
-                const added =
-                  direction === "before" ? r.added_before : r.added_after;
-                setResult(
-                  `${num(added)}개 추가 · ${r.complete ? "조회 범위 확인" : "일부 구간 미확인 또는 다음 수신 대기"}`,
-                );
-              }
-            }}
-          >
-            {direction === "before" ? "이전" : "이후"} 대화 더 불러오기
-          </Button>
-        ))}
-      </Flex>
-      <Notice state={state} />
-      <ContextResult value={result} />
-    </Box>
+    <Flex gap="3" wrap="wrap" mb="4">
+      <ContextExpandButton controller={controller} direction="before" />
+      <ContextExpandButton controller={controller} direction="after" />
+    </Flex>
   );
 }
 function ContextResult({ value }: { value: unknown }) {
@@ -138,57 +164,64 @@ export function Relevance({
 export function BookmarkSource({
   id,
   kind,
+  embedded = false,
 }: {
   id: string;
   kind: "conversation" | "episode";
+  embedded?: boolean;
 }) {
   const search = `?kind=${kind}&source_id=${id}`,
     query = useQuery(workspaceQuery("bookmarks", search));
   const data = query.data || {},
     existing = rows(data.items)[0] || {};
-  return (
+  const form = (
+    <Box mt="4">
+      <ActionForm
+        action="bookmark-save"
+        build={(f) => ({
+          kind,
+          source_id: id,
+          category: f.get("category"),
+          status: f.get("status"),
+          owner: f.get("owner"),
+          note: f.get("note"),
+        })}
+      >
+        <Grid columns={{ initial: "1", sm: "3" }} gap="3">
+          <Choice
+            name="category"
+            label="분류"
+            value={text(existing.category) || "other"}
+            options={{
+              complaint: "불만",
+              purchase_intent: "이용·구매 의향",
+              improvement: "개선 요청",
+              question: "확인할 질문",
+              other: "기타",
+            }}
+          />
+          <Choice
+            name="status"
+            label="상태"
+            value={text(existing.status) || "todo"}
+            options={{
+              todo: "확인 대기",
+              in_progress: "처리 중",
+              done: "처리 완료",
+            }}
+          />
+          <Field name="owner" label="담당자" value={text(existing.owner)} />
+        </Grid>
+        <Multiline name="note" label="메모" value={text(existing.note)} />
+      </ActionForm>
+    </Box>
+  );
+  return embedded ? (
+    form
+  ) : (
     <details className="background-message">
       <summary>중요 대화로 보관 · 담당자·메모 관리</summary>
-      <Box mt="4">
-        <ActionForm
-          action="bookmark-save"
-          build={(f) => ({
-            kind,
-            source_id: id,
-            category: f.get("category"),
-            status: f.get("status"),
-            owner: f.get("owner"),
-            note: f.get("note"),
-          })}
-        >
-          <Grid columns={{ initial: "1", sm: "3" }} gap="3">
-            <Choice
-              name="category"
-              label="분류"
-              value={text(existing.category) || "other"}
-              options={{
-                complaint: "불만",
-                purchase_intent: "이용·구매 의향",
-                improvement: "개선 요청",
-                question: "확인할 질문",
-                other: "기타",
-              }}
-            />
-            <Choice
-              name="status"
-              label="상태"
-              value={text(existing.status) || "todo"}
-              options={{
-                todo: "확인 대기",
-                in_progress: "처리 중",
-                done: "처리 완료",
-              }}
-            />
-            <Field name="owner" label="담당자" value={text(existing.owner)} />
-          </Grid>
-          <Multiline name="note" label="메모" value={text(existing.note)} />
-        </ActionForm>
-      </Box>
+      {form}
     </details>
   );
 }

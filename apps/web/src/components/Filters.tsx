@@ -1,7 +1,7 @@
-import { Button, Flex, Select, TextField } from "@radix-ui/themes";
 import { CalendarDays, RotateCcw } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import type { Metadata } from "../../../../packages/contracts/src/api";
+import { Button, FilterBar, Select, TextField } from "../design-system";
 export function Filters({ metadata }: { metadata?: Metadata }) {
   const [search, setSearch] = useSearchParams();
   function update(key: string, value: string) {
@@ -11,13 +11,7 @@ export function Filters({ metadata }: { metadata?: Metadata }) {
     setSearch(next, { replace: true });
   }
   return (
-    <Flex
-      className="scope-controls"
-      gap="2"
-      align="center"
-      wrap="wrap"
-      justify="end"
-    >
+    <FilterBar>
       <TextField.Root
         type="date"
         aria-label="조회 날짜"
@@ -52,6 +46,6 @@ export function Filters({ metadata }: { metadata?: Metadata }) {
           초기화
         </Button>
       )}
-    </Flex>
+    </FilterBar>
   );
 }

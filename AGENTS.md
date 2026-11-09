@@ -16,6 +16,19 @@ when implementing it; do not import an entire backend stack for an unrelated UI
 change. SSR is an explicit user requirement and a recorded exception to the
 reference guide's CSR default. Do not infer that reading the guide revoked SSR.
 
+## Required design system
+
+Read `docs/DESIGN-SYSTEM.md` before any UI implementation. Actively use the
+project design system in `apps/web/src/design-system`: semantic tokens, shared
+primitives and product patterns. Import UI controls through that boundary, not
+Radix directly in feature code. Search the `/design-system` catalog first; extend
+shared components and add synthetic catalog examples instead of per-page variants.
+Shared visual decisions belong in tokens, not new scattered literal styles.
+When changing existing screens, migrate the touched patterns to the system.
+Preserve accessibility and SSR; inspect desktop and mobile. Boundary and token
+checks in `tests/design-system.test.ts` must pass. Any necessary exception must
+have a concrete reason recorded in `docs/DESIGN-SYSTEM.md`.
+
 ## UI: reuse before custom styling
 
 The user explicitly requires established libraries or existing implementations

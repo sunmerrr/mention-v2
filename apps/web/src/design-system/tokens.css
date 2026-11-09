@@ -1,0 +1,47 @@
+/* Semantic aliases are the public token API. Radix owns primitive scales. */
+.radix-themes {
+  --mention-font-family:
+    Inter, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+    "Noto Sans KR", sans-serif;
+  --default-font-family: var(--mention-font-family);
+  --mention-bg-canvas: #edf1f6;
+  --mention-bg-surface: var(--color-panel-solid);
+  --mention-bg-subtle: var(--gray-2);
+  --mention-bg-selected: var(--accent-3);
+  --mention-text-primary: var(--gray-12);
+  --mention-text-secondary: var(--gray-11);
+  --mention-text-action: var(--accent-11);
+  --mention-border: var(--gray-5);
+  --mention-border-subtle: var(--gray-4);
+  --mention-focus: var(--accent-8);
+  --mention-positive: var(--jade-8);
+  --mention-negative: var(--red-8);
+  --mention-neutral: var(--slate-8);
+  --mention-mixed: var(--violet-8);
+  --mention-uncertain: var(--amber-8);
+  --mention-space-1: var(--space-1);
+  --mention-space-2: var(--space-2);
+  --mention-space-3: var(--space-3);
+  --mention-space-4: var(--space-4);
+  --mention-space-5: var(--space-5);
+  --mention-space-6: var(--space-6);
+  --mention-space-7: var(--space-7);
+  --mention-radius-control: var(--radius-2);
+  --mention-radius-surface: var(--radius-3);
+  --mention-shadow-surface: 0 1px 2px #24355005;
+  --mention-font-title: var(--font-size-6);
+  --mention-font-section: var(--font-size-4);
+  --mention-font-body: var(--font-size-2);
+  --mention-font-caption: var(--font-size-1);
+  --mention-weight-medium: var(--font-weight-medium);
+  --mention-line-body: 1.75;
+  --mention-line-conversation: 1.85;
+  --mention-sidebar-width: 218px;
+  --mention-content-max: 1550px;
+  --mention-page-gutter: var(--space-7);
+}
+@media (max-width: 700px) {
+  .radix-themes {
+    --mention-page-gutter: var(--space-4);
+  }
+}

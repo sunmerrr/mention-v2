@@ -24,6 +24,7 @@ export class CollectorTransport {
         child.kill();
         reject(new UpstreamError("수집기 응답 시간이 초과됐습니다."));
       }, 135000);
+      child.stdout.setEncoding("utf8");
       child.stdout.on("data", (chunk) => {
         output += chunk.toString();
         if (output.length > 20 * 1024 * 1024) {

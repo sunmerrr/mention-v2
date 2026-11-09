@@ -52,3 +52,30 @@ Mobile retains the compact grouped Radix page selector. Browser verification
 covered Enter-key collapse/reopen, route navigation, hydration and mobile bounds.
 Only the new web process was redeployed; the collector identity/connection stayed
 unchanged. Do not regress these categories into faint static captions.
+
+## Monitoring clarity and page actions
+
+Distribution bars share their exact color classes with the visible five-label
+legend and per-row count dots. Unclassified remains separate from neutral.
+Page-level settings and assessments use an SSR-rendered sticky upper-right save
+action linked by native HTML form ID. Loading/result/error feedback stays in that
+heading. Repeated record editors retain individual right-aligned actions. Standard
+Radix buttons, validation and local-only permissions are preserved.
+
+## Context collections and review navigation
+
+The overview separates latest activity, positive context and negative context.
+Current per-target summaries show their AI/human source, alongside short real
+excerpts; unclassified conversations explicitly await context summary. A context
+may express different opinions about different targets without collapsing those
+opinions into one label. Reaction panels do not infer stance from keyword presence.
+
+Review rows open the source context when their ordinary cells are clicked. The
+summary is also a native keyboard-focusable link. The separate Context button is
+removed; classification editing, history details and modal interaction never
+trigger row navigation. Related workflow links retain their origin menu through
+context/review/source pages and reload; an explicit menu click changes selection.
+
+Conversation context evaluation cards open the shared correction dialog in place. They do not navigate to the review list. Conversation-scoped classification reads supply the current conflict token; correction attribution and audit semantics are unchanged.
+
+Context classifications use a single grouped surface with aligned target/status, summary and edit action. Mobile places the summary under the target and action. The shared Radix correction dialog presents five RadioCards with short definitions, followed by the reasoning field and save action.

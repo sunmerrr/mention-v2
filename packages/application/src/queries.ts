@@ -11,9 +11,9 @@ import {
   scopedConversations,
   summarize,
 } from "../../domain/src/model";
-import type { MonitoringReader } from "./ports";
+import type { MonitoringProjection, MonitoringReader } from "./ports";
 export class InvalidCursor extends Error {}
-function cursorKey(input: ListInput): string {
+export function cursorKey(input: ListInput): string {
   return createHash("sha256")
     .update(JSON.stringify([input.day, input.target, input.label]))
     .digest("hex")
@@ -61,8 +61,12 @@ function paginate<T extends { id: string; at: number }>(
   return { items: page, nextCursor, total: sorted.length, capturedAt, source };
 }
 export class MonitoringQueries {
-  constructor(private readonly reader: MonitoringReader) {}
+  constructor(
+    private readonly reader: MonitoringReader,
+    private readonly projection?: MonitoringProjection,
+  ) {}
   async overview(scope: Scope) {
+    if (this.projection) return this.projection.overview(scope);
     const dataset = await this.reader.read();
     return {
       overview: summarize(dataset, scope),
@@ -70,6 +74,7 @@ export class MonitoringQueries {
     };
   }
   async conversations(input: ListInput): Promise<Page<Conversation>> {
+    if (this.projection) return this.projection.conversations(input);
     const data = await this.reader.read();
     const items = scopedConversations(data, input).filter(
       (c) =>
@@ -84,7 +89,9 @@ export class MonitoringQueries {
   }
   async classifications(input: ListInput): Promise<Page<Classification>> {
     const items = await this.reader.classifications(),
-      data = await this.reader.read();
+      data = this.projection
+        ? await this.projection.info()
+        : await this.reader.read();
     return paginate(
       items.filter(
         (i) =>
@@ -97,11 +104,18 @@ export class MonitoringQueries {
       data.source,
     );
   }
+  async conversationClassifications(id: string) {
+    return (await this.reader.classifications()).filter(
+      (item) => item.conversationId === id,
+    );
+  }
   detail(id: string) {
     return this.reader.detail(id);
   }
   refresh() {
-    return this.reader.refresh();
+    return this.projection
+      ? this.projection.refresh(true)
+      : this.reader.refresh();
   }
   private metadata(data: Dataset): Metadata {
     return {

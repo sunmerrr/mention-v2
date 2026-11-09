@@ -50,9 +50,16 @@ describe("read contracts", () => {
     const p = await query.conversations(listSchema.parse({ limit: 12 }));
     expect(p.items).toHaveLength(12);
     expect(p.items[0]).not.toHaveProperty("messages");
+    const overview = await query.overview({ day: "", target: "" });
+    expect(overview.overview.conversationSections.latest).toHaveLength(4);
     expect(
-      JSON.stringify(await query.overview({ day: "", target: "" })),
-    ).not.toContain("합성 발언");
+      overview.overview.conversationSections.positive.length,
+    ).toBeLessThanOrEqual(4);
+    expect(
+      overview.overview.conversationSections.negative.length,
+    ).toBeLessThanOrEqual(4);
+    expect(JSON.stringify(overview)).not.toContain("합성 발언 28");
+    expect(JSON.stringify(overview).length).toBeLessThan(25000);
     expect(() => listSchema.parse({ limit: 1000 })).toThrow();
   });
 });

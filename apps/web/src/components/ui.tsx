@@ -1,3 +1,9 @@
+import { RefreshCw, TriangleAlert } from "lucide-react";
+import type {
+  Evaluation,
+  Label,
+  Origin,
+} from "../../../../packages/domain/src/model";
 import {
   Badge,
   Box,
@@ -5,10 +11,9 @@ import {
   Callout,
   Flex,
   Spinner,
+  sentimentColors,
   Text,
-} from "@radix-ui/themes";
-import { RefreshCw, TriangleAlert } from "lucide-react";
-import type { Label, Origin } from "../../../../packages/domain/src/model";
+} from "../design-system";
 export const labels: Record<Label, string> = {
   positive: "긍정",
   negative: "부정",
@@ -17,19 +22,34 @@ export const labels: Record<Label, string> = {
   uncertain: "판단 보류",
   unreviewed: "미분류",
 };
-const colors = {
-  positive: "jade",
-  negative: "red",
-  neutral: "gray",
-  mixed: "violet",
-  uncertain: "amber",
-  unreviewed: "gray",
-} as const;
 export function Sentiment({ label }: { label: Label }) {
   return (
-    <Badge color={colors[label]} variant="soft">
+    <Badge color={sentimentColors[label]} variant="soft">
       {labels[label]}
     </Badge>
+  );
+}
+export function EvaluationStatus({ evaluation }: { evaluation: Evaluation }) {
+  const previous = evaluation.previous;
+  const label = previous?.label || evaluation.label;
+  return (
+    <Flex direction="column" gap="1" align="start">
+      {evaluation.stale ? (
+        <>
+          <Badge color={sentimentColors[label]}>
+            {label === "unreviewed"
+              ? "기존 분류 확인 필요"
+              : `기존 분류: ${labels[label]}`}
+          </Badge>
+          <Text size="1" color="amber">
+            맥락 변경 · 재검토 필요
+          </Text>
+        </>
+      ) : (
+        <Sentiment label={label} />
+      )}
+      <OriginBadge origin={previous?.origin || evaluation.origin} />
+    </Flex>
   );
 }
 export function OriginBadge({ origin }: { origin: Origin | null }) {

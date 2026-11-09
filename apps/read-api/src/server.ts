@@ -6,8 +6,11 @@ import middie from "@fastify/middie";
 import fastifyStatic from "@fastify/static";
 import Fastify from "fastify";
 import { WorkspaceQueries } from "../../../packages/application/src/workspace";
+import { AliasSuggestions } from "./adapters/alias-suggestions";
+import { AnalyticsTransport } from "./adapters/analytics";
 import { CollectorTransport } from "./adapters/collector";
 import { LegacyReader } from "./adapters/legacy";
+import { MonitoringReadModel } from "./adapters/read-model";
 import { registerApi } from "./routes";
 import { isLocalRequest, registerWorkspace } from "./workspace-routes";
 
@@ -39,18 +42,69 @@ if (production) await app.register(compress);
 const transport = deployment.legacyRoot
   ? new CollectorTransport(deployment.legacyRoot, writesEnabled)
   : undefined;
-const workspace = transport ? new WorkspaceQueries(transport) : undefined;
+const analytics =
+  transport && deployment.legacyRoot
+    ? new AnalyticsTransport(deployment.legacyRoot, transport, (metrics) =>
+        app.log.info(
+          { event: "analytics_read", ...metrics },
+          "Read-only analytics completed",
+        ),
+      )
+    : undefined;
+const aliases = analytics
+  ? new AliasSuggestions(
+      analytics,
+      path.join(root, "runtime/alias-suggestions.json"),
+    )
+  : undefined;
+const workspace = transport
+  ? new WorkspaceQueries(aliases || analytics || transport)
+  : undefined;
 const reader = new LegacyReader(
   process.env.MENTION_LEGACY_URL || "http://127.0.0.1:8766",
   (message) => app.log.warn({ event: "snapshot_refresh_failed" }, message),
   30000,
-  transport,
+  analytics || transport,
 );
-const queries = registerApi(app, reader, reader, {
-  origin,
-  writesEnabled,
-  publicOrigin: deployment.publicOrigin,
-});
+const readModel = new MonitoringReadModel(
+  reader,
+  path.join(root, "runtime/public-read-model.db"),
+);
+const queries = registerApi(
+  app,
+  reader,
+  reader,
+  {
+    origin,
+    writesEnabled,
+    publicOrigin: deployment.publicOrigin,
+  },
+  readModel,
+);
+const refreshReadModel = () =>
+  readModel
+    .refresh()
+    .catch(() =>
+      app.log.warn(
+        { event: "read_model_refresh_failed" },
+        "Public read model retained its last successful generation",
+      ),
+    );
+void refreshReadModel();
+const refreshAliases = () =>
+  aliases
+    ?.refresh()
+    .catch(() =>
+      app.log.warn(
+        { event: "alias_refresh_failed" },
+        "Alias suggestions retained their last successful generation",
+      ),
+    );
+void refreshAliases();
+const aliasTimer = setInterval(refreshAliases, 60000);
+aliasTimer.unref();
+const readModelTimer = setInterval(refreshReadModel, 30000);
+readModelTimer.unref();
 if (workspace)
   registerWorkspace(
     app,
@@ -164,6 +218,9 @@ app.get("/*", async (request, reply) => {
   }
 });
 async function shutdown() {
+  clearInterval(readModelTimer);
+  clearInterval(aliasTimer);
+  analytics?.close();
   await app.close();
   await vite?.close();
   process.exit(0);

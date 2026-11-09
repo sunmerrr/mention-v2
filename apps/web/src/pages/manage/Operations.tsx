@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+import { labels } from "../../components/ui";
 import {
   Badge,
   Box,
@@ -6,9 +8,7 @@ import {
   Flex,
   Grid,
   Text,
-} from "@radix-ui/themes";
-import { useQuery } from "@tanstack/react-query";
-import { labels } from "../../components/ui";
+} from "../../design-system";
 import { workspaceQuery } from "../../workspace-query";
 import {
   Action,

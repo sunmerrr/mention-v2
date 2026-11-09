@@ -1,4 +1,5 @@
 import "@radix-ui/themes/styles.css";
+import "./design-system/tokens.css";
 import "./style.css";
 import type { DehydratedState } from "@tanstack/react-query";
 import { HydrationBoundary, QueryClientProvider } from "@tanstack/react-query";
