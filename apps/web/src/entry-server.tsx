@@ -31,7 +31,15 @@ export async function render(
     label = requestUrl.searchParams.get("label") || "",
     client = createQueryClient();
   await preloadRoute(requestUrl.pathname);
-  const listInput = listSchema.parse({ ...scope, label });
+  const conversationLabel = label === "unreviewed" ? "" : label;
+  const conversationStatus =
+    requestUrl.searchParams.get("status") ||
+    (label === "unreviewed" ? "pending" : "");
+  const listInput = listSchema.parse({
+    ...scope,
+    label: requestUrl.pathname === "/conversations" ? conversationLabel : label,
+    status: requestUrl.pathname === "/conversations" ? conversationStatus : "",
+  });
   const detail = /^\/conversations\/([^/]+)$/.exec(requestUrl.pathname);
   const feature = routeFeature(requestUrl.pathname);
   if (feature && workspace) {
@@ -58,7 +66,11 @@ export async function render(
               queryFn: () => queries.classifications(listInput),
             })
           : client.fetchInfiniteQuery({
-              ...conversationsQuery(scope, label),
+              ...conversationsQuery(
+                scope,
+                conversationLabel,
+                conversationStatus,
+              ),
               queryFn: () => queries.conversations(listInput),
             }),
     ]);

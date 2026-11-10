@@ -1,26 +1,39 @@
+import { useQuery } from "@tanstack/react-query";
+import {
+  ArrowDownToLine,
+  ArrowLeftToLine,
+  ArrowRightToLine,
+  ArrowUpToLine,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Badge,
   Box,
   Button,
-  Card,
   Checkbox,
   Flex,
   Grid,
+  PreviewDisclosure,
+  Select,
+  SelectionPanel,
   Text,
   TextArea,
   TextField,
 } from "../../design-system";
+import { api } from "../../queries";
+import { useRuntime } from "../../runtime";
 import {
   ActionForm,
   Choice,
-  CountBadge,
   DataTable,
   Field,
-  FilterForm,
   Multiline,
   Notice,
+  num,
+  obj,
   Paging,
   Panel,
   type Row,
@@ -30,15 +43,48 @@ import {
   text,
   useAction,
 } from "./shared";
+
+function KeywordProcessingStatus() {
+  const query = useQuery({
+    queryKey: ["keyword-processing"],
+    queryFn: () => api<Row>("/api/workspace/keywordProcessing"),
+    refetchInterval: (query) =>
+      query.state.data?.supported === false
+        ? false
+        : ["queued", "running"].includes(text(query.state.data?.state))
+          ? 2000
+          : 30000,
+  });
+  const value = query.data;
+  if (!value?.supported) return null;
+  const status = text(value.state);
+  if (status === "idle") return null;
+  return (
+    <Text
+      as="p"
+      size="2"
+      color={status === "failed" ? "red" : "gray"}
+      role="status"
+    >
+      {status === "queued" || status === "running"
+        ? "설정 저장 완료 · 기존 데이터와 CSV 갱신 중"
+        : status === "failed"
+          ? "설정은 저장됐지만 기존 데이터 갱신에 실패했습니다. 다시 저장하면 재시도합니다."
+          : "설정 저장 및 기존 데이터·CSV 갱신 완료"}
+    </Text>
+  );
+}
 export function Keywords({ data }: { data: Row }) {
   const [groups, setGroups] = useState(rows(data.keyword_groups)),
     [suggestions, setSuggestions] = useState<Row[]>([]),
     [sample, setSample] = useState(""),
     [check, setCheck] = useState<Row>();
   const state = useAction();
+  const [expandedGroup, setExpandedGroup] = useState<string>();
   return (
     <>
       <Panel title="수집 키워드와 제외 키워드">
+        <KeywordProcessingStatus />
         <ActionForm
           action="keyword-settings"
           build={(f) => {
@@ -63,106 +109,222 @@ export function Keywords({ data }: { data: Row }) {
               value={strings(data.keywords).join("\n")}
               rows={12}
             />
-            <Box>
-              <Multiline
-                name="exclude_keywords"
-                label="제외 키워드 · 한 줄에 하나"
-                value={strings(data.exclude_keywords).join("\n")}
-                rows={8}
-              />
-              <Text as="p" size="2" color="gray" mt="2">
-                회차 숫자는 자동으로 일반화합니다. 예: 오버레이 헌터 25회차 정모
-                → 다른 회차도 제외합니다.
-              </Text>
-            </Box>
+            <Multiline
+              name="exclude_keywords"
+              label="제외 키워드 · 한 줄에 하나"
+              value={strings(data.exclude_keywords).join("\n")}
+              rows={12}
+            />
           </Grid>
-          <Text size="2" weight="medium">
-            대상별 하위 키워드 묶음
+          <Text as="p" size="1" color="gray">
+            제외 키워드의 회차 숫자는 자동으로 일반화합니다. 예: ‘오버레이 헌터
+            25회차 정모’는 다른 회차도 제외합니다.
           </Text>
-          {groups.map((g, i) => (
-            <Card key={text(g.id)}>
-              <Grid columns={{ initial: "1", md: "3" }} gap="3">
-                <TextField.Root
-                  aria-label="대상 이름"
-                  value={text(g.name)}
-                  onChange={(e) =>
-                    setGroups(
-                      groups.map((v, j) =>
-                        j === i ? { ...v, name: e.target.value } : v,
-                      ),
+          <Flex justify="between" align="center" gap="3" wrap="wrap">
+            <Text size="2" weight="medium">
+              대상별 하위 키워드 묶음
+            </Text>
+            <Flex gap="3" wrap="wrap">
+              <Button
+                type="button"
+                intent="quiet"
+                size="1"
+                loading={state.busy}
+                onClick={async () => {
+                  const result = await state.run("keyword-check", {
+                    keywords: data.keywords,
+                    keyword_groups: groups,
+                    suggest_groups: true,
+                  });
+                  if (result) setSuggestions(rows(result.suggestions));
+                }}
+              >
+                자동 묶음 제안
+              </Button>
+              <Button
+                type="button"
+                intent="secondary"
+                size="1"
+                onClick={() => {
+                  const id = `target_${Date.now()}`;
+                  setGroups([
+                    ...groups,
+                    { id, name: "새 대상", kind: "other", keywords: [] },
+                  ]);
+                  setExpandedGroup(id);
+                }}
+              >
+                <Plus size={14} />
+                묶음 추가
+              </Button>
+            </Flex>
+          </Flex>
+          <div className="keyword-group-list">
+            {groups.map((group, index) => {
+              const id = text(group.id),
+                name = text(group.name),
+                keywords = [
+                  ...new Set(
+                    strings(group.keywords)
+                      .map((keyword) => keyword.trim())
+                      .filter(Boolean),
+                  ),
+                ];
+              return (
+                <PreviewDisclosure
+                  key={id}
+                  title={name || "이름 없는 대상"}
+                  metadata={
+                    <Badge color="gray">
+                      {(
+                        {
+                          service: "서비스",
+                          person: "인물",
+                          event: "대회",
+                          other: "기타",
+                        } as Record<string, string>
+                      )[text(group.kind)] || "기타"}
+                    </Badge>
+                  }
+                  preview={
+                    <Flex gap="2" align="center" wrap="wrap">
+                      {keywords.slice(0, 5).map((keyword) => (
+                        <Badge
+                          color="gray"
+                          variant="outline"
+                          key={keyword}
+                          className="keyword-preview"
+                        >
+                          {keyword}
+                        </Badge>
+                      ))}
+                      {keywords.length > 5 && (
+                        <Text size="1" color="gray">
+                          외 {keywords.length - 5}개
+                        </Text>
+                      )}
+                      {!keywords.length && (
+                        <Text size="1" color="gray">
+                          하위 키워드를 추가하세요
+                        </Text>
+                      )}
+                    </Flex>
+                  }
+                  open={expandedGroup === id}
+                  onOpenChange={(open) =>
+                    setExpandedGroup((current) =>
+                      open ? id : current === id ? undefined : current,
                     )
                   }
-                />
-                <Choice
-                  name={`kind-${i}`}
-                  label="유형"
-                  value={text(g.kind)}
-                  options={{
-                    service: "서비스",
-                    person: "인물",
-                    event: "대회",
-                    other: "기타",
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  color="red"
-                  onClick={() => setGroups(groups.filter((_, j) => j !== i))}
                 >
-                  묶음 삭제
-                </Button>
-              </Grid>
-              <TextArea
-                className="alias-editor"
-                aria-label={`${text(g.name)} 하위 키워드`}
-                value={strings(g.keywords).join("\n")}
-                onChange={(e) =>
-                  setGroups(
-                    groups.map((v, j) =>
-                      j === i
-                        ? { ...v, keywords: e.target.value.split("\n") }
-                        : v,
-                    ),
-                  )
-                }
-              />
-            </Card>
-          ))}
-          <Flex gap="3" wrap="wrap">
-            <Button
-              type="button"
-              variant="soft"
-              onClick={() =>
-                setGroups([
-                  ...groups,
-                  {
-                    id: `target_${Date.now()}`,
-                    name: "새 대상",
-                    kind: "other",
-                    keywords: [],
-                  },
-                ])
-              }
-            >
-              대상 묶음 추가
-            </Button>
-            <Button
-              type="button"
-              variant="soft"
-              loading={state.busy}
-              onClick={async () => {
-                const r = await state.run("keyword-check", {
-                  keywords: data.keywords,
-                  keyword_groups: groups,
-                  suggest_groups: true,
-                });
-                if (r) setSuggestions(rows(r.suggestions));
-              }}
-            >
-              자동 묶음 제안 보기
-            </Button>
-          </Flex>
+                  <Grid columns={{ initial: "1", sm: "2" }} gap="4" mb="4">
+                    <Box>
+                      <Text
+                        as="label"
+                        htmlFor={`group-name-${id}`}
+                        size="2"
+                        weight="medium"
+                        mb="2"
+                        style={{ display: "block" }}
+                      >
+                        대상 이름
+                      </Text>
+                      <TextField.Root
+                        id={`group-name-${id}`}
+                        aria-label="대상 이름"
+                        value={name}
+                        onChange={(event) =>
+                          setGroups(
+                            groups.map((value, i) =>
+                              i === index
+                                ? { ...value, name: event.target.value }
+                                : value,
+                            ),
+                          )
+                        }
+                      />
+                    </Box>
+                    <Box>
+                      <Text as="p" size="2" weight="medium" mb="2">
+                        유형
+                      </Text>
+                      <Select.Root
+                        name={`kind-${index}`}
+                        value={text(group.kind) || "other"}
+                        onValueChange={(kind) =>
+                          setGroups(
+                            groups.map((value, i) =>
+                              i === index ? { ...value, kind } : value,
+                            ),
+                          )
+                        }
+                      >
+                        <Select.Trigger aria-label={`${name} 유형`}>
+                          {(
+                            {
+                              service: "서비스",
+                              person: "인물",
+                              event: "대회",
+                              other: "기타",
+                            } as Record<string, string>
+                          )[text(group.kind)] || "기타"}
+                        </Select.Trigger>
+                        <Select.Content>
+                          <Select.Item value="service">서비스</Select.Item>
+                          <Select.Item value="person">인물</Select.Item>
+                          <Select.Item value="event">대회</Select.Item>
+                          <Select.Item value="other">기타</Select.Item>
+                        </Select.Content>
+                      </Select.Root>
+                    </Box>
+                  </Grid>
+                  <Text
+                    as="label"
+                    htmlFor={`group-keywords-${id}`}
+                    size="2"
+                    weight="medium"
+                    mb="2"
+                    style={{ display: "block" }}
+                  >
+                    하위 키워드 · 한 줄에 하나
+                  </Text>
+                  <TextArea
+                    id={`group-keywords-${id}`}
+                    aria-label={`${name} 하위 키워드`}
+                    rows={5}
+                    value={strings(group.keywords).join("\n")}
+                    onChange={(event) =>
+                      setGroups(
+                        groups.map((value, i) =>
+                          i === index
+                            ? {
+                                ...value,
+                                keywords: event.target.value.split("\n"),
+                              }
+                            : value,
+                        ),
+                      )
+                    }
+                  />
+                  <Flex justify="end" mt="3">
+                    <Button
+                      type="button"
+                      intent="quiet"
+                      color="red"
+                      size="1"
+                      onClick={() => {
+                        setGroups(groups.filter((_, i) => i !== index));
+                        setExpandedGroup(undefined);
+                      }}
+                    >
+                      <Trash2 size={14} />
+                      묶음 삭제
+                    </Button>
+                  </Flex>
+                </PreviewDisclosure>
+              );
+            })}
+          </div>
           {suggestions.map((s, i) => (
             <Flex key={text(s.keyword)} gap="3" align="center">
               <Text size="2">
@@ -243,91 +405,135 @@ export function Keywords({ data }: { data: Row }) {
     </>
   );
 }
-export function Rooms({ data }: { data: Row }) {
-  const [p] = useSearchParams(),
-    [selected, set] = useState<string[]>([]);
-  const state = useAction();
+function RoomTransferIcon({ toExcluded }: { toExcluded: boolean }) {
   return (
     <>
-      <FilterForm>
-        <Field name="q" label="방 이름 검색" value={p.get("q") || ""} />
-        <Choice
-          name="state"
-          label="수집 상태"
-          value={p.get("state") || "all"}
-          options={{
-            all: "참여 중 전체",
-            active: "분석 포함",
-            excluded: "분석 제외",
-            inactive: "미참여",
-          }}
+      <Box
+        as="span"
+        display={{ initial: "none", md: "inline-block" }}
+        aria-hidden="true"
+      >
+        {toExcluded ? (
+          <ArrowRightToLine size={16} strokeWidth={1.75} />
+        ) : (
+          <ArrowLeftToLine size={16} strokeWidth={1.75} />
+        )}
+      </Box>
+      <Box
+        as="span"
+        display={{ initial: "inline-block", md: "none" }}
+        aria-hidden="true"
+      >
+        {toExcluded ? (
+          <ArrowDownToLine size={16} strokeWidth={1.75} />
+        ) : (
+          <ArrowUpToLine size={16} strokeWidth={1.75} />
+        )}
+      </Box>
+    </>
+  );
+}
+export function Rooms({ data }: { data: Row }) {
+  const [params, setParams] = useSearchParams();
+  const [selected, setSelected] = useState<{
+    included: string[];
+    excluded: string[];
+  }>({ included: [], excluded: [] });
+  const state = useAction();
+  const { writesEnabled } = useRuntime();
+  return (
+    <>
+      <form
+        className="room-search"
+        key={params.get("q") || ""}
+        onSubmit={(event) => {
+          event.preventDefault();
+          const q = String(
+            new FormData(event.currentTarget).get("q") || "",
+          ).trim();
+          setParams(q ? { q } : {});
+        }}
+      >
+        <TextField.Root
+          name="q"
+          aria-label="방 이름 검색"
+          placeholder="방 이름 검색"
+          defaultValue={params.get("q") || ""}
+          style={{ flex: 1, minWidth: 0 }}
         />
-        <Field
-          name="day"
-          label="집계 날짜"
-          type="date"
-          value={text(data.day)}
-        />
-      </FilterForm>
-      <Panel title="수집 대상" action={<CountBadge value={data.total} />}>
-        <Text as="p" size="2" color="gray" mb="4">
-          참여한 방은 기본 포함합니다. 분석 제외는 가이드 응답·예약 발송 중지와
-          별개입니다. 기존 저장 기록은 유지합니다.
-        </Text>
-        <Flex gap="3" mb="4">
-          <Button
-            variant="soft"
-            disabled={!selected.length || state.busy}
-            onClick={async () => {
-              await state.run("room-settings", {
-                room_ids: selected,
-                excluded: false,
-              });
-              set([]);
-            }}
-          >
-            선택한 방 분석 포함
+        <Button type="submit" intent="secondary">
+          검색
+        </Button>
+        {params.get("q") && (
+          <Button intent="quiet" type="button" onClick={() => setParams({})}>
+            초기화
           </Button>
-          <Button
-            variant="soft"
-            color="gray"
-            disabled={!selected.length || state.busy}
-            onClick={async () => {
-              await state.run("room-settings", {
-                room_ids: selected,
-                excluded: true,
-              });
-              set([]);
-            }}
-          >
-            선택한 방 분석 제외
-          </Button>
-        </Flex>
-        <Notice state={state} />
-        <DataTable
-          columns={["선택", "방 이름", "분석 상태", "저장 메시지"]}
-          items={rows(data.rooms).map((r) => [
-            <Checkbox
-              key={text(r.id)}
-              aria-label={`${text(r.name)} 선택`}
-              checked={selected.includes(text(r.id))}
-              onCheckedChange={(v) =>
-                set(
-                  v
-                    ? [...selected, text(r.id)]
-                    : selected.filter((x) => x !== r.id),
-                )
+        )}
+      </form>
+      <Text as="p" size="2" color="gray" mb="4">
+        참여한 방은 기본 포함합니다. 분석에서 제외해도 기존 기록은 유지되며,
+        가이드 응답·예약 발송에는 영향을 주지 않습니다.
+      </Text>
+      <Notice state={state} />
+      <Grid columns={{ initial: "1", md: "2" }} gap="5">
+        {(["included", "excluded"] as const).map((key) => {
+          const page = obj(data[key]);
+          const rooms = rows(page.rooms);
+          const ids = rooms.map((room) => text(room.id));
+          const chosen = selected[key].filter((id) => ids.includes(id));
+          const isIncluded = key === "included";
+          return (
+            <SelectionPanel
+              key={key}
+              title={isIncluded ? "분석 포함" : "분석 제외"}
+              description={`총 ${num(page.total)}개 방${params.get("q") ? " · 검색 결과" : ""}`}
+              items={rooms.map((room) => ({
+                id: text(room.id),
+                label: text(room.name),
+              }))}
+              selected={chosen}
+              disabled={state.busy || !writesEnabled}
+              onSelectionChange={(values) =>
+                setSelected((previous) => ({ ...previous, [key]: values }))
               }
-            />,
-            text(r.name),
-            <Badge key={text(r.id)} color={r.excluded ? "gray" : "jade"}>
-              {r.excluded ? "제외" : "포함"}
-            </Badge>,
-            text(r.count),
-          ])}
-        />
-        <Paging data={data} />
-      </Panel>
+              action={
+                chosen.length > 0 ? (
+                  <Button
+                    intent="secondary"
+                    disabled={!writesEnabled || state.busy}
+                    loading={state.busy}
+                    onClick={async () => {
+                      const result = await state.run("room-settings", {
+                        room_ids: chosen,
+                        excluded: isIncluded,
+                      });
+                      if (result)
+                        setSelected((previous) => ({ ...previous, [key]: [] }));
+                    }}
+                  >
+                    {!isIncluded && <RoomTransferIcon toExcluded={false} />}
+                    {isIncluded ? "제외로 이동" : "포함으로 이동"} ·{" "}
+                    {chosen.length}
+                    {isIncluded && <RoomTransferIcon toExcluded />}
+                  </Button>
+                ) : undefined
+              }
+              empty={
+                params.get("q")
+                  ? "검색 결과가 없습니다."
+                  : isIncluded
+                    ? "분석에 포함된 방이 없습니다."
+                    : "분석에서 제외한 방이 없습니다."
+              }
+              footer={
+                num(page.pages) > 1 ? (
+                  <Paging data={page} pageKey={`${key}_page`} />
+                ) : undefined
+              }
+            />
+          );
+        })}
+      </Grid>
     </>
   );
 }

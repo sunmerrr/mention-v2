@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
+import { expansionFinished } from "../../../../../packages/domain/src/context-expansion";
 import { labels, time } from "../../components/ui";
 import { Box, Button, Checkbox, Flex, Grid, Text } from "../../design-system";
 import { workspaceQuery } from "../../workspace-query";
@@ -23,11 +24,17 @@ import {
 } from "./shared";
 export function useContextExpansion(id: string, conversation = false) {
   const state = useAction();
-  const [result, setResult] = useState("");
-  const [direction, setDirection] = useState<"before" | "after">("before");
+  const scope = `${conversation ? "conversation" : "episode"}:${id}`;
+  const [outcomes, setOutcomes] = useState<
+    Record<string, { message: string; finished: boolean }>
+  >({});
+  const [operation, setOperation] = useState<{
+    scope: string;
+    direction: "before" | "after";
+  }>();
   async function expand(next: "before" | "after") {
-    setDirection(next);
-    setResult("");
+    if (state.busy) return;
+    setOperation({ scope, direction: next });
     const r = await state.run("context-expand", {
       id,
       conversation,
@@ -35,11 +42,21 @@ export function useContextExpansion(id: string, conversation = false) {
       minutes: next === "before" ? 30 : 15,
     });
     if (r)
-      setResult(
-        `${num(next === "before" ? r.added_before : r.added_after)}개 추가 · ${r.complete ? "조회 범위 확인" : "일부 구간 미확인 또는 다음 수신 대기"}`,
-      );
+      setOutcomes((previous) => ({
+        ...previous,
+        [`${scope}:${next}`]: {
+          finished: expansionFinished(r),
+          message: `${num(next === "before" ? r.added_before : r.added_after)}개 추가 · ${r.complete && r.stop_reason !== "waiting_for_messages" ? "조회 범위 확인" : "일부 구간 미확인 또는 다음 수신 대기"}`,
+        },
+      }));
   }
-  return { state, result, direction, expand };
+  return {
+    state,
+    expand,
+    direction: operation?.scope === scope ? operation.direction : undefined,
+    outcome: (direction: "before" | "after") =>
+      outcomes[`${scope}:${direction}`],
+  };
 }
 export function ContextExpandButton({
   controller,
@@ -49,6 +66,15 @@ export function ContextExpandButton({
   direction: "before" | "after";
 }) {
   const active = controller.direction === direction;
+  const outcome = controller.outcome(direction);
+  if (outcome?.finished)
+    return (
+      <Box className="context-expand">
+        <Text as="p" size="1" color="gray" role="status">
+          {direction === "before" ? "이전" : "이후"} 대화 조회 완료
+        </Text>
+      </Box>
+    );
   return (
     <Box className="context-expand">
       <Button
@@ -67,7 +93,7 @@ export function ContextExpandButton({
       {active && (
         <>
           <Notice state={controller.state} />
-          <ContextResult value={controller.result} />
+          <ContextResult value={outcome?.message} />
         </>
       )}
     </Box>

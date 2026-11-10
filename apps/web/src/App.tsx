@@ -71,7 +71,6 @@ const navGroups = [
     links: [
       ["/conversations", "대화 목록"],
       ["/reviews", "분류 검토"],
-      ["/bookmarks", "중요 대화"],
       ["/campaigns", "반응 관찰"],
       ["/responses", "반응 비교"],
       ["/messages", "메시지 기록"],
@@ -86,7 +85,6 @@ const navGroups = [
       ["/rooms", "수집 대상"],
       ["/guide", "카톡 가이드 관리"],
       ["/operations", "수집·백업"],
-      ["/design-system", "디자인 시스템"],
     ],
   },
 ];

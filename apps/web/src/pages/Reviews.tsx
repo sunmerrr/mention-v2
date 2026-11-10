@@ -7,7 +7,7 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import type { Stance } from "../../../../packages/domain/src/model";
-import { CorrectionDialog } from "../components/CorrectionDialog";
+import { ClassificationControl } from "../components/ClassificationControl";
 import { Filters } from "../components/Filters";
 import {
   Empty,
@@ -165,7 +165,7 @@ export default function Reviews() {
                           {item.room} · {time(item.at)}
                         </Text>
                         <Flex gap="3" align="center">
-                          <CorrectionDialog item={item} />
+                          <ClassificationControl item={item} />
                         </Flex>
                       </Table.Cell>
                     </Table.Row>

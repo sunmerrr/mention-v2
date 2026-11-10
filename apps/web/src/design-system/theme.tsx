@@ -23,4 +23,5 @@ export const sentimentColors = {
   mixed: "violet",
   uncertain: "amber",
   unreviewed: "gray",
+  excluded: "gray",
 } as const;

@@ -26,7 +26,9 @@ export function Filters({ metadata }: { metadata?: Metadata }) {
         value={search.get("target") || "all"}
         onValueChange={(v) => update("target", v === "all" ? "" : v)}
       >
-        <Select.Trigger aria-label="분석 대상" placeholder="모든 대상" />
+        <Select.Trigger aria-label="분석 대상">
+          {search.get("target") || "모든 대상"}
+        </Select.Trigger>
         <Select.Content>
           <Select.Item value="all">모든 대상</Select.Item>
           {metadata?.targets.map((t) => (

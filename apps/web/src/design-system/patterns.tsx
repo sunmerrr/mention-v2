@@ -1,5 +1,6 @@
+import { ChevronDown } from "lucide-react";
 import type { ReactNode } from "react";
-import { Box, Card, Dialog, Flex, Heading, Text } from "./primitives";
+import { Box, Card, Checkbox, Dialog, Flex, Heading, Text } from "./primitives";
 
 export function PageHeader({
   title,
@@ -178,6 +179,180 @@ export function Disclosure({
     <details className="ds-disclosure">
       <summary>{title}</summary>
       <Box pt="3">{children}</Box>
+    </details>
+  );
+}
+
+export function SelectionPanel({
+  title,
+  description,
+  items,
+  selected,
+  onSelectionChange,
+  action,
+  footer,
+  disabled = false,
+  empty,
+}: {
+  title: string;
+  description: string;
+  items: { id: string; label: string }[];
+  selected: string[];
+  onSelectionChange: (ids: string[]) => void;
+  action?: ReactNode;
+  footer?: ReactNode;
+  disabled?: boolean;
+  empty: string;
+}) {
+  const all =
+    items.length > 0 && items.every((item) => selected.includes(item.id));
+  return (
+    <section aria-label={title}>
+      <Card className="section-card">
+        <div className="selection-panel-header">
+          <Box>
+            <Heading as="h2" size="4">
+              {title}
+            </Heading>
+            <Text as="p" size="2" color="gray" mt="1">
+              {description}
+            </Text>
+          </Box>
+          <div className="selection-panel-action">{action}</div>
+        </div>
+        {items.length > 0 ? (
+          <>
+            <Text as="label" size="1" color="gray" className="selection-all">
+              <Checkbox
+                disabled={disabled}
+                checked={all ? true : selected.length ? "indeterminate" : false}
+                onCheckedChange={() =>
+                  onSelectionChange(all ? [] : items.map((item) => item.id))
+                }
+              />
+              이 페이지 전체 선택
+            </Text>
+            <div className="selection-items">
+              {items.map((item) => (
+                <Text
+                  as="label"
+                  key={item.id}
+                  size="2"
+                  className="selection-item"
+                >
+                  <Checkbox
+                    disabled={disabled}
+                    aria-label={`${item.label} 선택`}
+                    checked={selected.includes(item.id)}
+                    onCheckedChange={(checked) =>
+                      onSelectionChange(
+                        checked === true
+                          ? [...selected, item.id]
+                          : selected.filter((id) => id !== item.id),
+                      )
+                    }
+                  />
+                  <span>{item.label}</span>
+                </Text>
+              ))}
+            </div>
+          </>
+        ) : (
+          <Box py="5">
+            <Text as="p" size="2" color="gray">
+              {empty}
+            </Text>
+          </Box>
+        )}
+        {footer}
+      </Card>
+    </section>
+  );
+}
+
+export function MetricCard({
+  label,
+  icon,
+  value,
+  unit,
+  description,
+  children,
+}: {
+  label: string;
+  icon: ReactNode;
+  value: ReactNode;
+  unit?: string;
+  description: string;
+  children?: ReactNode;
+}) {
+  return (
+    <Card className="metric-card">
+      <Flex align="center" gap="2">
+        <Box as="span" aria-hidden="true">
+          {icon}
+        </Box>
+        <Text size="2" color="gray">
+          {label}
+        </Text>
+      </Flex>
+      <Flex align="baseline" gap="2" mt="3">
+        <Text size="7" weight="bold">
+          {value}
+        </Text>
+        {unit && (
+          <Text size="2" color="gray">
+            {unit}
+          </Text>
+        )}
+      </Flex>
+      <Text as="p" size="2" color="gray" mt="2">
+        {description}
+      </Text>
+      {children && (
+        <Box className="metric-card-action" mt="3">
+          {children}
+        </Box>
+      )}
+    </Card>
+  );
+}
+
+export function PreviewDisclosure({
+  title,
+  metadata,
+  preview,
+  open,
+  onOpenChange,
+  children,
+}: {
+  title: string;
+  metadata?: ReactNode;
+  preview: ReactNode;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: ReactNode;
+}) {
+  return (
+    <details
+      className="ds-preview-disclosure"
+      open={open}
+      onToggle={(event) => onOpenChange(event.currentTarget.open)}
+    >
+      <summary>
+        <Flex gap="2" align="center" wrap="wrap">
+          <Text size="2" weight="medium">
+            {title}
+          </Text>
+          {metadata}
+        </Flex>
+        <div>{preview}</div>
+        <ChevronDown
+          size={16}
+          className="ds-preview-chevron"
+          aria-hidden="true"
+        />
+      </summary>
+      <Box className="ds-preview-editor">{children}</Box>
     </details>
   );
 }

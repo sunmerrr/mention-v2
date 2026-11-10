@@ -3,8 +3,14 @@ import { ArrowLeft, MessagesSquare } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { Classification } from "../../../../packages/contracts/src/api";
-import { CorrectionDialog } from "../components/CorrectionDialog";
-import { EvaluationStatus, Failure, Pending, time } from "../components/ui";
+import { ClassificationControl } from "../components/ClassificationControl";
+import {
+  EvaluationStatus,
+  Failure,
+  OriginBadge,
+  Pending,
+  time,
+} from "../components/ui";
 import {
   Badge,
   Box,
@@ -88,7 +94,11 @@ export default function Detail() {
             </Flex>
             <Text as="p" size="1" color="gray" mb="3">
               이전 맥락 {before}개 · 이후 맥락 {after}개
-              {limited ? " · 일부 맥락 미확보" : ""}
+              {query.data.promotionFollowupNeeded
+                ? " · 홍보 이후 맥락 부족: 질문·반응을 더 확인해야 합니다"
+                : limited
+                  ? " · 일부 맥락 미확보"
+                  : ""}
             </Text>
             <ContextExpandButton controller={expansion} direction="before" />
             {messages.map((m, index) => {
@@ -158,7 +168,8 @@ export default function Detail() {
                   {m.background ? (
                     <details className="background-message">
                       <summary>
-                        사진·링크·홍보 추정 자료 · {time(m.time)}
+                        {m.backgroundLabel || "사진·링크·홍보 추정 자료"} ·{" "}
+                        {time(m.time)}
                       </summary>
                       <Box py="3">{content}</Box>
                     </details>
@@ -193,14 +204,18 @@ export default function Detail() {
                       <Text weight="bold" size="2">
                         {name}
                       </Text>
-                      <EvaluationStatus evaluation={e} />
+                      {e.stale ? (
+                        <EvaluationStatus evaluation={e} />
+                      ) : (
+                        <OriginBadge origin={e.origin} />
+                      )}
                     </Flex>
                     <Text as="p" size="2" className="classification-summary">
                       {e.summary || "아직 분류 메모가 없습니다."}
                     </Text>
                     <div className="classification-action">
                       {classification ? (
-                        <CorrectionDialog item={classification} prominent />
+                        <ClassificationControl item={classification} />
                       ) : (
                         <Button
                           size="2"
@@ -208,9 +223,7 @@ export default function Detail() {
                           disabled
                           loading={classifications.isPending}
                         >
-                          {classifications.isError
-                            ? "분류 로드 실패"
-                            : "분류 수정"}
+                          {classifications.isError ? "분류 로드 실패" : "분류"}
                         </Button>
                       )}
                     </div>

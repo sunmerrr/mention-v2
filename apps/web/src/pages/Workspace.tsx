@@ -127,13 +127,13 @@ export default function Workspace() {
   }
   return (
     <PageSaveLayout
-      key={`${feature}:${feature === "guide" ? search : ""}`}
+      key={`${feature}:${feature === "guide" || feature === "rooms" ? search : ""}`}
       title={page.title}
       description={page.description}
       actions={actions}
     >
       <Component
-        key={`${feature}:${feature === "guide" ? search : ""}`}
+        key={`${feature}:${feature === "guide" || feature === "rooms" ? search : ""}`}
         data={query.data}
       />
     </PageSaveLayout>

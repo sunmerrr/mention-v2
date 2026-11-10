@@ -59,3 +59,37 @@ working tree, production state or historical test counts as proof for this proje
 ## UI foundation
 
 The project design system is mandatory. Read [DESIGN-SYSTEM.md](docs/DESIGN-SYSTEM.md), import controls from `apps/web/src/design-system`, reuse its tokens and patterns, and update the synthetic `/design-system` catalog for new shared elements. Feature files must not import vendor controls directly.
+
+### Keyword save/rebuild separation — 2026-11-10
+
+The UI supports the collector's optional `/api/keyword-processing` capability.
+It distinguishes committed settings, background rebuild, and failed rebuild;
+404 from the currently older collector is an explicit unsupported capability,
+not a false success. Poll active jobs every two seconds and idle status every
+30 seconds; ordinary action invalidation refreshes status after a save.
+The collector worker is staged in the separate collector workspace. This web
+release alone does not remove the old collector's synchronous save latency.
+No production keyword changes or collector restart were used for verification.
+Synthetic tests cover revision supersession, durable interrupted export claims,
+retry, live dirty-day preservation, concurrent review preservation, and saves
+while export is blocked. Browser status tests intercept responses, never save
+production settings. Actual deployed save latency remains unverified until an
+authorized fresh-token collector replacement.
+
+### Promotion follow-up context — 2026-11-10
+
+Poster/GTD notice templates and bare participation invitations are background,
+while numeric slash registration records are retained as background evidence.
+Questions and opinions are protected from these automatic notice heuristics.
+The public bridge re-annotates returned conversation evidence in memory so a
+promotion with insufficient following dialogue does not claim full context.
+The detail page explicitly flags this gap. Source records and human decisions
+are not changed by presentation annotation. Read-model projection version7
+rebuilds derived results with the same selection policy.
+
+Prepared collector changes give new promotional anchors a fixed30minute after
+window and15 dialogue candidate slots; an explicit after expansion of a poster
+notice also uses30minutes. This is a bounded target, not a guarantee of15
+available messages or confirmed relevance. Existing healthy collector has not
+been replaced, so automatic extended capture is NOT deployed yet. No history
+request, authentication, or Kakao send was used to validate this change.

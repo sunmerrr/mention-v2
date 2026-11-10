@@ -350,13 +350,19 @@ export function DataTable({
     </Box>
   );
 }
-export function Paging({ data }: { data: Row }) {
+export function Paging({
+  data,
+  pageKey = "page",
+}: {
+  data: Row;
+  pageKey?: string;
+}) {
   const [params, set] = useSearchParams(),
     page = num(data.page) || 1,
     pages = num(data.pages) || 1;
   const go = (n: number) => {
     const p = new URLSearchParams(params);
-    p.set("page", String(n));
+    p.set(pageKey, String(n));
     set(p);
   };
   return (

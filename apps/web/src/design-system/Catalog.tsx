@@ -4,8 +4,11 @@ import {
   DialogContent,
   Disclosure,
   Field,
+  MetricCard,
   PageHeader,
+  PreviewDisclosure,
   Section,
+  SelectionPanel,
 } from "./patterns";
 import {
   Badge,
@@ -36,6 +39,8 @@ const swatches = [
 ];
 export default function Catalog() {
   const [choice, setChoice] = useState("neutral");
+  const [selection, setSelection] = useState<string[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
   return (
     <>
       <PageHeader
@@ -157,6 +162,7 @@ export default function Catalog() {
                   mixed: "혼합",
                   uncertain: "판단 보류",
                   unreviewed: "미분류",
+                  excluded: "판단 제외",
                 }[key as keyof typeof sentimentColors]
               }
             </Badge>
@@ -223,6 +229,68 @@ export default function Catalog() {
             </Disclosure>
           }
         />
+      </Section>
+      <SelectionPanel
+        title="선택 목록 예제"
+        description="항목을 선택하면 오른쪽 위에 작업이 나타납니다."
+        items={[
+          { id: "example-a", label: "예제 항목 A" },
+          { id: "example-b", label: "예제 항목 B" },
+        ]}
+        selected={selection}
+        onSelectionChange={setSelection}
+        empty="항목이 없습니다."
+        action={
+          selection.length ? (
+            <Button intent="secondary" onClick={() => setSelection([])}>
+              선택 해제 · {selection.length}
+            </Button>
+          ) : undefined
+        }
+      />
+      <Section
+        title="요약 지표"
+        description="제목·값·설명·관련 작업을 분리하고 같은 행의 높이를 맞춥니다."
+      >
+        <Grid columns={{ initial: "1", sm: "2" }} gap="4">
+          <MetricCard
+            label="예제 지표"
+            icon={<span aria-hidden="true">#</span>}
+            value="24"
+            unit="건"
+            description="합성 데이터 예제"
+          />
+          <MetricCard
+            label="예제 분류"
+            icon={<span aria-hidden="true">#</span>}
+            value="12"
+            unit="건"
+            description="검토가 완료된 예제"
+          >
+            <Button intent="quiet" size="1">
+              검토 목록 보기
+            </Button>
+          </MetricCard>
+        </Grid>
+      </Section>
+      <Section
+        title="미리보기 편집 목록"
+        description="요약은 목록에서 읽고, 필요한 항목만 펼쳐 수정합니다."
+      >
+        <PreviewDisclosure
+          title="예제 대상"
+          preview={
+            <Text size="2" color="gray">
+              하위 키워드 미리보기
+            </Text>
+          }
+          open={previewOpen}
+          onOpenChange={setPreviewOpen}
+        >
+          <Field id="ds-preview-name" label="대상 이름">
+            <TextField.Root id="ds-preview-name" defaultValue="예제 대상" />
+          </Field>
+        </PreviewDisclosure>
       </Section>
     </>
   );

@@ -248,3 +248,75 @@ describe("workspace parity boundary", () => {
     }
   });
 });
+
+it("loads included and excluded room pages independently without forwarding reporting dates or unrelated filters", async () => {
+  const calls: string[] = [];
+  const queries = new WorkspaceQueries({
+    request: async (path) => {
+      calls.push(path);
+      const url = new URL(path, "http://localhost");
+      return {
+        rooms: [{ id: url.searchParams.get("state"), name: "Synthetic room" }],
+        page: Number(url.searchParams.get("page")),
+        pages: 4,
+        total: 80,
+      };
+    },
+  });
+  const result = await queries.read(
+    "rooms",
+    "?day=2026-01-01&state=inactive&q=synthetic&included_page=2&excluded_page=3",
+  );
+  expect(calls).toHaveLength(2);
+  for (const path of calls) {
+    const params = new URL(path, "http://localhost").searchParams;
+    expect(params.has("day")).toBe(false);
+    expect(params.get("q")).toBe("synthetic");
+    expect(params.get("page")).toBe(
+      params.get("state") === "active" ? "2" : "3",
+    );
+  }
+  expect(result.included).toMatchObject({ page: 2 });
+  expect(result.excluded).toMatchObject({ page: 3 });
+});
+
+it("keeps external automations and unknown legacy observations out of dashboard comparison", async () => {
+  const calls: string[] = [];
+  const queries = new WorkspaceQueries({
+    request: async (path) => {
+      calls.push(path);
+      if (path === "/api/campaigns")
+        return {
+          campaigns: [
+            {
+              id: "dashboard",
+              title: "Question",
+              request_id: "mention_v2_synthetic",
+            },
+            {
+              id: "automation",
+              title: "Question",
+              request_id: "scheduled_synthetic",
+            },
+            { id: "unknown", title: "Question", request_id: "old-uuid" },
+          ],
+        };
+      return { campaigns: [{ id: "dashboard" }] };
+    },
+  });
+  expect(await queries.read("responses", "")).toMatchObject({
+    source: "dashboard",
+    options: [{ id: "dashboard" }],
+    campaigns: [],
+    source_counts: { dashboard: 1, external: 1, legacy: 1 },
+  });
+  await queries.read("responses", "?ids=automation");
+  expect(
+    calls.filter((path) => path.startsWith("/api/campaign-comparison")),
+  ).toHaveLength(0);
+  await queries.read("responses", "?ids=dashboard");
+  expect(calls).toContain("/api/campaign-comparison?ids=dashboard");
+  expect(await queries.read("responses", "?source=external")).toMatchObject({
+    options: [{ id: "automation" }],
+  });
+});

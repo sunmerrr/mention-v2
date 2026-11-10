@@ -20,6 +20,7 @@ import {
   Flex,
   Grid,
   Heading,
+  MetricCard,
   PageHeader,
   Popover,
   Table,
@@ -32,6 +33,15 @@ export default function Overview() {
     scope = scopeFrom(search),
     query = useQuery({ ...overviewQuery(scope), refetchInterval: 15000 });
   const [params, setParams] = useSearchParams();
+  function unreviewedHref(target?: string) {
+    const filters = new URLSearchParams(search);
+    filters.delete("nav");
+    filters.delete("label");
+    filters.set("status", "pending");
+    if (target) filters.set("target", target);
+    return `/conversations?${filters}`;
+  }
+
   if (query.isPending) return <Pending />;
   if (query.isError)
     return <Failure error={query.error} retry={query.refetch} />;
@@ -45,59 +55,44 @@ export default function Overview() {
         actions={<Filters metadata={metadata} />}
       />
       <Grid columns={{ initial: "1", sm: "3" }} gap="4" className="metric-grid">
-        <Card>
-          <Flex align="center" gap="2">
-            <MessagesSquare size={16} />
-            <Text size="2" color="gray">
-              연결된 대화
+        <MetricCard
+          label="연결된 대화"
+          icon={<MessagesSquare size={16} />}
+          value={overview.conversations.toLocaleString()}
+          unit="개"
+          description={`${scope.day || "전체 저장 기간"} · 홍보 단독 안내 제외`}
+        />
+        <MetricCard
+          label="확정된 대상별 반응"
+          icon={<ScanText size={16} />}
+          value={overview.classified}
+          unit="건"
+          description="AI 확정·사람 평가 · 대상별 건수"
+        >
+          <Flex align="center" justify="between" gap="3">
+            <Text size="1" color="gray">
+              미분류·재검토 {overview.unclassified}건
             </Text>
+            <Button asChild intent="quiet" size="1">
+              <Link to={unreviewedHref()}>
+                검토 <ArrowRight size={12} />
+              </Link>
+            </Button>
           </Flex>
-          <Heading size="7" mt="3">
-            {overview.conversations.toLocaleString()}
-            <Text size="3" color="gray" ml="2">
-              개
-            </Text>
-          </Heading>
-          <Text size="2" color="gray">
-            {scope.day || "전체 저장 기간"} · 홍보 단독 안내 제외
-          </Text>
-        </Card>
-        <Card>
-          <Flex align="center" gap="2">
-            <ScanText size={16} />
-            <Text size="2" color="gray">
-              확정된 대상별 반응
-            </Text>
-          </Flex>
-          <Heading size="7" mt="3">
-            {overview.classified}
-            <Text size="3" color="gray" ml="2">
-              건
-            </Text>
-          </Heading>
-          <Text size="2" color="gray">
-            AI 확정과 사람 평가 포함 · 미분류 {overview.unclassified}건
-          </Text>
-        </Card>
-        <Card>
-          <Flex align="center" gap="2">
-            <Layers3 size={16} />
-            <Text size="2" color="gray">
-              대화가 모인 대상
-            </Text>
-          </Flex>
-          <Heading size="6" mt="3">
-            {lead?.name || "아직 대화가 없습니다"}
-          </Heading>
-          <Text size="2" color="gray">
-            {lead
+        </MetricCard>
+        <MetricCard
+          label="대화가 모인 대상"
+          icon={<Layers3 size={16} />}
+          value={lead?.name || "—"}
+          description={
+            lead
               ? `${lead.conversations}개 대화 · 대화 수는 호감도와 다릅니다.`
-              : "기간과 분석 대상을 확인해 주세요."}
-          </Text>
-        </Card>
+              : "기간과 분석 대상을 확인해 주세요."
+          }
+        />
       </Grid>
       <Card className="section-card">
-        <Flex align="center" justify="between" mb="4">
+        <Flex align="start" justify="between" mb="4" gap="3" wrap="wrap">
           <Box>
             <Heading size="4">대상별 여론</Heading>
             <Text as="p" size="2" color="gray" mt="1">
@@ -135,8 +130,11 @@ export default function Overview() {
             </Flex>
           ))}
         </Flex>
+        <Text as="p" size="1" color="gray" className="overview-table-hint">
+          표를 좌우로 움직여 분류 범위를 확인하세요.
+        </Text>
         <Box className="table-scroll">
-          <Table.Root variant="surface">
+          <Table.Root variant="surface" className="overview-target-table">
             <Table.Header>
               <Table.Row>
                 <Table.ColumnHeaderCell>분석 대상</Table.ColumnHeaderCell>
@@ -242,12 +240,16 @@ export default function Overview() {
                     )}
                   </Table.Cell>
                   <Table.Cell>
-                    <Text size="2">
-                      {t.classified} / {t.conversations}
-                    </Text>
-                    <Text as="p" size="1" color="gray">
-                      미분류 {t.counts.unreviewed}
-                    </Text>
+                    <Flex align="center" justify="between" gap="3">
+                      <Text size="2">
+                        {t.classified} / {t.conversations}
+                      </Text>
+                      <Button asChild intent="quiet" size="1">
+                        <Link to={unreviewedHref(t.name)}>
+                          검토 <ArrowRight size={12} />
+                        </Link>
+                      </Button>
+                    </Flex>
                   </Table.Cell>
                 </Table.Row>
               ))}

@@ -8,6 +8,7 @@ import {
   Checkbox,
   Flex,
   Grid,
+  Select,
   Text,
 } from "../../design-system";
 import { useRuntime } from "../../runtime";
@@ -105,7 +106,7 @@ export function Campaigns({ data }: { data: Row }) {
               if (pendingError) return;
               if (pending) input = pending;
               else {
-                input.request_id = crypto.randomUUID();
+                input.request_id = `mention_v2_${crypto.randomUUID()}`;
                 try {
                   localStorage.setItem(pendingKey, JSON.stringify(input));
                 } catch {
@@ -117,7 +118,7 @@ export function Campaigns({ data }: { data: Row }) {
                 setPending(input);
               }
             } else {
-              request.current ||= crypto.randomUUID();
+              request.current ||= `mention_v2_${crypto.randomUUID()}`;
               input.request_id = request.current;
               input.anchor_ms = new Date(
                 `${f.get("start")}:00+09:00`,
@@ -224,7 +225,58 @@ export function Responses({ data }: { data: Row }) {
     );
   return (
     <>
-      <Panel title="비교할 질문 선택">
+      <Panel
+        title="비교할 질문 선택"
+        action={
+          <Select.Root
+            value={text(data.source) || "dashboard"}
+            onValueChange={(value) => {
+              choose([]);
+              set({ source: value });
+            }}
+          >
+            <Select.Trigger aria-label="관찰 출처">
+              {
+                (
+                  {
+                    dashboard: "대시보드 관찰",
+                    external: "외부 자동 관찰",
+                    legacy: "기존 관찰 · 출처 미확인",
+                  } as Record<string, string>
+                )[text(data.source) || "dashboard"]
+              }
+            </Select.Trigger>
+            <Select.Content>
+              <Select.Item value="dashboard">대시보드 관찰</Select.Item>
+              <Select.Item value="external">외부 자동 관찰</Select.Item>
+              <Select.Item value="legacy">기존 관찰 · 출처 미확인</Select.Item>
+            </Select.Content>
+          </Select.Root>
+        }
+      >
+        {!rows(data.options).length && (
+          <Box py="5">
+            <Text as="p" size="2" color="gray" mb="3">
+              {data.source === "dashboard"
+                ? "대시보드에서 생성한 것으로 확인된 관찰이 없습니다."
+                : "해당 출처의 반응 관찰이 없습니다."}
+            </Text>
+            <Button asChild intent="secondary">
+              <Link to="/campaigns">반응 관찰 만들기</Link>
+            </Button>
+          </Box>
+        )}
+        {data.source === "external" && (
+          <Text as="p" size="2" color="gray" mb="4">
+            예약 알림·환영·뉴스 등 외부 자동화가 생성한 관찰 기록입니다. 이
+            대시보드에서 설정한 질문과 구분해 표시합니다.
+          </Text>
+        )}
+        {data.source === "legacy" && (
+          <Text as="p" size="2" color="gray" mb="4">
+            생성 출처를 확인할 수 없는 기존 관찰 기록입니다.
+          </Text>
+        )}
         <Flex direction="column" gap="3">
           {rows(data.options).map((c) => (
             <Text as="label" size="2" key={text(c.id)}>
@@ -242,13 +294,20 @@ export function Responses({ data }: { data: Row }) {
             </Text>
           ))}
         </Flex>
-        <Button
-          mt="4"
-          disabled={!selected.length}
-          onClick={() => set({ ids: selected.join(",") })}
-        >
-          선택한 질문 비교 · 최대 6개
-        </Button>
+        {rows(data.options).length > 0 && (
+          <Button
+            mt="4"
+            disabled={!selected.length}
+            onClick={() =>
+              set({
+                source: text(data.source) || "dashboard",
+                ids: selected.join(","),
+              })
+            }
+          >
+            선택한 질문 비교 · 최대 6개
+          </Button>
+        )}
       </Panel>
       <Text as="p" size="2" color="gray" mb="4">
         {text(data.note)}

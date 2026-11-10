@@ -2,7 +2,7 @@
 
 This is the required UI foundation, not an optional reference. Start every UI
 change here. The implementation lives in `apps/web/src/design-system` and the
-interactive, synthetic-only catalog is available at `/design-system`.
+interactive, synthetic-only catalog is available at `/design-system` (not in the product menu).
 
 ## Ownership and layers
 
@@ -93,3 +93,11 @@ login, responder, schedule or production classification changes are involved.
 `DetailLayout stickyAside` keeps the secondary panel visible on desktop above 1200px. It is bounded to the viewport with internal overflow so every action remains reachable; stacked/tablet/mobile layouts retain normal document scrolling.
 
 EvaluationStatus is the shared product status presentation: fresh classifications use their current badge; stale evaluations show the previous decision and an explicit context-changed/recheck message. A genuinely unclassified record remains unclassified. This component does not reactivate stale results for sentiment aggregation.
+
+SelectionPanel provides named selectable lists, a header action, page-level selection, empty content and optional pagination. Room configuration uses separate included/excluded panels with only the opposite move shown for the current selection; reporting date/count controls do not belong in this configuration flow.
+
+MetricCard standardizes label/value/unit/description/action stacking. Overview conversations use flat rows in a Section, with optional excerpts in Disclosure rather than nested cards. Tables preserve a readable internal width on mobile and scroll within the section.
+
+Judgment choices distinguish uncertain (insufficient evidence) from excluded (not a subject for sentiment judgment). Excluded uses a neutral badge and a dedicated state filter; it is not a sentiment color in the distribution legend. Source collection inclusion is independent.
+
+PreviewDisclosure is a keyboard-accessible native details row with title/metadata, compact preview and an inline editor. Use it for editable collections where showing every form at once obscures the overview. Editors remain mounted so collapsed fields keep their form values. Keyword group rows allow one editor open at a time and expose add/delete at their relevant scope.

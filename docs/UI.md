@@ -79,3 +79,9 @@ context/review/source pages and reload; an explicit menu click changes selection
 Conversation context evaluation cards open the shared correction dialog in place. They do not navigate to the review list. Conversation-scoped classification reads supply the current conflict token; correction attribution and audit semantics are unchanged.
 
 Context classifications use a single grouped surface with aligned target/status, summary and edit action. Mobile places the summary under the target and action. The shared Radix correction dialog presents five RadioCards with short definitions, followed by the reasoning field and save action.
+
+Classification interaction update: lists and context show an inline Radix Select. Selecting a stance saves immediately without a classification dialog; the optional memo has its own button/dialog. Stale or unclassified records require an explicit stance selection before adding a memo. Overview review actions use the short label `검토` on the same line as their counts.
+
+The empty bookmarks/important-conversations route is retained but temporarily omitted from desktop/mobile navigation. Conversation list controls classify each target directly, with explicit review-state and stance filters. Reaction comparison defaults to confirmed dashboard-origin observations; external automation and legacy unknown-source records require an explicit source selection.
+
+Context lookup controls disappear independently once that direction reports terminal completion; a short completion status remains. Waiting for future messages, partial/budget-limited reads and failures retain the control. Outcomes are scoped to the conversation/episode ID so navigation cannot hide controls on another conversation.
