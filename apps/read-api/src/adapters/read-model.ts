@@ -19,6 +19,7 @@ import {
   type Conversation,
   type Dataset,
   koreanDay,
+  reviewState,
   type Scope,
   summarize,
 } from "../../../../packages/domain/src/model";
@@ -46,6 +47,14 @@ export class MonitoringReadModel implements MonitoringProjection {
       CREATE INDEX IF NOT EXISTS labels_scope ON labels(target,label,id);
       CREATE INDEX IF NOT EXISTS labels_verdict ON labels(label,id);
     `);
+    const columns = this.db.prepare("PRAGMA table_info(labels)").all();
+    if (!columns.some((column) => column.name === "review_state"))
+      this.db.exec(
+        "ALTER TABLE labels ADD COLUMN review_state TEXT NOT NULL DEFAULT 'unclassified'",
+      );
+    this.db.exec(
+      "CREATE INDEX IF NOT EXISTS labels_state ON labels(review_state,target,id)",
+    );
   }
   private value<T>(key: string): T | undefined {
     const row = this.db.prepare("SELECT value FROM info WHERE key=?").get(key);
@@ -57,7 +66,7 @@ export class MonitoringReadModel implements MonitoringProjection {
     return value;
   }
   private async ready() {
-    if (!this.value("capturedAt") || this.value("projectionVersion") !== 3)
+    if (!this.value("capturedAt") || this.value("projectionVersion") !== 7)
       await this.refresh();
   }
   async info() {
@@ -114,17 +123,24 @@ export class MonitoringReadModel implements MonitoringProjection {
       const insert = this.db.prepare(
         "INSERT INTO conversations VALUES(?,?,?,?)",
       );
-      const label = this.db.prepare("INSERT INTO labels VALUES(?,?,?)");
+      const label = this.db.prepare(
+        "INSERT INTO labels(id,target,label,review_state) VALUES(?,?,?,?)",
+      );
       for (const c of dataset.conversations) {
         insert.run(c.id, c.at, koreanDay(c.at), JSON.stringify(c));
         for (const target of c.targets) {
           const e = c.evaluations[target];
-          label.run(c.id, target, e ? (e.stale ? "unreviewed" : e.label) : "");
+          label.run(
+            c.id,
+            target,
+            e ? (e.stale ? "unreviewed" : e.label) : "unreviewed",
+            reviewState(e),
+          );
         }
       }
       const info = this.db.prepare("INSERT INTO info VALUES(?,?)");
       for (const [key, value] of Object.entries({
-        projectionVersion: 3,
+        projectionVersion: 7,
         capturedAt: dataset.capturedAt,
         source: dataset.source,
         metadata,
@@ -162,7 +178,7 @@ export class MonitoringReadModel implements MonitoringProjection {
       conditions.push("c.day=?");
       params.push(input.day);
     }
-    if (input.target || input.label) {
+    if (input.target || input.label || input.status) {
       const filters = ["l.id=c.id"];
       if (input.target) {
         filters.push("l.target=?");
@@ -171,6 +187,12 @@ export class MonitoringReadModel implements MonitoringProjection {
       if (input.label) {
         filters.push("l.label=?");
         params.push(input.label);
+      }
+      if (input.status === "pending")
+        filters.push("l.review_state IN ('unclassified','recheck')");
+      else if (input.status) {
+        filters.push("l.review_state=?");
+        params.push(input.status);
       }
       conditions.push(
         `EXISTS(SELECT 1 FROM labels l WHERE ${filters.join(" AND ")})`,

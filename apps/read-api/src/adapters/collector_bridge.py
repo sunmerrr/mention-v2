@@ -12,7 +12,7 @@ from monitor.ipc import CollectorConnection
 from monitor.classifications import Classifications
 
 endpoint=urlparse(request['path']);query=parse_qs(endpoint.query)
-allowed={'/api/insights','/api/conversation','/api/keywords','/api/rooms','/api/guide','/api','/api/trends','/api/campaigns','/api/campaign-comparison','/api/briefing','/api/briefing-delivery','/api/bookmarks','/api/aliases','/api/operations','/api/episode','/results.json'}
+allowed={'/api/keyword-processing','/api/insights','/api/conversation','/api/keywords','/api/rooms','/api/guide','/api','/api/trends','/api/campaigns','/api/campaign-comparison','/api/briefing','/api/briefing-delivery','/api/bookmarks','/api/aliases','/api/operations','/api/episode','/results.json'}
 actions={'/keyword-settings','/keyword-check','/room-settings','/guide-settings','/bookmark-save','/bookmark-archive','/alias-decision','/briefing-refresh','/briefing-recipient','/briefing-delivery-settings','/briefing-send','/backup-create','/backup-verify','/campaign-start','/campaign-send','/campaign-stop','/context-expand','/episode-review','/episode-quality','/conversation-review','/conversation-message-review','/review-undo','/mention-correction','/feedback-review'}
 local_actions={'/briefing-recipient','/briefing-delivery-settings','/briefing-send','/backup-create','/backup-verify','/campaign-send'}
 class ResponseError(Exception):
@@ -28,6 +28,7 @@ def call(method,path,data=None):
     try:
         connection.request(method,path,json.dumps(data,ensure_ascii=False).encode() if data is not None else None,{'Host':'127.0.0.1:8766','Origin':'http://127.0.0.1:8766','X-Monitor-Public':'0' if request.get('local') else '1','Content-Type':'application/json'})
         response=connection.getresponse();body=response.read()
+        if response.status==404 and parsed.path=='/api/keyword-processing':return {'supported':False}
         if response.status not in (200,202):
             try:message=json.loads(body).get('message','입력 값과 현재 상태를 확인해 주세요.')
             except ValueError:message='입력 값과 현재 상태를 확인해 주세요.'
@@ -39,13 +40,24 @@ def call(method,path,data=None):
 try:
     if endpoint.path=='/api/classifications':
         data=Classifications(root/'state/monitor',call).listing(page=int(query.get('page',['1'])[0]))
-    elif endpoint.path=='/classification-save' and request.get('writesEnabled'):
+    elif endpoint.path=='/api/classifications-for-conversation':
+        from classification_initial import options
+        from urllib.parse import quote
+        group=call('GET','/api/conversation?id='+quote(query.get('id',[''])[0],safe=''))
+        data=options(Classifications(root/'state/monitor',call),group)
+    elif endpoint.path=='/classification-save'  and request.get('writesEnabled'):
         import fcntl,os
         fd=os.open(root/'state/monitor/classification-write.lock',os.O_CREAT|os.O_WRONLY,0o600)
         with os.fdopen(fd,'w') as lock:
             fcntl.flock(lock,fcntl.LOCK_EX)
-            data=Classifications(root/'state/monitor',call).save(request['input'],'human')
+            from classification_initial import save
+            data=save(Classifications(root/'state/monitor',call),request['input'])
     else:data=call('POST' if request.get('input') is not None else 'GET',request['path'],request.get('input'))
+    if endpoint.path=='/api/conversation' and request.get('input') is None:
+        from monitor.context_selection import annotate
+        summary=annotate(data.get('messages',[]))
+        data['context_summary']=summary
+        data['dialogue_phase_counts']={phase:counts['dialogue'] for phase,counts in summary['phases'].items()}
     print(json.dumps({'ok':True,'data':data},ensure_ascii=False))
 except Exception as error:
     print(json.dumps({'ok':False,'code':str(error) if isinstance(error,ValueError) else type(error).__name__,'status':getattr(error,'status',502),'message':getattr(error,'message','요청을 완료하지 못했습니다.')}))

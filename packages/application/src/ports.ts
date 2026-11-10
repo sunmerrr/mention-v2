@@ -11,6 +11,7 @@ export interface MonitoringReader {
   read(): Promise<Dataset>;
   detail(id: string): Promise<Detail>;
   classifications(): Promise<Classification[]>;
+  classificationOptions?(id: string): Promise<Classification[]>;
   refresh(): Promise<Dataset>;
 }
 export interface ClassificationWriter {

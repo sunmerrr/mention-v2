@@ -21,6 +21,7 @@ export const labels: Record<Label, string> = {
   mixed: "혼합",
   uncertain: "판단 보류",
   unreviewed: "미분류",
+  excluded: "판단 제외",
 };
 export function Sentiment({ label }: { label: Label }) {
   return (

@@ -9,6 +9,7 @@ import { WorkspaceQueries } from "../../../packages/application/src/workspace";
 import { AliasSuggestions } from "./adapters/alias-suggestions";
 import { AnalyticsTransport } from "./adapters/analytics";
 import { CollectorTransport } from "./adapters/collector";
+import { JudgmentExclusions } from "./adapters/judgment-exclusions";
 import { LegacyReader } from "./adapters/legacy";
 import { MonitoringReadModel } from "./adapters/read-model";
 import { registerApi } from "./routes";
@@ -60,11 +61,15 @@ const aliases = analytics
 const workspace = transport
   ? new WorkspaceQueries(aliases || analytics || transport)
   : undefined;
-const reader = new LegacyReader(
+const sourceReader = new LegacyReader(
   process.env.MENTION_LEGACY_URL || "http://127.0.0.1:8766",
   (message) => app.log.warn({ event: "snapshot_refresh_failed" }, message),
   30000,
   analytics || transport,
+);
+const reader = new JudgmentExclusions(
+  sourceReader,
+  path.join(root, "runtime/judgment-decisions.db"),
 );
 const readModel = new MonitoringReadModel(
   reader,
@@ -223,6 +228,8 @@ async function shutdown() {
   analytics?.close();
   await app.close();
   await vite?.close();
+  readModel.close();
+  reader.close();
   process.exit(0);
 }
 process.once("SIGTERM", shutdown);

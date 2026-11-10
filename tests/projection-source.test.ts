@@ -23,7 +23,7 @@ it.skipIf(!root || !existsSync(path.join(root, "monitor/context.py")))(
     );
     expect(result.status, result.stderr).toBe(0);
     expect(JSON.parse(result.stdout)).toEqual({
-      checks: 24,
+      checks: 25,
       source_writes: 0,
       operational_constructors: 0,
     });

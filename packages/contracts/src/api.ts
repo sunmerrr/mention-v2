@@ -14,6 +14,9 @@ export const scopeSchema = z.object({
   target: z.string().max(100).default(""),
 });
 export const listSchema = scopeSchema.extend({
+  status: z
+    .enum(["", "pending", "unclassified", "recheck", "classified", "excluded"])
+    .optional(),
   label: z
     .enum([
       "",
@@ -23,6 +26,7 @@ export const listSchema = scopeSchema.extend({
       "mixed",
       "uncertain",
       "unreviewed",
+      "excluded",
     ])
     .default(""),
   cursor: z.string().max(500).optional(),
@@ -43,6 +47,7 @@ export interface Message {
   time: number;
   phase: string;
   background: boolean;
+  backgroundLabel?: string;
   own: boolean;
   relation?: string;
   anchor?: boolean;
@@ -52,6 +57,7 @@ export interface Detail {
   conversation: Conversation;
   messages: Message[];
   limited: boolean;
+  promotionFollowupNeeded?: boolean;
   before: number;
   after: number;
   source: "legacy" | "synthetic";
@@ -63,14 +69,14 @@ export interface Classification {
   target: string;
   label: Label;
   summary: string;
-  origin: Origin;
+  origin: Origin | null;
   stale: boolean;
   expected: string;
   room: string;
   at: number;
   history: {
     at: string;
-    origin: Origin;
+    origin: Origin | null;
     before: string;
     after: string;
     note: string;
@@ -79,10 +85,18 @@ export interface Classification {
 export const correctionSchema = z.object({
   id: z.string().min(1).max(100),
   service: z.string().min(1).max(100),
-  verdict: z.enum(["positive", "negative", "neutral", "mixed", "uncertain"]),
+  verdict: z.enum([
+    "positive",
+    "negative",
+    "neutral",
+    "mixed",
+    "uncertain",
+    "excluded",
+  ]),
   summary: z.string().max(2800),
   expected: z.string().min(1).max(200),
   request_id: z.string().uuid(),
+  origin: z.enum(["ai", "human"]).optional(),
 });
 export type Correction = z.infer<typeof correctionSchema>;
 export interface Metadata {

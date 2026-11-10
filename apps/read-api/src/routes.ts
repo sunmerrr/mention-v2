@@ -125,7 +125,7 @@ export function registerApi(
       });
     const input = correctionSchema.parse(request.body);
     await writer.correct(input);
-    if (projection) void queries.refresh().catch(() => {});
+    if (projection) await queries.refresh().catch(() => {});
     return { success: true, data: { saved: true }, error: null };
   });
   return queries;

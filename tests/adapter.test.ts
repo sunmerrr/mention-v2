@@ -56,7 +56,7 @@ describe("legacy public read adapter", () => {
               own: 0,
             },
           ],
-          context_summary: { limited: true },
+          context_summary: { limited: true, promotion_followup_needed: true },
           phase_counts: { before: 0, after: 0 },
         }),
       ),
@@ -64,6 +64,7 @@ describe("legacy public read adapter", () => {
     const detail = await new LegacyReader("http://127.0.0.1:8766").detail(id);
     expect(detail.messages[0].own).toBe(false);
     expect(detail.limited).toBe(true);
+    expect(detail.promotionFollowupNeeded).toBe(true);
   });
   it("does not accept external hosts or arbitrary conversation paths", async () => {
     expect(() => new LegacyReader("https://example.com")).toThrow();

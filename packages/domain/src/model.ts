@@ -6,14 +6,17 @@ export const stances = [
   "uncertain",
 ] as const;
 export type Stance = (typeof stances)[number];
-export type Label = Stance | "unreviewed";
+export const decisions = [...stances, "excluded"] as const;
+export type Decision = (typeof decisions)[number];
+export type Label = Decision | "unreviewed";
 export type Origin = "ai" | "human";
 export interface Evaluation {
   label: Label;
   summary: string;
   origin: Origin | null;
   stale: boolean;
-  previous?: { label: Stance; origin: Origin };
+  expected?: string;
+  previous?: { label: Decision; origin: Origin };
 }
 export interface ContextPreview {
   id: string;
@@ -84,6 +87,7 @@ export function selectHighlights(dataset: Dataset, scope: Scope) {
             (!scope.target || target === scope.target) &&
             !evaluation.stale &&
             evaluation.label !== "unreviewed" &&
+            evaluation.label !== "excluded" &&
             evaluation.label !== "uncertain" &&
             evaluation.summary.trim().length > 0 &&
             conversation.messageCount >= 3,
@@ -142,12 +146,16 @@ export function selectConversationSections(dataset: Dataset, scope: Scope) {
       targets: c.targets,
       messageCount: c.messageCount,
       contextPreview: preview(c),
+      judgmentExcluded: c.targets
+        .filter((target) => !scope.target || target === scope.target)
+        .every((target) => c.evaluations[target]?.label === "excluded"),
       opinions: Object.entries(c.evaluations)
         .filter(
           ([target, e]) =>
             (!scope.target || target === scope.target) &&
             !e.stale &&
             e.label !== "unreviewed" &&
+            e.label !== "excluded" &&
             !!e.summary.trim(),
         )
         .map(([target, e]) => ({
@@ -216,7 +224,7 @@ export function summarize(dataset: Dataset, scope: Scope) {
         c.targets.includes(target.name),
       );
       const counts = Object.fromEntries(
-        [...stances, "unreviewed"].map((s) => [s, 0]),
+        [...decisions, "unreviewed"].map((s) => [s, 0]),
       ) as Record<Label, number>;
       for (const c of relevant) {
         const e = c.evaluations[target.name];
@@ -226,7 +234,7 @@ export function summarize(dataset: Dataset, scope: Scope) {
         ...target,
         counts,
         conversations: relevant.length,
-        classified: relevant.length - counts.unreviewed,
+        classified: relevant.length - counts.unreviewed - counts.excluded,
       };
     })
     .sort(
@@ -239,6 +247,7 @@ export function summarize(dataset: Dataset, scope: Scope) {
     targets,
     conversations: conversations.length,
     classified: targets.reduce((sum, t) => sum + t.classified, 0),
+    excluded: targets.reduce((sum, t) => sum + t.counts.excluded, 0),
     unclassified: targets.reduce((sum, t) => sum + t.counts.unreviewed, 0),
     activeTargets: targets.filter((t) => t.conversations > 0).length,
     gaps: dataset.gaps,
@@ -248,3 +257,23 @@ export function summarize(dataset: Dataset, scope: Scope) {
   };
 }
 export type Overview = ReturnType<typeof summarize>;
+
+export function reviewState(evaluation?: Evaluation) {
+  if (evaluation?.label === "excluded") return "excluded";
+  return evaluation?.stale
+    ? "recheck"
+    : !evaluation || evaluation.label === "unreviewed"
+      ? "unclassified"
+      : "classified";
+}
+export function matchesReviewState(
+  evaluation: Evaluation | undefined,
+  status?: string,
+) {
+  return (
+    !status ||
+    (status === "pending"
+      ? ["unclassified", "recheck"].includes(reviewState(evaluation))
+      : reviewState(evaluation) === status)
+  );
+}

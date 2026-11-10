@@ -1,3 +1,4 @@
+import sqlite3
 import copy
 """Differential tests using original analytics code and only synthetic state."""
 import hashlib
@@ -48,7 +49,19 @@ with tempfile.TemporaryDirectory() as directory:
         return result,metrics
     def compare():
         global checks
-        expected=store.context.insights();actual,_=compute('/api/insights')
+        # Independent legacy reference over a scoped in-memory fixture. Live
+        # source is never altered; all legacy domain calculations still compare.
+        reference=copy.copy(store);reference.db=sqlite3.connect(':memory:');reference.db.row_factory=sqlite3.Row
+        store.db.backup(reference.db)
+        for (table,) in reference.db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall():
+            if table in ('rooms','gaps') or table.startswith('sqlite_'):continue
+            if 'room_id' in {row[1] for row in reference.db.execute('PRAGMA table_info('+table+')')}:
+                reference.db.execute('DELETE FROM '+table+' WHERE room_id IN (SELECT id FROM rooms WHERE excluded=1)')
+        reference.context=copy.copy(store.context);reference.context.store=reference;reference.context.db=reference.db
+        reference.coverage=copy.copy(store.coverage);reference.coverage.store=reference;reference.coverage.db=reference.db
+        reference.db.create_function('keyword_match',1,lambda text:int(reference.eligible(text)))
+        reference.db.create_function('context_allowed',1,lambda text:int(reference.context.allowed(text)))
+        expected=reference.context.insights();actual,_=compute('/api/insights')
         assert actual['keyword_groups']==expected['keyword_groups']
         compact=[]
         for group in expected['conversations']:
@@ -56,11 +69,14 @@ with tempfile.TemporaryDirectory() as directory:
         baseline=copy.deepcopy(actual['conversations'])
         for group in baseline:
             for evaluation in group['evaluations'].values():
+                expected_token=evaluation.pop('expected')
                 previous=evaluation.pop('previous_verdict',None)
                 origin=evaluation.pop('previous_origin',None)
                 if previous is not None:
                     assert evaluation['needs_review'] and previous in ('positive','negative','neutral','mixed','uncertain')
                     assert origin in ('ai','human')
+                from monitor.classifications import token
+                assert expected_token==token({'signature':group['evidence_signature'],'evaluation':evaluation})
         assert [{k:v for k,v in g.items() if k not in ('context_preview','last_message_ms')} for g in baseline]==compact,'Conversations differ'
         for group in actual['conversations']:
             assert len(group['context_preview'])<=3
@@ -70,13 +86,14 @@ with tempfile.TemporaryDirectory() as directory:
                 assert row and row['text'].startswith(preview['text']) and row['time_ms']==preview['at'],'Fabricated excerpt'
                 assert preview['author']==(row['author_name'] or '참여자')
         checks+=1
-        expected=analytics.trends(store,day,day);actual,_=compute('/api/trends',{'from':day,'to':day})
+        expected=analytics.trends(reference,day,day);actual,_=compute('/api/trends',{'from':day,'to':day})
         assert actual==expected,'Trends differ';checks+=1
-        expected=Classifications(state,lambda *_:store.context.insights()).listing();actual,_=compute('/api/classifications')
+        expected=Classifications(state,lambda *_:reference.context.insights()).listing();actual,_=compute('/api/classifications')
         assert actual==expected,'Classifications or evidence tokens differ';checks+=1
-        expected=workspace.get_briefing(store,day);actual,_=compute('/api/briefing',{'day':day})
+        expected=workspace.get_briefing(reference,day);actual,_=compute('/api/briefing',{'day':day})
         actual.pop('image_available');expected.pop('generated_at');actual.pop('generated_at')
         assert actual==expected,'Briefing differs';checks+=1
+        reference.db.close()
     compare()
     _,warm=compute('/api/insights');assert warm['cached'] and warm['fastCache'] and warm['detailComputations']==0;checks+=1
     store.db.execute("UPDATE private_sentinel SET text='CHANGED-PRIVATE-NEVER-READ'");store.db.commit()
@@ -89,6 +106,20 @@ with tempfile.TemporaryDirectory() as directory:
     store.set_room_exclusions(['2'],True);compare()
     workspace.refresh_briefing(store,day);compare()
     store.configure(['2'],['APL','룰루','개츠비'],['APL 티켓 가격']);compare()
+    # Confirmed outbound anchors may exist in the collector despite analysis
+    # exclusion. They remain for operational history, never public insights.
+    from monitor.guide import DEFAULT
+    store.guide.configure(dict(DEFAULT), '2')
+    seed='APL 새틀 안내를 확인해 주세요'
+    sent=int(time.time())-10
+    store.context.create_campaign('2','Synthetic scheduled notice',seed,sent*1000,15,'synthetic-excluded-campaign',anchor_message={'chat_id':'2','log_id':'9000','text':seed,'sent_at':str(sent),'author_id':'99','type':1})
+    retained=store.db.execute("SELECT count(*) FROM context_messages WHERE room_id='2'").fetchone()[0]
+    assert retained>0
+    actual,_=compute('/api/insights')
+    excluded_ids={row[0] for row in store.db.execute("SELECT id FROM episodes WHERE room_id='2'")}
+    assert not any(member['id'] in excluded_ids for group in actual['conversations'] for member in group['members'])
+    assert store.db.execute("SELECT count(*) FROM context_messages WHERE room_id='2'").fetchone()[0]==retained
+    checks+=1
     memory,_read,_digest=projection.load_public_snapshot(state/'monitor.sqlite3')
     assert set(r[0] for r in memory.execute('SELECT key FROM settings'))<=set(projection.SETTINGS)
     assert not memory.execute("SELECT name FROM sqlite_master WHERE name='private_sentinel'").fetchall()

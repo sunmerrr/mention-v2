@@ -41,10 +41,24 @@ it("matches domain summaries and filtered pages without reloading the source", a
         await fallback.overview({ day, target }),
       );
       for (const label of ["", "positive", "unreviewed"] as const) {
-        const input = listSchema.parse({ day, target, label, limit: 3 });
-        expect(await projection.conversations(input)).toEqual(
-          await fallback.conversations(input),
-        );
+        for (const status of [
+          "",
+          "pending",
+          "unclassified",
+          "recheck",
+          "classified",
+        ]) {
+          const input = listSchema.parse({
+            day,
+            target,
+            label,
+            status,
+            limit: 3,
+          });
+          expect(await projection.conversations(input)).toEqual(
+            await fallback.conversations(input),
+          );
+        }
       }
     }
   expect(refresh).not.toHaveBeenCalled();

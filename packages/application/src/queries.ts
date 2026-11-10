@@ -8,6 +8,7 @@ import type {
 import type { Conversation, Dataset, Scope } from "../../domain/src/model";
 import {
   koreanDay,
+  matchesReviewState,
   scopedConversations,
   summarize,
 } from "../../domain/src/model";
@@ -15,7 +16,14 @@ import type { MonitoringProjection, MonitoringReader } from "./ports";
 export class InvalidCursor extends Error {}
 export function cursorKey(input: ListInput): string {
   return createHash("sha256")
-    .update(JSON.stringify([input.day, input.target, input.label]))
+    .update(
+      JSON.stringify([
+        input.day,
+        input.target,
+        input.label,
+        input.status || "",
+      ]),
+    )
     .digest("hex")
     .slice(0, 16);
 }
@@ -76,15 +84,20 @@ export class MonitoringQueries {
   async conversations(input: ListInput): Promise<Page<Conversation>> {
     if (this.projection) return this.projection.conversations(input);
     const data = await this.reader.read();
-    const items = scopedConversations(data, input).filter(
-      (c) =>
-        !input.label ||
-        Object.entries(c.evaluations).some(
-          ([target, e]) =>
-            (!input.target || target === input.target) &&
-            (e.stale ? "unreviewed" : e.label) === input.label,
-        ),
-    );
+    const items = scopedConversations(data, input).filter((conversation) => {
+      if (!input.label && !input.status) return true;
+      return conversation.targets.some((target) => {
+        const evaluation = conversation.evaluations[target];
+        return (
+          (!input.target || target === input.target) &&
+          matchesReviewState(evaluation, input.status) &&
+          (!input.label ||
+            (evaluation?.stale
+              ? "unreviewed"
+              : evaluation?.label || "unreviewed") === input.label)
+        );
+      });
+    });
     return paginate(items, input, data.capturedAt, data.source);
   }
   async classifications(input: ListInput): Promise<Page<Classification>> {
@@ -105,6 +118,8 @@ export class MonitoringQueries {
     );
   }
   async conversationClassifications(id: string) {
+    if (this.reader.classificationOptions)
+      return this.reader.classificationOptions(id);
     return (await this.reader.classifications()).filter(
       (item) => item.conversationId === id,
     );

@@ -28,6 +28,7 @@ const evaluationSchema = z.object({
   summary: z.string().default(""),
   source: z.string(),
   needs_review: z.boolean(),
+  expected: z.string().optional(),
   previous_verdict: labelSchema.optional(),
   previous_origin: z.enum(["ai", "human"]).optional(),
 });
@@ -84,6 +85,7 @@ function normalize(group: Group): Conversation {
             ? "ai"
             : "human",
       stale: e.needs_review,
+      expected: e.expected,
       ...(e.needs_review &&
       e.previous_verdict &&
       e.previous_verdict !== "unreviewed" &&
@@ -217,6 +219,7 @@ export class LegacyReader implements MonitoringReader, ClassificationWriter {
             time_ms: z.number(),
             phase: z.string().default("discussion"),
             context_folded: z.boolean().optional(),
+            context_class: z.string().optional(),
             relation: z.string().optional(),
             role: z.string().optional(),
             photos: z
@@ -227,7 +230,12 @@ export class LegacyReader implements MonitoringReader, ClassificationWriter {
             own: z.union([z.boolean(), z.literal(0), z.literal(1)]).optional(),
           }),
         ),
-        context_summary: z.object({ limited: z.boolean() }).optional(),
+        context_summary: z
+          .object({
+            limited: z.boolean(),
+            promotion_followup_needed: z.boolean().optional(),
+          })
+          .optional(),
         phase_counts: z.record(z.string(), z.number()),
         dialogue_phase_counts: z.record(z.string(), z.number()).optional(),
       })
@@ -239,6 +247,8 @@ export class LegacyReader implements MonitoringReader, ClassificationWriter {
       time: m.time_ms,
       phase: m.phase,
       background: !!m.context_folded,
+      backgroundLabel:
+        m.context_class === "registration" ? "참가·예약 기록" : undefined,
       own: !!m.own,
       relation: m.relation,
       anchor: m.role === "anchor",
@@ -256,7 +266,7 @@ export class LegacyReader implements MonitoringReader, ClassificationWriter {
           item.conversationId === group.id && item.label !== "unreviewed",
       )) {
         const evaluation = conversation.evaluations[item.target];
-        if (evaluation?.stale && item.label !== "unreviewed")
+        if (evaluation?.stale && item.label !== "unreviewed" && item.origin)
           evaluation.previous = { label: item.label, origin: item.origin };
       }
     }
@@ -264,11 +274,46 @@ export class LegacyReader implements MonitoringReader, ClassificationWriter {
       conversation,
       messages,
       limited: !!detail.context_summary?.limited,
+      promotionFollowupNeeded:
+        detail.context_summary?.promotion_followup_needed,
       before: (detail.dialogue_phase_counts || detail.phase_counts).before || 0,
       after: (detail.dialogue_phase_counts || detail.phase_counts).after || 0,
       source: "legacy",
       episodes: group.members,
     };
+  }
+  async classificationOptions(id: string): Promise<Classification[]> {
+    if (!/^[a-f0-9]{32}$/.test(id))
+      throw new UpstreamError("대화 주소를 확인해 주세요.", 400);
+    return z
+      .array(
+        z.object({
+          id: z.string(),
+          conversationId: z.string(),
+          target: z.string(),
+          label: labelSchema,
+          summary: z.string(),
+          origin: z.enum(["ai", "human"]).nullable(),
+          stale: z.boolean(),
+          expected: z.string(),
+          room: z.string(),
+          at: z.number(),
+          history: z.array(
+            z.object({
+              at: z.string(),
+              origin: z.enum(["ai", "human"]),
+              before: z.string(),
+              after: z.string(),
+              note: z.string(),
+            }),
+          ),
+        }),
+      )
+      .parse(
+        await this.request(
+          `/api/classifications-for-conversation?id=${encodeURIComponent(id)}`,
+        ),
+      );
   }
   async classifications(): Promise<Classification[]> {
     if (

@@ -85,6 +85,14 @@ def load_public_snapshot(filename):
     for table,(schema,rows) in snapshot.items():
         memory.execute(schema)
         if rows:memory.executemany('INSERT INTO '+table+' VALUES ('+','.join('?' for _ in rows[0])+')',rows)
+    # Scope only the disposable analytics copy. Collector/guide data and send
+    # receipts remain intact; excluded rooms cannot leak back through campaign
+    # anchor materialization into public analysis.
+    for table in TABLES:
+        if table in ('rooms','gaps'):continue
+        columns={row[1] for row in memory.execute('PRAGMA table_info('+table+')')}
+        if 'room_id' in columns:
+            memory.execute('DELETE FROM '+table+' WHERE room_id IN (SELECT id FROM rooms WHERE excluded=1)')
     memory.executescript('''
       CREATE INDEX projection_context_text ON context_messages(room_id,text);
       CREATE INDEX projection_links_episode ON episode_links(episode_id);
@@ -247,7 +255,10 @@ def compute(root, endpoint, params):
             result = copy.deepcopy(call('GET',endpoint))
             # Presentation metadata only; never change the evaluation objects used
             # to calculate collector correction conflict tokens.
+            from monitor.classifications import token
             for group in result['conversations']:
+                for evaluation in group['evaluations'].values():
+                    evaluation['expected']=token({'signature':group['evidence_signature'],'evaluation':evaluation})
                 ids=[member['id'] for member in group['members']]
                 if not ids or not any(e.get('needs_review') for e in group['evaluations'].values()):continue
                 reviews=database.execute('SELECT * FROM conversation_reviews WHERE anchor_id IN ('+','.join('?' for _ in ids)+') ORDER BY updated_at DESC,rowid DESC',ids).fetchall()
