@@ -34,3 +34,6 @@ coverage/
 
 # docker extract
 dist-web/
+
+# Native React SSR build output
+dist-server/

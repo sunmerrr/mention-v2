@@ -10,7 +10,84 @@ export interface MonitoringSource {
 /** Read-only transition adapter. It never imports a collector SDK or sends mutations. */
 @Injectable()
 export class MonitoringRepository {
-  constructor(@Inject(MONITORING_SOURCE) private readonly source: MonitoringSource) {}
+  constructor(@Inject(MONITORING_SOURCE) private readonly source: MonitoringSource) {
+    this.source = { ...source, origin: new URL(source.origin).origin };
+  }
+
+  async write(endpoint: string, input: unknown, scope: { local: boolean }) {
+    let response: Response;
+    try {
+      response = await fetch(new URL(endpoint, this.source.origin), {
+        method: 'POST',
+        redirect: 'manual',
+        signal: AbortSignal.timeout(30000),
+        headers: {
+          'Content-Type': 'application/json',
+          Origin: this.source.origin,
+          ...(scope.local ? {} : { 'x-forwarded-for': '0.0.0.0' }),
+        },
+        body: JSON.stringify(input),
+      });
+    } catch {
+      throw new AppError(
+        'WRITE_UNCONFIRMED',
+        '처리 결과를 확인하지 못했습니다. 같은 요청의 상태를 먼저 확인해 주세요.',
+        503,
+      );
+    }
+    let envelope: unknown;
+    try {
+      envelope = await response.json();
+    } catch {
+      throw new AppError('WRITE_UNCONFIRMED', '처리 결과를 확인하지 못했습니다.', 502);
+    }
+    if (
+      !envelope ||
+      typeof envelope !== 'object' ||
+      !('success' in envelope) ||
+      !('data' in envelope)
+    )
+      throw new AppError('WRITE_UNCONFIRMED', '처리 결과를 확인하지 못했습니다.', 502);
+    if (!response.ok || envelope.success !== true) {
+      const message =
+        'error' in envelope &&
+        envelope.error &&
+        typeof envelope.error === 'object' &&
+        'message' in envelope.error &&
+        typeof envelope.error.message === 'string' &&
+        response.status < 500
+          ? envelope.error.message
+          : '저장 결과를 확인하지 못했습니다.';
+      throw new AppError('SOURCE_WRITE_FAILED', message, response.ok ? 502 : response.status);
+    }
+    return envelope.data;
+  }
+
+  async asset(endpoint: string) {
+    const url = new URL(endpoint, this.source.origin);
+    if (
+      (!/^\/(photo|download)\//.test(url.pathname) && url.pathname !== '/results.json') ||
+      url.origin !== this.source.origin
+    )
+      throw new AppError('INVALID_ASSET', '잘못된 파일 경로입니다.', 400);
+    const response = await fetch(url, {
+      method: 'GET',
+      redirect: 'manual',
+      signal: AbortSignal.timeout(this.source.timeoutMs),
+      headers: { 'x-monitor-public': '1' },
+    });
+    if (!response.ok)
+      throw new AppError(
+        'ASSET_UNAVAILABLE',
+        '파일을 가져오지 못했습니다.',
+        response.status === 404 ? 404 : 503,
+      );
+    return {
+      bytes: Buffer.from(await response.arrayBuffer()),
+      contentType: response.headers.get('content-type') || 'application/octet-stream',
+      disposition: response.headers.get('content-disposition'),
+    };
+  }
 
   async read(
     endpoint: string,

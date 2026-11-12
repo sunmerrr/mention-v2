@@ -4,6 +4,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { stdSerializers } from 'pino';
 import { HealthModule } from './modules/health/health.module.js';
 import { ApiModule } from './roles/api.module.js';
+import { WorkerModule } from './roles/worker.module.js';
 import { hasRole } from './shared/config/app-role.js';
 import { config } from './shared/config/index.js';
 import { GlobalExceptionFilter } from './shared/filters/http-exception.filter.js';
@@ -69,7 +70,7 @@ const coreImports = [
 // 조건부 로드: 역할 모듈(컨트롤러 등록). → deployment/single-image-roles.md
 const roleImports: Type[] = [];
 if (hasRole('api')) roleImports.push(ApiModule);
-// worker 블록을 도입하면:  if (hasRole('worker')) roleImports.push(WorkerModule);
+if (hasRole('worker')) roleImports.push(WorkerModule);
 
 // 백스톱: 유효한 역할인데 매핑된 모듈이 하나도 없으면(모듈 추가 누락 등) 조용히 뜨지 말고 부팅 실패.
 if (roleImports.length === 0) {

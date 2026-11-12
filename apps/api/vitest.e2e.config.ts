@@ -11,7 +11,8 @@ export default defineConfig({
     testTimeout: 30000,
     hookTimeout: 120000,
     pool: 'forks',
-    poolOptions: { forks: { singleFork: true } },
+    fileParallelism: false,
+    maxWorkers: 1,
     // 코어에는 DB가 없으므로 globalSetup(testcontainers)을 켜지 않는다.
     // DB/Valkey 블록을 도입하면 아래 주석을 해제해 실제 컨테이너 위에서 e2e를 돌린다.
     // globalSetup: ['test/global-setup.ts'],

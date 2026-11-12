@@ -12,9 +12,24 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "zod": "4.6.7"
+    "zod": "4.6.7",
+    "dayjs": "1.11.23"
   },
   "devDependencies": {
-    "typescript": "^5.4.0"
-  }
+    "typescript": "^5.4.0",
+    "@types/node": "24.19.2"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./monitoring/*": {
+      "types": "./dist/monitoring/*.d.ts",
+      "default": "./dist/monitoring/*.js"
+    }
+  },
+  "files": [
+    "dist"
+  ]
 }

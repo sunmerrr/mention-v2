@@ -15,3 +15,5 @@ dist-web
 # 저장소 안 git worktree·로컬 산출물(.dev) — .dockerignore 는 .gitignore 를 읽지 않는다
 .worktrees
 .dev
+
+**/dist-server

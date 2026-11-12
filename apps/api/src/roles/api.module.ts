@@ -3,6 +3,7 @@ import { ExampleController } from '../modules/example/example.controller.js';
 import { ExampleModule } from '../modules/example/example.module.js';
 import { MonitoringController } from '../modules/monitoring/monitoring.controller.js';
 import { MonitoringModule } from '../modules/monitoring/monitoring.module.js';
+import { WebController } from '../modules/web/web.controller.js';
 
 /**
  * 역할 모듈 — 컨트롤러/게이트웨이를 여기서 등록한다. → deployment/single-image-roles.md
@@ -11,6 +12,6 @@ import { MonitoringModule } from '../modules/monitoring/monitoring.module.js';
  */
 @Module({
   imports: [ExampleModule, MonitoringModule],
-  controllers: [ExampleController, MonitoringController],
+  controllers: [ExampleController, MonitoringController, WebController],
 })
 export class ApiModule {}

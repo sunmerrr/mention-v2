@@ -6,8 +6,9 @@ import { defineConfig } from 'vite';
 // - manualChunks 안 씀(자동 분할). modulePreload 끔(라우트 lazy 정신).
 // - 파일명은 hash 만(페이지명 노출 금지).
 // - 환경 값은 빌드에 박지 않는다 — index.html placeholder 를 런타임에 치환.
-export default defineConfig({
+export default defineConfig(({ isSsrBuild }) => ({
   base: '/',
+  ssr: { noExternal: true },
   plugins: [react()],
   resolve: {
     alias: {
@@ -20,8 +21,8 @@ export default defineConfig({
     modulePreload: false,
     rollupOptions: {
       output: {
-        chunkFileNames: 'assets/[hash].js',
-        entryFileNames: 'assets/[hash].js',
+        chunkFileNames: isSsrBuild ? 'assets/[hash].mjs' : 'assets/[hash].js',
+        entryFileNames: isSsrBuild ? 'entry-server.mjs' : 'assets/[hash].js',
         assetFileNames: 'assets/[hash][extname]',
       },
     },
@@ -31,4 +32,4 @@ export default defineConfig({
       '/api': { target: 'http://localhost:4200', changeOrigin: true },
     },
   },
-});
+}));

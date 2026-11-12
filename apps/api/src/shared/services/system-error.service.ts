@@ -1,24 +1,53 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, type OnApplicationShutdown } from '@nestjs/common';
+import { createDatabase } from '../../db/client.js';
+import { systemErrorLogs } from '../../db/schema.js';
+import { config } from '../config/index.js';
 
-/**
- * 5xx/unhandled 예외의 영속 기록 진입점. → logging/pino.md
- *
- * 코어에는 DB 블록이 없으므로 지금은 pino 로만 남긴다. DB 블록을 도입하면 이 메서드에서
- * `system_error_logs` 테이블에 1 row INSERT 한다(fire-and-forget). 호출부(GlobalExceptionFilter)는
- * 그대로 두고 이 구현만 교체하면 된다.
- *
- * DrizzleQueryError 처럼 wrapper Error 가 cause 에 진짜 원인을 담는 경우가 있어 cause 체인을
- * 펼쳐 함께 기록한다.
+/** Persist 5xx metadata in PostgreSQL when configured; Pino remains the fallback.
+ * Request query strings, chat evidence and SQL parameters are excluded from DB rows.
  */
 @Injectable()
-export class SystemErrorService {
+export class SystemErrorService implements OnApplicationShutdown {
+  private readonly connection = config.DATABASE_URL
+    ? createDatabase(config.DATABASE_URL)
+    : undefined;
+  private readonly pending = new Set<Promise<unknown>>();
   private readonly logger = new Logger(SystemErrorService.name);
 
   log(source: string, error: unknown, metadata?: Record<string, unknown>): void {
     const { message, stack } = flattenError(error);
 
-    // TODO(DB 블록 도입 시): db.insert(systemErrorLogs).values({ source, message, stack, metadata })
+    if (this.connection) {
+      // Persist operational metadata, never SQL parameters, tokens or chat evidence.
+      const safe = {
+        method: typeof metadata?.method === 'string' ? metadata.method : undefined,
+        route: typeof metadata?.url === 'string' ? metadata.url.split('?')[0] : undefined,
+        statusCode: typeof metadata?.statusCode === 'number' ? metadata.statusCode : undefined,
+      };
+      const work = this.connection.db
+        .insert(systemErrorLogs)
+        .values({
+          source: source.slice(0, 80),
+          kind: error instanceof Error ? error.name.slice(0, 100) : 'Unknown',
+          metadata: safe,
+        })
+        .then(
+          () => {},
+          () => {
+            this.logger.error(
+              { event: 'system_error_persistence_failed' },
+              'Could not persist failure metadata',
+            );
+          },
+        );
+      this.pending.add(work);
+      void work.finally(() => this.pending.delete(work));
+    }
     this.logger.error({ source, err: { message, stack }, metadata }, `system_error:${source}`);
+  }
+  async onApplicationShutdown() {
+    await Promise.allSettled([...this.pending]);
+    await this.connection?.pool.end();
   }
 }
 

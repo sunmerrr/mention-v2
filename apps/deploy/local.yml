@@ -1,4 +1,4 @@
-name: app-local
+name: mention-internal-local
 # → deployment/docker-compose-rules.md
 # - name: 로 스택명 고정(디렉토리명 추종 방지). container_name 은 쓰지 않는다(스택 간 충돌).
 # - 환경 값은 .env 한 파일로(env_file). compose 안에서 fallback 체인/분기 로직 금지.
@@ -14,7 +14,8 @@ services:
     environment:
       APP_ROLE: api
     ports:
-      - "4200:4200"
+      - "127.0.0.1:14200:4200"
+    stop_grace_period: 35s
     healthcheck:
       test:
         [
@@ -25,6 +26,14 @@ services:
       timeout: 3s
       retries: 5
 
+  worker:
+    image: verify-mention-internal-api:local
+    env_file: ../../.env
+    environment:
+      APP_ROLE: worker
+      PORT: 4201
+    stop_grace_period: 35s
+
   web:
     build:
       context: ../..
@@ -32,7 +41,7 @@ services:
       target: web
     env_file: ../../.env
     ports:
-      - "8080:80"
+      - "127.0.0.1:18080:80"
     depends_on:
       api:
         condition: service_healthy

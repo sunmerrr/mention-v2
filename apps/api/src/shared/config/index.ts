@@ -11,6 +11,13 @@ import { z } from 'zod';
  * 그 블록의 키를 여기 스키마에 추가한다.
  */
 const envSchema = z.object({
+  MENTION_WRITES_ENABLED: z
+    .enum(['0', '1'])
+    .default('0')
+    .transform((value) => value === '1'),
+  DATABASE_URL: z.string().url().optional(),
+  MONITORING_READ_BACKEND: z.enum(['source', 'postgres']).default('source'),
+  MENTION_WEB_ROOT: z.string().min(1).default('../web'),
   MENTION_SOURCE_URL: z
     .url()
     .refine((value) => {

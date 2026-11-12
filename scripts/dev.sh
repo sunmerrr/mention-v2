@@ -11,11 +11,15 @@
 # ── 이 스크립트는 boilerplate 원본이다. reference 는 target/포트/infra 설정 블록만
 #    확장하고 아래 본문 로직은 동일하게 유지한다. ──
 set -euo pipefail
+case "${1:-}" in
+  container-start|container-stop|container-status)
+    exec bash "$(dirname "${BASH_SOURCE[0]}")/local-container.sh" "${1#container-}" ;;
+esac
 
 # ─────────────────────────────────────────────────────────────
 # CONFIG (저장소별로 다른 유일한 영역 — target 목록 / 포트 / infra)
 # ─────────────────────────────────────────────────────────────
-TARGETS_ALL="api web"
+TARGETS_ALL="api web worker"
 
 # target → 리슨 포트 (status 의 포트 체크에 사용)
 port_for() {
@@ -27,6 +31,7 @@ port_for() {
       echo "${p:-4200}"
       ;;
     web) echo 5173 ;;
+    worker) echo 4201 ;;
     *)   echo "" ;;
   esac
 }
@@ -35,27 +40,31 @@ port_for() {
 start_cmd_for() {
   case "$1" in
     api)
-      if [ "${DEBUG:-0}" = "1" ]; then
+      if [ "${MENTION_PRODUCTION:-0}" = "1" ]; then
+        echo "APP_ROLE=api pnpm --filter @app/api run start"
+      elif [ "${DEBUG:-0}" = "1" ]; then
         # nest start(--debug) → node --inspect. 로컬/--debug 일 때만. 프로덕션 설정엔 절대 없음.
-        echo "pnpm --filter @app/api exec nest start --watch --builder swc --debug 0.0.0.0:9229"
+        echo "APP_ROLE=api pnpm --filter @app/api exec nest start --watch --builder swc --debug 0.0.0.0:9229"
       else
-        echo "pnpm --filter @app/api run dev"
+        echo "APP_ROLE=api pnpm --filter @app/api run dev"
       fi
       ;;
-    web) echo "pnpm --filter @app/web exec vite --port 5173 --strictPort" ;;
+    web) echo "node scripts/ssr-preview.mjs" ;;
+    worker) echo "APP_ROLE=worker PORT=4201 pnpm --filter @app/api run start" ;;
     *)   echo "" ;;
   esac
 }
 
 # compose 인프라 파일 (없으면 infra-up/down 및 api 의 infra 사전점검 비활성).
-INFRA_COMPOSE=""
-INFRA_SERVICES="postgres valkey minio minio-init"
-INFRA_HEALTH_PORT=5432   # infra 기동 여부 판단용(postgres)
+INFRA_COMPOSE="apps/deploy/infrastructure.local.yml"
+INFRA_SERVICES="postgres"
+INFRA_HEALTH_PORT=15432   # infra 기동 여부 판단용(postgres)
 
 # ─────────────────────────────────────────────────────────────
 # 이하 본문 — 두 저장소 공통 (수정 시 양쪽 동기화)
 # ─────────────────────────────────────────────────────────────
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [ -x "$ROOT_DIR/.dev/tools/bin/docker" ]; then source "$ROOT_DIR/scripts/container-env.sh"; fi
 cd "$ROOT_DIR"
 # api 는 apps/api cwd 로 뜨지만 .env 는 저장소 루트에 있다 → dotenv 가 루트 .env 를 읽도록 경로 고정.
 [ -f "$ROOT_DIR/.env" ] && export DOTENV_CONFIG_PATH="$ROOT_DIR/.env"
@@ -168,7 +177,7 @@ stop_one() {
   fi
   # 프로세스 그룹 전체에 SIGTERM (그룹 kill 실패 시 단일 pid).
   kill -TERM "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
-  for i in 1 2 3 4 5; do
+  for ((i=0;i<30;i++)); do
     is_alive "$pid" || break
     sleep 1
   done
@@ -246,7 +255,7 @@ for a in "$@"; do
   case "$a" in
     --debug) DEBUG=1 ;;
     -f|--follow) FOLLOW=1 ;;
-    api|web|admin|all) TARGET="$a" ;;
+    api|web|worker|admin|all) TARGET="$a" ;;
     *) echo "알 수 없는 인자: $a" >&2; exit 2 ;;
   esac
 done

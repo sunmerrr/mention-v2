@@ -56,7 +56,7 @@ COPY apps/api/ apps/api/
 # 캐시 마운트 id 는 빌더 전체에서 공유된다. 다른 프로젝트와 섞이지 않게 프로젝트 이름을 붙인다
 # (새 프로젝트는 `myapp` 을 자기 이름으로 바꾼다). pnpm-store 는 내용 주소 저장소라 공유해도 된다.
 FROM api-source AS api-typecheck
-RUN --mount=type=cache,id=myapp-api-tsbuildinfo,target=/tsbuild \
+RUN --mount=type=cache,id=mention-api-tsbuildinfo,target=/tsbuild \
     if cp /tsbuild/api.tsbuildinfo /tmp/api.tsbuildinfo 2>/dev/null; \
       then echo "[api-typecheck] tsbuildinfo cache: hit"; \
       else echo "[api-typecheck] tsbuildinfo cache: miss (full check)"; fi; \
@@ -80,23 +80,26 @@ FROM api-build AS deploy-api
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm --filter @app/api deploy --prod /prod
 
-# ---------- api 런타임 ----------
-FROM node:24.14.0-slim AS api
-WORKDIR /app
-ENV NODE_ENV=production
-# api-typecheck 가 성공해야 이 파일이 있다. 이 COPY 가 없으면 BuildKit 이 typecheck 스테이지를 건너뛴다.
-COPY --from=api-typecheck /typecheck.ok /app/.typechecked
-# self-contained 번들 하나만 복사(심볼릭 트리 불필요). dist/package.json/node_modules 포함.
-COPY --from=deploy-api /prod ./
-USER node
-EXPOSE 4200
-CMD ["node", "dist/src/main.js"]
-
 # ---------- web 빌드 (Vite) ----------
 # 환경별 값 없음 — dist 에는 __APP_RUNTIME_CONFIG__ placeholder 만 남는다.
 FROM src AS build-web
 COPY apps/web/ apps/web/
 RUN pnpm --filter @app/web build
+
+
+# ---------- api 런타임 ----------
+FROM node:24.14.0-slim AS api
+WORKDIR /app
+ENV NODE_ENV=production MENTION_WEB_ROOT=/app/web
+# api-typecheck 가 성공해야 이 파일이 있다. 이 COPY 가 없으면 BuildKit 이 typecheck 스테이지를 건너뛴다.
+COPY --from=api-typecheck /typecheck.ok /app/.typechecked
+# self-contained 번들 하나만 복사(심볼릭 트리 불필요). dist/package.json/node_modules 포함.
+COPY --from=deploy-api /prod ./
+COPY --from=build-web /app/apps/web/dist /app/web/dist
+COPY --from=build-web /app/apps/web/dist-server /app/web/dist-server
+USER node
+EXPOSE 4200
+CMD ["node", "dist/src/main.js"]
 
 # ---------- web 런타임 (nginx + 실행 시 placeholder 치환) ----------
 FROM nginx:1.27-alpine AS web

@@ -1,0 +1,48 @@
+.mention-responsive-table th {
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .mention-responsive-scroll {
+    overflow: visible;
+  }
+  .mention-responsive-table.conversation-table,
+  .mention-responsive-table table {
+    width: 100%;
+    min-width: 0;
+  }
+  .mention-responsive-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .mention-responsive-table tbody,
+  .mention-responsive-table tbody tr,
+  .mention-responsive-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    height: auto;
+    min-height: 0;
+  }
+  .mention-responsive-table tbody tr {
+    padding-block: var(--mention-space-3);
+    border-bottom: 1px solid var(--mention-border);
+  }
+  .mention-responsive-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+  .mention-responsive-table td:nth-child(n) {
+    width: auto;
+    min-width: 0;
+    padding: var(--mention-space-2) 0;
+    box-shadow: none;
+    overflow-wrap: anywhere;
+  }
+  .mention-responsive-table td:first-child > div {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}

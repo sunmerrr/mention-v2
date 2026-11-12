@@ -4,6 +4,13 @@ Company-template workspace: `/Users/we/mention-internal`.
 The existing dashboard remains at `/Users/we/mention`; this workspace has not
 replaced it. See [migration status](docs/MIGRATION-STATUS.md),
 [decisions](DECISIONS.md) and [security baseline](docs/BOILERPLATE-BASELINE.md).
+Local verification uses Node24.14.0 and pnpm9.15.9. Prepare a private `.env`
+from `.env.example`, then use `scripts/dev.sh container-start`, `infra-up`,
+`pnpm --filter @app/api db:migrate` and `db:import-source`. Start the API,
+worker and SSR preview with `scripts/dev.sh start all`; stop with `stop all`.
+The loopback source on8790 must remain available during this transition.
+Preview writes default OFF. Run `pnpm verify:full` before deployment changes.
+
 The original boilerplate documentation is retained below as reference.
 
 # project-boilerplate

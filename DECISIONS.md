@@ -17,7 +17,7 @@
 | Block | Decision | Implementation status |
 | --- | --- | --- |
 | Core | ON | Copied company NestJS/Fastify, role/envelope/config/Pino/validation, React/Vite/Tailwind/Query foundation. |
-| PostgreSQL / Drizzle | ON for target architecture | Pending reference implementation, schema mapping and disposable DB verification. No source migration run. |
+| PostgreSQL / Drizzle | ON for target architecture | Implemented and verified public read projection; native authoritative storage remains at source. |
 | Valkey | Planned only where template blocks require it | No service created; rate-limit rollout remains deferred by the user's earlier scope. |
 | Authentication | Not yet selected | Existing shared-link behavior remains; internal SSO/provider is not assumed. |
 | Worker | Existing functions must be preserved | Ownership/design mapping before changing schedules or adding instances. |
@@ -92,3 +92,60 @@ Actual verify passed after adding the first read slice:6unit and8API integration
 tests. Six actual read-only source comparisons returned identical data. New API
 was stopped after validation; existing Kakao owner/processes and the running web
 were unchanged. See docs/MIGRATION-STATUS.md for remaining migration gates.
+
+## Local migration continuation
+
+The user renewed the migration request. Prepare an isolated project-local Docker
+verification runtime for PostgreSQL/testcontainers, preserving every running
+production process. Lima is only a development Docker host, not a production
+architecture replacement. Its downloaded official release is SHA256-verified;
+state/tools are ignored under .dev, host directory mounts are disabled, and no
+system installation/global Docker context or Kakao operation is performed.
+The current frontend/SSR/design system are preserved during migration; using the
+existing product UI avoids a second redesign while the backend is replaced.
+
+## Transitional mutation boundary
+
+Preserved UI mutations delegate to the existing authoritative writer so native
+request IDs, receipts, evidence tokens and human corrections retain one owner.
+Nest validates Origin, actual loopback/forwarded scope, action allowlists and
+shared correction schema before forwarding. Public requests keep reduced source
+privileges; there is no automatic mutation retry. Writes default OFF for the
+migration preview. Integration/browser verification uses synthetic writes only.
+The native collector, delivery workers and AI thread are not duplicated or moved.
+
+## PostgreSQL and preserved SSR rollout
+
+Real PostgreSQL16 now runs in the isolated local Docker runtime. A Drizzle-owned,
+rebuildable public read model uses integer PK/FKs, indexed native source identity,
+UTC timestamps and atomic generation publication. Source import validates complete
+stable pagination before any publication; it does not modify the native store.
+Unchanged content refreshes metadata rather than cloning every generation. The
+new producer synchronizes only public data, owning no Kakao or AI session.
+
+The existing UI/design system and React SSR are migrated as product requirements.
+The company Nest API image includes the self-contained SSR bundle and browser
+assets; nginx forwards page requests to Nest rather than an empty SPA index.
+Preview writes remain disabled. Existing native writer/receipt ownership is an
+explicit transition boundary, not claimed PostgreSQL write-history migration.
+
+## Worker role and responsive QA
+
+Scheduled projection synchronization now belongs only to the company worker role,
+using Nest Schedule. API writes emit a PostgreSQL refresh notification; the worker
+coalesces work and retains the periodic catch-up. A dedicated PostgreSQL advisory
+lease prevents parallel producers. CPU aggregation is isolated in a worker thread,
+and immutable timestamp-to-day memoization is bounded. Existing Kakao/private/AI
+workers remain untouched. Local lifecycle runs api4200, preview5173and worker4201;
+container role selection uses the same API image.
+
+Browser inspection found clipped mobile table content. ResponsiveTable is now a
+shared design-system pattern for conversation/review records: desktop tables are
+preserved and mobile rows stack vertically. The catalog contains synthetic evidence.
+
+## Final local checkpoint
+
+The earlier Docker/environment blocker is resolved by the isolated local runtime.
+Actual verify:full passes, including real PostgreSQL integration and Docker targets.
+See MIGRATION-STATUS for current boundaries; historical checkpoint paragraphs above
+are not current deployment claims. Public routing and native ownership are unchanged.

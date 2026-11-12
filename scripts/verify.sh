@@ -24,6 +24,7 @@ RUNTIME_PLACEHOLDER="__APP_RUNTIME_CONFIG__"
 # ─────────────────────────────────────────────────────────────
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
+if [ -x "$ROOT_DIR/.dev/tools/bin/docker" ]; then source "$ROOT_DIR/scripts/container-env.sh"; fi
 
 FULL=0
 [ "${1:-}" = "--full" ] && FULL=1
