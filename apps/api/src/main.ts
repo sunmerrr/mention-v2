@@ -1,0 +1,98 @@
+import 'reflect-metadata';
+import cookie from '@fastify/cookie';
+import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
+import rateLimit from '@fastify/rate-limit';
+import { NestFactory } from '@nestjs/core';
+import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import type { FastifyRequest } from 'fastify';
+import { Logger } from 'nestjs-pino';
+import { cleanupOpenApiDoc, ZodValidationPipe } from 'nestjs-zod';
+import { loadEnv } from './shared/config/load-env.js';
+
+async function bootstrap() {
+  // 1) env 출처 폭포를 먼저 병합(Parameter Store → env → .env). → config/runtime-configuration.md
+  await loadEnv();
+
+  // 2) 병합 후에 config(zod 검증)와 AppModule(APP_ROLE 분기)을 로드한다.
+  const { config } = await import('./shared/config/index.js');
+  const { AppModule } = await import('./app.module.js');
+
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    // ALB/프록시 뒤에서 X-Forwarded-For 기반 IP 를 쓰려면 trustProxy 필수(rate-limit 오탐 방지).
+    new FastifyAdapter({ trustProxy: true, bodyLimit: 1 * 1024 * 1024 }),
+    { bufferLogs: true },
+  );
+
+  app.useLogger(app.get(Logger));
+
+  // SIGTERM/SIGINT 에서 lifecycle hook(OnModuleDestroy 등) 실행. → deployment/graceful-shutdown.md
+  app.enableShutdownHooks();
+  // 시그널 수신 즉시 /health 를 503(draining)으로 — 정리 중인 인스턴스로 새 요청이 오지 않게.
+  const { LifecycleState } = await import('./modules/health/lifecycle-state.js');
+  const lifecycle = app.get(LifecycleState);
+  for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+    process.once(signal, () => lifecycle.markDraining());
+  }
+
+  // 검증 파이프(nestjs-zod) — 실패 시 ZodError → GlobalExceptionFilter 에서 VALIDATION_ERROR.
+  app.useGlobalPipes(new ZodValidationPipe());
+
+  // 보안 헤더. JSON API 라 CSP 는 의미가 적어 끈다(HSTS 등 나머지는 유지).
+  await app.register(helmet, { contentSecurityPolicy: false });
+
+  await app.register(cors, {
+    origin: config.CORS_ORIGINS.length > 0 ? config.CORS_ORIGINS : true,
+    credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  });
+  await app.register(cookie);
+
+  // 전역 rate limit(안전망). → api/05-rate-limiting.md
+  // 코어에는 Valkey 가 없으므로 인메모리 store 로 시작한다.
+  // ⚠️ 인스턴스가 2대 이상이 되면 한도가 인스턴스 수만큼 늘어난다. Valkey 블록 도입 시
+  //    `redis: valkeyClient` 옵션으로 교체해 카운터를 공유해야 한다(인메모리 → Valkey).
+  await app.register(rateLimit, {
+    global: true,
+    max: 300,
+    timeWindow: '1 minute',
+    // /health 는 한도에서 제외 — ALB 헬스체크가 429 로 죽지 않게.
+    allowList: (req: FastifyRequest) =>
+      req.url === '/health' || req.url.startsWith('/api/v1/health'),
+    errorResponseBuilder: () => ({
+      success: false,
+      data: null,
+      error: {
+        code: 'RATE_LIMITED',
+        message: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.',
+      },
+    }),
+  });
+
+  // Swagger — 비프로덕션 또는 ENABLE_SWAGGER=true.
+  if (config.NODE_ENV !== 'production' || config.ENABLE_SWAGGER) {
+    const doc = SwaggerModule.createDocument(
+      app,
+      new DocumentBuilder()
+        .setTitle('API')
+        .setDescription('공통 코어 API')
+        .setVersion('1.0')
+        .build(),
+    );
+    SwaggerModule.setup('api/docs', app, cleanupOpenApiDoc(doc));
+  }
+
+  // 없는 경로 → NestJS 가 NotFoundException 을 던지고 GlobalExceptionFilter 가
+  // envelope 404(code: NOT_FOUND)로 변환한다. 별도 핸들러 불필요.
+
+  await app.listen(config.PORT, '0.0.0.0');
+  app.get(Logger).log(`API server running on port ${config.PORT} (APP_ROLE=${config.APP_ROLE})`);
+}
+
+bootstrap().catch((error) => {
+  // 부팅 자체가 실패하면 최소한 stderr 로 남기고 죽는다.
+  console.error('Bootstrap failed:', error);
+  process.exit(1);
+});

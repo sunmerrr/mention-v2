@@ -1,0 +1,4 @@
+{
+  // 포맷터/린터 충돌 방지 — Biome 를 표준으로.
+  "recommendations": ["biomejs.biome"]
+}

@@ -1,0 +1,48 @@
+{
+  "name": "mention-internal",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mention internal migration based on the company boilerplate",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "biome check apps packages",
+    "lint:fix": "biome check --write apps packages",
+    "format": "biome format --write apps packages",
+    "test": "turbo run test",
+    "test:e2e": "pnpm --filter @app/api test:e2e",
+    "verify": "bash scripts/verify.sh",
+    "verify:full": "bash scripts/verify.sh --full",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.8",
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0"
+  },
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "fast-uri@>=3.0.0 <3.1.9": "3.1.9",
+      "brace-expansion@<1.1.21": "1.1.21",
+      "brace-expansion@>=2.0.0 <2.1.7": "2.1.7",
+      "brace-expansion@>=5.0.0 <5.0.12": "5.0.12",
+      "postcss@<8.5.23": "8.5.23",
+      "js-yaml@>=4.0.0 <4.3.2": "4.3.2",
+      "nanoid@<3.3.18": "3.3.18",
+      "browserslist@<4.28.7": "4.28.7",
+      "qs@<6.16.1": "6.16.1",
+      "baseline-browser-mapping@>=2.0.0 <2.11.0": "2.11.0",
+      "piscina@<4.9.4": "4.9.4",
+      "source-map-js@<1.2.2": "1.2.2",
+      "fast-copy@>=4.0.0 <4.1.0": "4.1.0",
+      "postcss-selector-parser@<6.1.5": "6.1.5",
+      "glob@>=9.0.0 <=14.0.1": "14.0.2",
+      "minimatch@>=7.0.0 <11.0.1": "11.0.1"
+    }
+  }
+}

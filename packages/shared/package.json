@@ -1,0 +1,20 @@
+{
+  "name": "@app/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "프론트/백엔드가 공유하는 타입·검증 스키마·상수·유틸",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "lint": "biome check src",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

@@ -1,0 +1,56 @@
+name: app-local
+# → deployment/docker-compose-rules.md
+# - name: 로 스택명 고정(디렉토리명 추종 방지). container_name 은 쓰지 않는다(스택 간 충돌).
+# - 환경 값은 .env 한 파일로(env_file). compose 안에서 fallback 체인/분기 로직 금지.
+# - 로컬은 편의상 build 로 띄운다. qa/production 은 CI 가 빌드/푸시한 이미지를 쓴다(아래 주석 예시).
+
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/deploy/Dockerfile
+      target: api
+    env_file: ../../.env
+    environment:
+      APP_ROLE: api
+    ports:
+      - "4200:4200"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://localhost:4200/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  web:
+    build:
+      context: ../..
+      dockerfile: apps/deploy/Dockerfile
+      target: web
+    env_file: ../../.env
+    ports:
+      - "8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+# ─────────────────────────────────────────────────────────────
+# qa/production 예시 — CI 가 빌드/푸시한 이미지를 변수 두 개로 참조한다.
+# 별도 파일(docker-compose.qa.yml / docker-compose.production.yml)로 분리하는 것이 원칙.
+# → deployment/docker-compose-rules.md, deployment/dockerfile-multistage.md (태그 규칙)
+#
+#   api:
+#     image: ${ECR_REPOSITORY}:${IMAGE_TAG_APP_API}
+#     env_file: .env
+#   worker:
+#     image: ${ECR_REPOSITORY}:${IMAGE_TAG_APP_API}
+#     env_file: .env
+#     environment:
+#       APP_ROLE: worker
+#   web:
+#     image: ${ECR_REPOSITORY}:${IMAGE_TAG_APP_WEB}
+#     env_file: .env
+# ─────────────────────────────────────────────────────────────

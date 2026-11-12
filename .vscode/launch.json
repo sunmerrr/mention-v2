@@ -1,0 +1,36 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // 1) API 디버깅: scripts/dev.sh start api --debug 로 띄운 뒤 attach.
+      //    프로세스 lifecycle 은 dev.sh 가 소유하고, 디버거는 붙었다 떨어질 뿐.
+      "name": "API: attach (9229)",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "restart": true,
+      "cwd": "${workspaceFolder}/apps/api",
+      "sourceMaps": true
+    },
+    {
+      // 2) 테스트 디버깅: 현재 열린 vitest 파일
+      "name": "API: vitest current file",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/apps/api",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["vitest", "run", "${relativeFile}"],
+      "console": "integratedTerminal"
+    },
+    {
+      // 3) 프론트 디버깅: Chrome 을 디버그 모드로 띄워 Vite dev 서버에 연결.
+      //    사전에 scripts/dev.sh start web
+      "name": "Web: Chrome (5173)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/apps/web",
+      "sourceMaps": true
+    }
+  ]
+}

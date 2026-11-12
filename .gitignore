@@ -1,0 +1,36 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build output
+dist/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# env
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+
+# local dev lifecycle + 로컬 생성물의 유일한 홈 (PID/로그/tmp/스크린샷/QA 산출물)
+# 폴더 자체는 .gitkeep 으로 유지, 내용물은 전부 비커밋
+.dev/*
+!.dev/.gitkeep
+
+# 로컬 산출물 안전망 — 루트 스크린샷/브라우저 도구 캐시 (원칙은 .dev/ 아래에 만들 것)
+/*.png
+.playwright-mcp/
+
+# os / editor
+.DS_Store
+.vscode/*
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+
+# docker extract
+dist-web/
