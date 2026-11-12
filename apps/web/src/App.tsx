@@ -88,6 +88,13 @@ const navGroups = [
     ],
   },
 ];
+const localMenuPaths = new Set([
+  "/trends",
+  "/aliases",
+  "/campaigns",
+  "/responses",
+  "/guide",
+]);
 function NavigationGroup({ group }: { group: (typeof navGroups)[number] }) {
   const pathname = useMenuOrigin();
   const active =
@@ -161,10 +168,14 @@ function Refresh() {
   );
 }
 export function App() {
-  const { writesEnabled } = useRuntime(),
+  const { writesEnabled, local } = useRuntime(),
     location = useLocation(),
     navigate = useNavigate(),
-    menu = useMenuOrigin();
+    menu = useMenuOrigin(),
+    visibleNavGroups = navGroups.map((group) => ({
+      ...group,
+      links: group.links.filter(([path]) => local || !localMenuPaths.has(path)),
+    }));
   return (
     <DesignSystemProvider>
       <div className="workspace">
@@ -189,13 +200,13 @@ export function App() {
                 style={{ width: "100%" }}
               >
                 {
-                  navGroups
+                  visibleNavGroups
                     .flatMap((group) => group.links)
                     .find(([path]) => path === menu)?.[1]
                 }
               </Select.Trigger>
               <Select.Content>
-                {navGroups.map((group) => (
+                {visibleNavGroups.map((group) => (
                   <Select.Group key={group.label}>
                     <Select.Label>{group.label}</Select.Label>
                     {group.links.map(([path, label]) => (
@@ -209,7 +220,7 @@ export function App() {
             </Select.Root>
           </Box>
           <nav aria-label="주 메뉴">
-            {navGroups.map((group) => (
+            {visibleNavGroups.map((group) => (
               <NavigationGroup key={group.label} group={group} />
             ))}
           </nav>

@@ -77,74 +77,15 @@ export function OverviewConversations({
   function listLink(label?: string) {
     const params = new URLSearchParams(search);
     params.delete("nav");
+    params.delete("status");
+    params.delete("cursor");
+    params.delete("page");
     if (label) params.set("label", label);
     else params.delete("label");
     return `/conversations?${params}`;
   }
   return (
     <>
-      <Section
-        title="최신 대화"
-        description="저장된 마지막 대화 시각 순 · 분류 전 대화 포함"
-        actions={
-          <Button asChild intent="secondary" size="1">
-            <Link to={listLink()}>
-              전체 대화 보기 <ArrowRight size={14} />
-            </Link>
-          </Button>
-        }
-      >
-        <div className="overview-conversation-list">
-          {sections.latest.map((item) => (
-            <article key={item.id} className="overview-conversation-row">
-              <Flex gap="2" wrap="wrap" align="center" mb="2">
-                {item.targets.map((target) => (
-                  <Badge color="gray" key={target}>
-                    {target}
-                  </Badge>
-                ))}
-                {!item.opinions.length && (
-                  <Text size="1" color="gray">
-                    {item.judgmentExcluded ? "판단 제외" : "요약 대기"}
-                  </Text>
-                )}
-              </Flex>
-              <Link
-                className="conversation-link overview-conversation-title"
-                to={relatedHref(`/conversations/${item.id}${search}`, menu)}
-              >
-                <Text as="p" size="3" weight="medium" className="preview-copy">
-                  {item.title}
-                </Text>
-                <ArrowRight size={16} aria-hidden="true" />
-              </Link>
-              {item.opinions.map((opinion) => (
-                <Box mt="3" key={opinion.target}>
-                  <Flex gap="2" align="center" wrap="wrap" mb="1">
-                    <Text size="1" weight="medium">
-                      {opinion.target}
-                    </Text>
-                    <Sentiment label={opinion.label} />
-                    <OriginBadge origin={opinion.origin} />
-                  </Flex>
-                  <Text as="p" size="2" className="overview-opinion-summary">
-                    {opinion.summary}
-                  </Text>
-                </Box>
-              ))}
-              <Metadata
-                room={item.room}
-                at={item.at}
-                count={item.messageCount}
-              />
-              <Excerpt items={item.contextPreview} />
-            </article>
-          ))}
-        </div>
-        {!sections.latest.length && (
-          <Empty>선택한 기간·대상에 표시할 대화가 없습니다.</Empty>
-        )}
-      </Section>
       <Grid columns={{ initial: "1", lg: "2" }} gap="4" align="start">
         {(["positive", "negative"] as const).map((label) => (
           <Section

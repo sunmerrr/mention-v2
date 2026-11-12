@@ -42,6 +42,14 @@ export default function Overview() {
     return `/conversations?${filters}`;
   }
 
+  function sentimentHref(target: string, label: string) {
+    const filters = new URLSearchParams(search);
+    for (const key of ["nav", "status", "cursor", "page"]) filters.delete(key);
+    filters.set("target", target);
+    filters.set("label", label);
+    return `/conversations?${filters}`;
+  }
+
   if (query.isPending) return <Pending />;
   if (query.isError)
     return <Failure error={query.error} retry={query.refetch} />;
@@ -131,16 +139,20 @@ export default function Overview() {
           ))}
         </Flex>
         <Text as="p" size="1" color="gray" className="overview-table-hint">
-          표를 좌우로 움직여 분류 범위를 확인하세요.
+          표를 좌우로 움직여 분류 현황을 확인하세요.
         </Text>
         <Box className="table-scroll">
           <Table.Root variant="surface" className="overview-target-table">
             <Table.Header>
               <Table.Row>
                 <Table.ColumnHeaderCell>분석 대상</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell>대화</Table.ColumnHeaderCell>{" "}
+                <Table.ColumnHeaderCell justify="center">
+                  전체 대화
+                </Table.ColumnHeaderCell>{" "}
                 <Table.ColumnHeaderCell>반응 분포</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell>분류 범위</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell justify="center">
+                  분류 현황 (분류 / 제외 / 미분류)
+                </Table.ColumnHeaderCell>
               </Table.Row>
             </Table.Header>
             <Table.Body>
@@ -190,7 +202,7 @@ export default function Overview() {
                       </Popover.Root>
                     </Flex>
                   </Table.RowHeaderCell>
-                  <Table.Cell>
+                  <Table.Cell justify="center">
                     <Text weight="medium">{t.conversations}</Text>
                   </Table.Cell>
                   <Table.Cell>
@@ -219,15 +231,19 @@ export default function Overview() {
                           {stances
                             .filter((s) => t.counts[s] > 0)
                             .map((s) => (
-                              <Flex align="center" gap="1" key={s}>
-                                <span
-                                  className={`sentiment-dot sentiment-fill ${s}`}
-                                  aria-hidden="true"
-                                />
-                                <Text size="1" color="gray">
+                              <Button asChild intent="quiet" size="1" key={s}>
+                                <Link
+                                  to={sentimentHref(t.name, s)}
+                                  aria-label={`${t.name} ${labels[s]} 대화 ${t.counts[s]}건 보기`}
+                                >
+                                  <span
+                                    className={`sentiment-dot sentiment-fill ${s}`}
+                                    aria-hidden="true"
+                                  />
                                   {labels[s]} {t.counts[s]}
-                                </Text>
-                              </Flex>
+                                  <ArrowUpRight size={12} aria-hidden="true" />
+                                </Link>
+                              </Button>
                             ))}
                         </Flex>
                       </Box>
@@ -239,16 +255,28 @@ export default function Overview() {
                       </Text>
                     )}
                   </Table.Cell>
-                  <Table.Cell>
-                    <Flex align="center" justify="between" gap="3">
-                      <Text size="2">
-                        {t.classified} / {t.conversations}
+                  <Table.Cell justify="center">
+                    <Flex
+                      position="relative"
+                      align="center"
+                      justify="center"
+                      gap="3"
+                    >
+                      <Text
+                        size="2"
+                        wrap="nowrap"
+                        aria-label={`분류 ${t.classified}건, 제외 ${t.counts.excluded}건, 미분류·재검토 ${t.counts.unreviewed}건`}
+                      >
+                        {t.classified} / {t.counts.excluded} /{" "}
+                        {t.counts.unreviewed}
                       </Text>
-                      <Button asChild intent="quiet" size="1">
-                        <Link to={unreviewedHref(t.name)}>
-                          검토 <ArrowRight size={12} />
-                        </Link>
-                      </Button>
+                      <Box position="absolute" right="0">
+                        <Button asChild intent="quiet" size="1">
+                          <Link to={unreviewedHref(t.name)}>
+                            검토 <ArrowRight size={12} />
+                          </Link>
+                        </Button>
+                      </Box>
                     </Flex>
                   </Table.Cell>
                 </Table.Row>

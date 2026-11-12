@@ -110,11 +110,13 @@ export function Multiline({
   name,
   value = "",
   rows: count = 5,
+  maxLength,
 }: {
   label: string;
   name: string;
   value?: string;
   rows?: number;
+  maxLength?: number;
 }) {
   const controlId = useId();
   return (
@@ -129,6 +131,7 @@ export function Multiline({
           name={name}
           defaultValue={value}
           rows={count}
+          maxLength={maxLength}
         />
       </label>
     </Box>

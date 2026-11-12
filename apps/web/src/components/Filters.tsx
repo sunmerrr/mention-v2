@@ -1,8 +1,15 @@
 import { CalendarDays, RotateCcw } from "lucide-react";
+import type { ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { Metadata } from "../../../../packages/contracts/src/api";
 import { Button, FilterBar, Select, TextField } from "../design-system";
-export function Filters({ metadata }: { metadata?: Metadata }) {
+export function Filters({
+  metadata,
+  children,
+}: {
+  metadata?: Metadata;
+  children?: ReactNode;
+}) {
   const [search, setSearch] = useSearchParams();
   function update(key: string, value: string) {
     const next = new URLSearchParams(search);
@@ -38,7 +45,10 @@ export function Filters({ metadata }: { metadata?: Metadata }) {
           ))}
         </Select.Content>
       </Select.Root>
-      {(search.get("day") || search.get("target")) && (
+      {children}
+      {(search.get("day") ||
+        search.get("target") ||
+        (children && (search.get("status") || search.get("label")))) && (
         <Button
           variant="ghost"
           color="gray"

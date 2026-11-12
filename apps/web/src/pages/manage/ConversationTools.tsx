@@ -340,13 +340,24 @@ export function Episode({ data }: { data: Row }) {
           <ActionForm
             action="episode-review"
             submit="여론 평가 저장"
-            build={(f) => ({ id, verdict: f.get("verdict") })}
+            build={(f) => ({
+              id,
+              verdict: f.get("verdict"),
+              note: f.get("note"),
+            })}
           >
             <Choice
               name="verdict"
               label="대화 여론"
               value={text(data.verdict)}
               options={labels}
+            />
+            <Multiline
+              name="note"
+              label="평가 메모"
+              maxLength={2800}
+              value={text(data.evaluation_note)}
+              rows={4}
             />
           </ActionForm>
           <ActionForm

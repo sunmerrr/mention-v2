@@ -146,3 +146,22 @@ backup actions retain local-only scope. Quick-tunnel addresses are temporary and
 recreated. The old Cloudflare address is retired.
 
 Design system: [rules and component ownership](docs/DESIGN-SYSTEM.md), with a synthetic interactive catalog at `/design-system`. All UI changes must actively use it.
+
+## Continuous sentiment review
+
+A separate bounded AI review queue classifies pending target context and future
+arrivals using retained monitoring evidence. It preserves human decisions, publishes
+AI attribution and concrete reasons, and rechecks changed AI context. Procedural
+questions and promotional notices are judgment-excluded rather than neutral.
+See [classifier operation and rubric](docs/SENTIMENT-CLASSIFIER.md). Runtime
+snapshots, queue state and model outputs remain private under ignored runtime/.
+
+## Processing service boundary (2026-11-11)
+
+The existing private collector.sock now routes dialogue operations to a dedicated
+open-chat processing server and public collection/analysis to a separate worker.
+Both share the same live Kakao connection owner and retain the existing monitoring
+SQLite and request contracts. This web app's source URL/socket, settings and
+classification workers are unchanged. The operator verified that guide service
+remains available during analytics replacement; processing changes need no Kakao
+login. Physical monitoring DB failure/lock contention remains shared.

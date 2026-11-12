@@ -141,3 +141,38 @@ overrides. The synthetic `/design-system` catalog is available under management.
 See `docs/DESIGN-SYSTEM.md` and the matching AGENTS.md requirement. Existing feature
 layouts migrate when touched; the foundation is not a claim of a completed visual
 redesign of every screen.
+
+## Continuous AI sentiment review (2026-11-10)
+
+The user authorized reviewing the remaining PokerLulu backlog and future arrivals.
+One dedicated local model session is queued by its own minute timer after a
+120-second quiet window. Every decision requires retained source quotes, an
+expected evidence token and durable request identity. Human decisions win; stale
+AI context is reconsidered. Informational questions, personal play results and
+promotion without service feedback are excluded with specific reasons. Unknown
+writes are held and reconciled from receipts, never blindly retried. This queue
+cannot control Kakao, send chats or change other workers. See the classifier doc.
+
+Public grouped projections use the same room and KST anchor-date boundary as
+native conversation detail. A cross-midnight global grouping produced different
+canonical IDs/signatures and made saved classifications look unreviewed; the read
+adapter now partitions by that boundary without changing source records or Kakao.
+
+The user subsequently extended this queue to all remaining target keywords and
+future arrivals. Private config `target: "*"` discovers target evaluations and
+processes one target per batch, preserving independent decisions and human priority.
+
+## Conversation filters and editable evaluation notes (2026-11-11)
+
+Classification status and sentiment now live in the same header filter bar as
+date and target. Mutually exclusive status/sentiment choices clear the conflicting
+filter rather than returning a misleading empty list. Embedded lists retain their
+compact filter controls. Reset includes status and sentiment selections.
+
+Direct classification remains immediate. The optional memo editor can be opened
+before classification or during recheck, select a verdict and save the note in
+one request. It retains the expected token captured when editing began, so a
+background refresh cannot silently rebase an old draft over newer evidence.
+The legacy episode evaluation form now includes its own editable evaluation note;
+source persistence preserves omitted notes and records verdict/note edit history.
+These are source-episode notes, distinct from grouped target-classification notes.

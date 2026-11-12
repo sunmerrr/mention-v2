@@ -27,6 +27,8 @@ import { Failure, labels } from "./ui";
 export function ClassificationControl({ item }: { item: Classification }) {
   const [open, setOpen] = useState(false),
     [note, setNote] = useState(item.summary),
+    [noteLabel, setNoteLabel] = useState<Decision | "">(""),
+    [noteExpected, setNoteExpected] = useState(item.expected),
     [notice, setNotice] = useState("");
   const request = useRef<{ key: string; id: string }>();
   const client = useQueryClient(),
@@ -48,8 +50,8 @@ export function ClassificationControl({ item }: { item: Classification }) {
       setNotice("저장됨");
     },
   });
-  function submit(label: Decision, summary: string) {
-    const key = JSON.stringify([item.expected, label, summary]);
+  function submit(label: Decision, summary: string, expected = item.expected) {
+    const key = JSON.stringify([expected, label, summary]);
     if (request.current?.key !== key)
       request.current = { key, id: crypto.randomUUID() };
     setNotice("");
@@ -58,7 +60,7 @@ export function ClassificationControl({ item }: { item: Classification }) {
       service: item.target,
       verdict: label,
       summary,
-      expected: item.expected,
+      expected,
       request_id: request.current.id,
     });
   }
@@ -93,6 +95,10 @@ export function ClassificationControl({ item }: { item: Classification }) {
             setOpen(value);
             if (value) {
               setNote(item.summary);
+              setNoteLabel(
+                item.stale || item.label === "unreviewed" ? "" : item.label,
+              );
+              setNoteExpected(item.expected);
               save.reset();
             }
           }}
@@ -101,17 +107,8 @@ export function ClassificationControl({ item }: { item: Classification }) {
             <Button
               intent="quiet"
               size="1"
-              disabled={
-                !writesEnabled ||
-                save.isPending ||
-                item.stale ||
-                item.label === "unreviewed"
-              }
-              title={
-                item.stale || item.label === "unreviewed"
-                  ? "분류를 먼저 선택하세요"
-                  : "메모 작성"
-              }
+              disabled={!writesEnabled || save.isPending}
+              title="분류 메모 수정"
             >
               <MessageSquareText size={14} />
               메모
@@ -119,14 +116,37 @@ export function ClassificationControl({ item }: { item: Classification }) {
           </Dialog.Trigger>
           <DialogContent
             title={`${item.target} 메모`}
-            description="분류와 별도로 판단 근거나 참고할 내용을 남깁니다."
+            description="분류와 판단 근거를 함께 수정하고 저장합니다."
           >
+            <Box mb="4">
+              <Text as="p" size="2" weight="medium" mb="2">
+                여론 분류
+              </Text>
+              <Select.Root
+                value={noteLabel}
+                onValueChange={(value) => setNoteLabel(value as Decision)}
+                disabled={save.isPending}
+              >
+                <Select.Trigger
+                  aria-label="메모의 여론 분류"
+                  placeholder="분류 선택"
+                />
+                <Select.Content>
+                  {decisions.map((label) => (
+                    <Select.Item key={label} value={label}>
+                      {labels[label]}
+                    </Select.Item>
+                  ))}
+                </Select.Content>
+              </Select.Root>
+            </Box>
             <Field id={`classification-note-${item.id}`} label="메모">
               <TextArea
                 id={`classification-note-${item.id}`}
                 aria-label="분류 메모"
                 value={note}
                 maxLength={2800}
+                disabled={save.isPending}
                 rows={5}
                 onChange={(event) => setNote(event.target.value)}
               />
@@ -141,12 +161,13 @@ export function ClassificationControl({ item }: { item: Classification }) {
               <Button
                 loading={save.isPending}
                 disabled={
-                  item.label === "unreviewed" ||
-                  item.stale ||
-                  note === item.summary
+                  !noteLabel ||
+                  (!item.stale &&
+                    noteLabel === item.label &&
+                    note === item.summary)
                 }
                 onClick={() => {
-                  if (item.label !== "unreviewed") submit(item.label, note);
+                  if (noteLabel) submit(noteLabel, note, noteExpected);
                 }}
               >
                 메모 저장

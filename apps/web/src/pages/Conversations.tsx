@@ -13,6 +13,7 @@ import {
   Box,
   Button,
   Card,
+  FilterBar,
   Flex,
   Heading,
   PageHeader,
@@ -63,18 +64,83 @@ export default function Conversations({
     if (value === "all") next.delete("label");
     else {
       next.set("label", value);
-      if (["pending", "unclassified", "recheck"].includes(status))
+      if (["pending", "unclassified", "recheck", "excluded"].includes(status))
         next.set("status", "classified");
     }
     setParams(next, { replace: true });
   }
+  const classificationFilters = (
+    <>
+      <Select.Root
+        value={status || "all"}
+        onValueChange={(value) => {
+          const next = new URLSearchParams(params);
+          if (value === "all") next.delete("status");
+          else next.set("status", value);
+          if (
+            ["pending", "unclassified", "recheck", "excluded"].includes(
+              value,
+            ) ||
+            next.get("label") === "unreviewed"
+          )
+            next.delete("label");
+          setParams(next, { replace: true });
+        }}
+      >
+        <Select.Trigger aria-label="분류 상태">
+          {(
+            {
+              pending: "미분류 / 재검토",
+              unclassified: "미분류",
+              recheck: "재검토",
+              classified: "분류 완료",
+              excluded: "판단 제외",
+            } as Record<string, string>
+          )[status] || "전체 상태"}
+        </Select.Trigger>
+        <Select.Content>
+          <Select.Item value="all">전체 상태</Select.Item>
+          <Select.Item value="pending">미분류 / 재검토</Select.Item>
+          <Select.Item value="unclassified">미분류</Select.Item>
+          <Select.Item value="recheck">재검토</Select.Item>
+          <Select.Item value="classified">분류 완료</Select.Item>
+          <Select.Item value="excluded">판단 제외</Select.Item>
+        </Select.Content>
+      </Select.Root>
+
+      <Select.Root
+        value={label && label !== "unreviewed" ? label : "all"}
+        onValueChange={setLabel}
+      >
+        <Select.Trigger aria-label="여론 분류">
+          {label && label !== "unreviewed"
+            ? labels[label as keyof typeof labels]
+            : "모든 여론"}
+        </Select.Trigger>
+        <Select.Content>
+          <Select.Item value="all">모든 여론</Select.Item>
+          {Object.entries(labels)
+            .filter(([key]) => key !== "unreviewed" && key !== "excluded")
+            .map(([key, name]) => (
+              <Select.Item key={key} value={key}>
+                {name}
+              </Select.Item>
+            ))}
+        </Select.Content>
+      </Select.Root>
+    </>
+  );
   return (
     <>
       {!embedded && (
         <PageHeader
           title="대화 목록"
           description="기준 발언과 앞뒤 맥락을 한 대화로 읽습니다."
-          actions={<Filters metadata={metadata.data?.metadata} />}
+          actions={
+            <Filters metadata={metadata.data?.metadata}>
+              {classificationFilters}
+            </Filters>
+          }
         />
       )}
       <Card className="section-card">
@@ -85,70 +151,7 @@ export default function Conversations({
               {total}개 대화 · 발송 시각 기준
             </Text>
           </Box>
-          <Flex gap="3" align="end" wrap="wrap">
-            <Box>
-              <Text as="p" size="1" color="gray" mb="1">
-                분류 상태
-              </Text>
-              <Select.Root
-                value={status || "all"}
-                onValueChange={(value) => {
-                  const next = new URLSearchParams(params);
-                  if (value === "all") next.delete("status");
-                  else next.set("status", value);
-                  if (next.get("label") === "unreviewed") next.delete("label");
-                  setParams(next, { replace: true });
-                }}
-              >
-                <Select.Trigger aria-label="분류 상태">
-                  {(
-                    {
-                      pending: "미분류 / 재검토",
-                      unclassified: "미분류",
-                      recheck: "재검토",
-                      classified: "분류 완료",
-                      excluded: "판단 제외",
-                    } as Record<string, string>
-                  )[status] || "전체 상태"}
-                </Select.Trigger>
-                <Select.Content>
-                  <Select.Item value="all">전체 상태</Select.Item>
-                  <Select.Item value="pending">미분류 / 재검토</Select.Item>
-                  <Select.Item value="unclassified">미분류</Select.Item>
-                  <Select.Item value="recheck">재검토</Select.Item>
-                  <Select.Item value="classified">분류 완료</Select.Item>
-                  <Select.Item value="excluded">판단 제외</Select.Item>
-                </Select.Content>
-              </Select.Root>
-            </Box>
-            <Box>
-              <Text as="p" size="1" color="gray" mb="1">
-                여론
-              </Text>
-              <Select.Root
-                value={label && label !== "unreviewed" ? label : "all"}
-                onValueChange={setLabel}
-              >
-                <Select.Trigger aria-label="여론 분류">
-                  {label && label !== "unreviewed"
-                    ? labels[label as keyof typeof labels]
-                    : "모든 여론"}
-                </Select.Trigger>
-                <Select.Content>
-                  <Select.Item value="all">모든 여론</Select.Item>
-                  {Object.entries(labels)
-                    .filter(
-                      ([key]) => key !== "unreviewed" && key !== "excluded",
-                    )
-                    .map(([key, name]) => (
-                      <Select.Item key={key} value={key}>
-                        {name}
-                      </Select.Item>
-                    ))}
-                </Select.Content>
-              </Select.Root>
-            </Box>
-          </Flex>
+          {embedded && <FilterBar>{classificationFilters}</FilterBar>}
         </Flex>
         {query.isPending ? (
           <Pending />
