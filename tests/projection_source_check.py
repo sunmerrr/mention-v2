@@ -129,3 +129,37 @@ with tempfile.TemporaryDirectory() as directory:
     memory.close();checks+=1
     store.db.close()
 print(json.dumps({'checks':checks,'source_writes':0,'operational_constructors':0}))
+
+
+# A global read must agree with native single-day detail even when the shared
+# messages/authors could otherwise merge conversations across KST midnight.
+with tempfile.TemporaryDirectory() as directory:
+    root=Path(directory);state=root/'state/monitor';store=Store(state)
+    store.rooms([{'chat_id':'1','name':'Synthetic midnight'}])
+    midnight=int(datetime(2026,11,8,tzinfo=KST).timestamp())
+    for lid,offset,text in [(1,-3,'APL 가격이 부담돼요'),(2,-2,'이용해보니 비용이 커요'),(3,-1,'룰루 가입했어요'),(4,1,'APL 사용 절차는 괜찮네요'),(5,2,'가격 의견도 궁금합니다'),(6,3,'룰루 기능이 좋아요')]:
+        store.ingest('1',{'log_id':str(lid),'type':1,'text':text,'author_id':'8','sent_at':str(midnight+offset)},'live')
+    episodes=store.context.listing(include_messages=True)
+    eligible=[e for e in episodes if e['analysis_eligible']]
+    assert len(conversations.group_episodes(eligible,store.setting('keywords',[])))==1,'Fixture must reproduce original cross-day merge'
+    # Save using the canonical native detail path, just as the API does.
+    for day in ('2026-11-07','2026-11-08'):
+        candidates=store.context.listing(day=day)
+        assert candidates
+        detail=conversations.conversation(store.context,candidates[0]['id'])
+        conversations.review_conversation(store.context,detail['id'],'APL','neutral','Synthetic midnight review')
+    source_before=hashlib.sha256((state/'monitor.sqlite3').read_bytes()).hexdigest()
+    result,_=projection.compute(root,'/api/insights',{})
+    groups=result['conversations']
+    assert len(groups)==2
+    from monitor.classifications import token
+    for group in groups:
+        native=conversations.conversation(store.context,group['id'])
+        assert group['id']==native['id']
+        assert group['evidence_signature']==native['evidence_signature']
+        for target,evaluation in group['evaluations'].items():
+            assert evaluation['expected']==token({'signature':native['evidence_signature'],'evaluation':native['evaluations'][target]})
+        assert group['evaluations']['APL']['verdict']=='neutral'
+        assert not group['evaluations']['APL']['needs_review']
+    assert source_before==hashlib.sha256((state/'monitor.sqlite3').read_bytes()).hexdigest()
+    store.db.close()

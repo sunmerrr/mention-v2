@@ -16,6 +16,7 @@ export interface MonitoringReader {
 }
 export interface ClassificationWriter {
   correct(input: Correction): Promise<void>;
+  requestStatus?(requestId: string): Promise<{ state: string }>;
 }
 
 export interface MonitoringProjection {

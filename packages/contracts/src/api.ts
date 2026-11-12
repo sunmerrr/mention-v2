@@ -97,6 +97,16 @@ export const correctionSchema = z.object({
   expected: z.string().min(1).max(200),
   request_id: z.string().uuid(),
   origin: z.enum(["ai", "human"]).optional(),
+  evidence: z
+    .array(
+      z.object({
+        log_id: z.string().min(1).max(100),
+        quote: z.string().min(1).max(2000),
+      }),
+    )
+    .min(1)
+    .max(5)
+    .optional(),
 });
 export type Correction = z.infer<typeof correctionSchema>;
 export interface Metadata {

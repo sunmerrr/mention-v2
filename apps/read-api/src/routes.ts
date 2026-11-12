@@ -128,5 +128,67 @@ export function registerApi(
     if (projection) await queries.refresh().catch(() => {});
     return { success: true, data: { saved: true }, error: null };
   });
+  app.get<{ Params: { requestId: string } }>(
+    "/api/classifications/request-state/:requestId",
+    async (request, reply) => {
+      if (
+        request.headers.origin !== options.origin ||
+        request.headers["x-monitor-public"] === "1"
+      )
+        return reply.code(403).send({
+          success: false,
+          data: null,
+          error: { message: "로컬 요청만 허용합니다." },
+        });
+      const id = z.string().uuid().parse(request.params.requestId);
+      return {
+        success: true,
+        data: writer.requestStatus
+          ? await writer.requestStatus(id)
+          : { state: "unsupported" },
+        error: null,
+      };
+    },
+  );
+  app.post("/api/classifications/ai-batch", async (request, reply) => {
+    if (
+      !options.writesEnabled ||
+      request.headers.origin !== options.origin ||
+      request.headers["x-monitor-public"] === "1"
+    )
+      return reply.code(403).send({
+        success: false,
+        data: null,
+        error: { message: "로컬 AI 분류 요청만 허용합니다." },
+      });
+    const inputs = z.array(correctionSchema).min(1).max(20).parse(request.body);
+    if (inputs.some((input) => input.origin !== "ai"))
+      return reply.code(400).send({
+        success: false,
+        data: null,
+        error: { message: "AI 출처가 필요합니다." },
+      });
+    const results = [];
+    for (const input of inputs) {
+      try {
+        await writer.correct(input);
+        results.push({
+          id: input.id,
+          request_id: input.request_id,
+          state: "saved",
+        });
+      } catch (error) {
+        results.push({
+          id: input.id,
+          request_id: input.request_id,
+          state: "not_saved",
+          status: error instanceof UpstreamError ? error.status : 502,
+          message: error instanceof Error ? error.message : "분류 저장 실패",
+        });
+      }
+    }
+    if (projection) await queries.refresh().catch(() => {});
+    return { success: true, data: { results }, error: null };
+  });
   return queries;
 }

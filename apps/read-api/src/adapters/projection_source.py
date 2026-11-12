@@ -206,12 +206,17 @@ def compute(root, endpoint, params):
     public.coverage.store, public.coverage.db = public, database
     original_groups = conversations.group_episodes
     def room_groups(episodes,keywords):
-        by_room={}
+        by_room_day={}
         order={episode['id']:index for index,episode in enumerate(episodes)}
-        for episode in episodes:by_room.setdefault(episode['room_id'],[]).append(episode)
+        # Native detail resolves episodes within one KST anchor date. Matching
+        # that boundary prevents a global snapshot from inventing another
+        # canonical ID/signature for the same detail and review receipt.
+        for episode in episodes:
+            day=datetime.fromtimestamp(episode['anchor_ms']/1000,ZoneInfo('Asia/Seoul')).date().isoformat()
+            by_room_day.setdefault((episode['room_id'],day),[]).append(episode)
         result=[]
-        for room,members in by_room.items():
-            key=(str(root),room_versions.get(room),tuple(e['id'] for e in members),tuple(keywords))
+        for (room,day),members in by_room_day.items():
+            key=(str(root),room_versions.get(room),day,tuple(e['id'] for e in members),tuple(keywords))
             if key not in GROUPS:retain(GROUPS,key,original_groups(members,keywords),32)
             else:GROUPS.move_to_end(key)
             result.extend(copy.deepcopy(GROUPS[key]))

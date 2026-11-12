@@ -60,5 +60,7 @@ try:
         data['dialogue_phase_counts']={phase:counts['dialogue'] for phase,counts in summary['phases'].items()}
     print(json.dumps({'ok':True,'data':data},ensure_ascii=False))
 except Exception as error:
-    print(json.dumps({'ok':False,'code':str(error) if isinstance(error,ValueError) else type(error).__name__,'status':getattr(error,'status',502),'message':getattr(error,'message','요청을 완료하지 못했습니다.')}))
+    conflict_codes={'REVIEW_CONFLICT','HUMAN_REVIEW_EXISTS','SOURCE_CHANGED','SAVE_RESULT_UNCERTAIN','AI_REVIEW_UNKNOWN'}
+    status=409 if isinstance(error,ValueError) and str(error) in conflict_codes else 400 if isinstance(error,ValueError) else getattr(error,'status',502)
+    print(json.dumps({'ok':False,'code':str(error) if isinstance(error,ValueError) else type(error).__name__,'status':status,'message':getattr(error,'message','요청을 완료하지 못했습니다.')}))
     sys.exit(1)
