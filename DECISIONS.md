@@ -75,3 +75,20 @@ transitive development-tool advisory remains documented in BOILERPLATE-BASELINE.
 NestJS11 and React18 are retained. Router7/Vite8/Zod4/Vitest4 and supporting
 plugins are authorized security compatibility updates. Shared source contracts
 and tests will be migrated against those pinned dependency versions.
+
+## First monitoring slice
+
+Authorized migration starts with read-only Nest monitoring endpoints for overview,
+conversation lists/detail and classifications. The transition repository performs
+GET only against a credential-free loopback source, without forwarding local
+privileges, cookies or request Origin. Shared Zod schemas bound filters and cursor
+size. No compatibility proxy is claimed to be a completed database migration.
+The source defaults to the current authorized Mention8790service and has a bounded
+timeout. Tests must use a disposable synthetic source and reject redirects/errors.
+
+## Read slice verification
+
+Actual verify passed after adding the first read slice:6unit and8API integration
+tests. Six actual read-only source comparisons returned identical data. New API
+was stopped after validation; existing Kakao owner/processes and the running web
+were unchanged. See docs/MIGRATION-STATUS.md for remaining migration gates.

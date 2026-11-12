@@ -1,3 +1,11 @@
+# Mention internal migration
+
+Company-template workspace: `/Users/we/mention-internal`.
+The existing dashboard remains at `/Users/we/mention`; this workspace has not
+replaced it. See [migration status](docs/MIGRATION-STATUS.md),
+[decisions](DECISIONS.md) and [security baseline](docs/BOILERPLATE-BASELINE.md).
+The original boilerplate documentation is retained below as reference.
+
 # project-boilerplate
 
 **이 저장소를 복사해서 새 프로젝트를 시작한다.** [가이드](https://project-template.mygen.site/llms.txt)의 `bootstrap.md` **Part 1(공통 코어)** 를 그대로 구현한 공통 코어 스켈레톤이다.

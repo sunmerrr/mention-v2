@@ -11,6 +11,22 @@ import { z } from 'zod';
  * 그 블록의 키를 여기 스키마에 추가한다.
  */
 const envSchema = z.object({
+  MENTION_SOURCE_URL: z
+    .url()
+    .refine((value) => {
+      const url = new URL(value);
+      return (
+        url.protocol === 'http:' &&
+        ['127.0.0.1', 'localhost'].includes(url.hostname) &&
+        url.username === '' &&
+        url.password === '' &&
+        url.pathname === '/' &&
+        url.search === '' &&
+        url.hash === ''
+      );
+    }, 'The migration source must be a credential-free loopback HTTP origin')
+    .default('http://127.0.0.1:8790'),
+  MENTION_SOURCE_TIMEOUT_MS: z.coerce.number().int().min(100).max(30000).default(20000),
   NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(4200),
   // 빈 값 차단(min 1) — 빈 APP_ROLE 이 통과하면 역할 분기가 전부 false 가 되어 컨트롤러 없는 서버가 조용히 뜬다.

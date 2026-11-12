@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ExampleController } from '../modules/example/example.controller.js';
 import { ExampleModule } from '../modules/example/example.module.js';
+import { MonitoringController } from '../modules/monitoring/monitoring.controller.js';
+import { MonitoringModule } from '../modules/monitoring/monitoring.module.js';
 
 /**
  * 역할 모듈 — 컨트롤러/게이트웨이를 여기서 등록한다. → deployment/single-image-roles.md
@@ -8,7 +10,7 @@ import { ExampleModule } from '../modules/example/example.module.js';
  * 비즈니스 서비스는 modules/ 에서 제공되고, 이 모듈은 컨트롤러만 얹는다.
  */
 @Module({
-  imports: [ExampleModule],
-  controllers: [ExampleController],
+  imports: [ExampleModule, MonitoringModule],
+  controllers: [ExampleController, MonitoringController],
 })
 export class ApiModule {}
