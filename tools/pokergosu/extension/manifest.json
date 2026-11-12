@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Mention · 포커고수 읽기",
+  "version": "0.4.4",
+  "description": "자유 게시판 새 글과 최근 댓글을 한 번 시작한 탭에서 자동으로 읽고 로컬에 저장합니다.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "contextMenus",
+    "alarms"
+  ],
+  "host_permissions": ["http://127.0.0.1/*"],
+  "background": {
+    "service_worker": "background.mjs",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "현재 포커고수 글·댓글 읽기"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; connect-src 'self' http://127.0.0.1:8791"
+  },
+  "optional_host_permissions": ["https://www.pokergosu.com/*"]
+}
