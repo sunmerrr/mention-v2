@@ -19,7 +19,7 @@ from pathlib import Path
 TABLES = ('rooms', 'messages', 'episodes', 'context_messages', 'episode_links',
           'photos', 'mention_corrections', 'conversation_reviews', 'review_history',
           'feedback_notes', 'gaps', 'collection_intervals', 'collection_recoveries',
-          'bookmarks', 'daily_briefings', 'alias_decisions')
+          'bookmarks', 'daily_briefings', 'alias_decisions', 'promotion_reaction_links')
 SETTINGS = ('keywords', 'exclude_keywords', 'keyword_groups')
 RESULTS = OrderedDict()
 DETAILS = OrderedDict()
@@ -71,6 +71,7 @@ def load_public_snapshot(filename):
         for table in (*TABLES, 'settings'):
             schema = source.execute('SELECT sql FROM sqlite_master WHERE type=\'table\' AND name=?', (table,)).fetchone()
             if not schema:
+                if table == 'promotion_reaction_links':continue
                 raise ValueError('MISSING_ANALYTICS_TABLE')
             rows = source.execute('SELECT * FROM settings WHERE key IN (?,?,?)', SETTINGS).fetchall() if table == 'settings' else source.execute('SELECT * FROM '+table+' ORDER BY rowid').fetchall()
             snapshot[table] = (schema[0],rows)
@@ -90,6 +91,7 @@ def load_public_snapshot(filename):
     # anchor materialization into public analysis.
     for table in TABLES:
         if table in ('rooms','gaps'):continue
+        if table not in snapshot:continue
         columns={row[1] for row in memory.execute('PRAGMA table_info('+table+')')}
         if 'room_id' in columns:
             memory.execute('DELETE FROM '+table+' WHERE room_id IN (SELECT id FROM rooms WHERE excluded=1)')
@@ -131,7 +133,8 @@ def compute(root, endpoint, params):
         return result,{'readMs':round(read_ms,1),'computeMs':0,'detailComputations':0,'cached':True,'fastCache':False,'totalMs':round((time.perf_counter()-request_started)*1000,1)}
     room_inputs={row['id']:[('room',row['name'])] for row in database.execute('SELECT id,name FROM rooms')}
     episode_rooms={row['id']:row['room_id'] for row in database.execute('SELECT id,room_id FROM episodes')}
-    for table in ('messages','episodes','context_messages','episode_links','photos','mention_corrections','conversation_reviews','review_history','feedback_notes','gaps'):
+    for table in ('messages','episodes','context_messages','episode_links','photos','mention_corrections','conversation_reviews','review_history','feedback_notes','gaps','promotion_reaction_links'):
+        if table == 'promotion_reaction_links' and not database.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",(table,)).fetchone():continue
         for row in database.execute('SELECT * FROM '+table):
             value=dict(row)
             room=value.get('room_id') or episode_rooms.get(value.get('anchor_id') or value.get('episode_id'))

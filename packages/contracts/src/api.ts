@@ -9,7 +9,10 @@ import type {
 export const scopeSchema = z.object({
   day: z
     .string()
-    .regex(/^(\d{4}-\d{2}-\d{2})?$/)
+    .refine(
+      (value) => value === "" || z.iso.date().safeParse(value).success,
+      "Invalid date",
+    )
     .default(""),
   target: z.string().max(100).default(""),
 });
@@ -51,6 +54,14 @@ export interface Message {
   own: boolean;
   relation?: string;
   anchor?: boolean;
+  promotionReference?: {
+    logId: string;
+    at: number;
+    keywords: string[];
+    targets: string[];
+    method: "explicit_reply" | "topic_candidate";
+    ambiguousTargets: boolean;
+  };
   photos?: { url: string; thumbnail?: string | null }[];
 }
 export interface Detail {

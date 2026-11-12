@@ -220,6 +220,16 @@ export class LegacyReader implements MonitoringReader, ClassificationWriter {
             phase: z.string().default("discussion"),
             context_folded: z.boolean().optional(),
             context_class: z.string().optional(),
+            promotion_reference: z
+              .object({
+                log_id: z.string().regex(/^[1-9][0-9]{0,18}$/),
+                time_ms: z.number().int(),
+                keywords: z.array(z.string().max(200)).max(100),
+                targets: z.array(z.string().max(100)).max(50),
+                method: z.enum(["explicit_reply", "topic_candidate"]),
+                ambiguous_targets: z.boolean(),
+              })
+              .optional(),
             relation: z.string().optional(),
             role: z.string().optional(),
             photos: z
@@ -252,6 +262,16 @@ export class LegacyReader implements MonitoringReader, ClassificationWriter {
       own: !!m.own,
       relation: m.relation,
       anchor: m.role === "anchor",
+      promotionReference: m.promotion_reference
+        ? {
+            logId: m.promotion_reference.log_id,
+            at: m.promotion_reference.time_ms,
+            keywords: m.promotion_reference.keywords,
+            targets: m.promotion_reference.targets,
+            method: m.promotion_reference.method,
+            ambiguousTargets: m.promotion_reference.ambiguous_targets,
+          }
+        : undefined,
       photos: m.photos,
     }));
     const conversation = normalize(group);

@@ -114,6 +114,20 @@ export default function Detail() {
                       {time(m.time)}
                     </Text>
                   </Flex>
+                  {m.promotionReference && (
+                    <Text as="p" size="1" color="gray" mt="2">
+                      광고 원문 제외 ·{" "}
+                      {m.promotionReference.method === "explicit_reply"
+                        ? "광고에 직접 답장"
+                        : "광고 후속 반응 후보"}
+                      {" · "}
+                      {m.promotionReference.targets.join(", ")}
+                      {m.promotionReference.ambiguousTargets ||
+                      m.promotionReference.method === "topic_candidate"
+                        ? " · 연결 대상 확인 필요"
+                        : ""}
+                    </Text>
+                  )}
                   <Text as="p" size="2" className="message-copy" mt="2">
                     <Highlight
                       value={m.text || "본문이 없는 첨부 메시지"}
@@ -159,7 +173,15 @@ export default function Detail() {
                       {(
                         {
                           before: "이전 맥락",
-                          discussion: "키워드가 나온 구간",
+                          discussion:
+                            messages.some(
+                              (message) => message.promotionReference,
+                            ) &&
+                            !Object.values(c.keywords).some(
+                              (count) => count > 0,
+                            )
+                              ? "광고 후속 반응 구간"
+                              : "키워드가 나온 구간",
                           after: "이후 맥락",
                         } as Record<string, string>
                       )[m.phase] || "대화"}

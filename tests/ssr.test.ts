@@ -5,6 +5,33 @@ import { WorkspaceQueries } from "../packages/application/src/workspace";
 import { FakeReader } from "./fakes";
 
 describe("native React SSR", () => {
+  it("identifies inherited promotion reactions without claiming a literal keyword hit", async () => {
+    const reader = new FakeReader();
+    reader.data.conversations[0].keywords = {};
+    const original = reader.detail.bind(reader);
+    reader.detail = async (id) => {
+      const detail = await original(id);
+      detail.messages[0].promotionReference = {
+        logId: "123",
+        at: detail.conversation.at - 1000,
+        keywords: ["샘플 A"],
+        targets: ["샘플 A"],
+        method: "topic_candidate",
+        ambiguousTargets: false,
+      };
+      return detail;
+    };
+    const page = await render(
+      "/conversations/" + "0".repeat(32),
+      new MonitoringQueries(reader),
+      false,
+    );
+    expect(page.html).toContain("광고 후속 반응 후보");
+    expect(page.html).toContain("연결 대상 확인 필요");
+    expect(page.html).toContain("광고 후속 반응 구간");
+    expect(page.html).not.toContain("키워드가 나온 구간");
+  });
+
   it("includes useful data in HTML and dehydrates only the active route", async () => {
     const result = await render(
       "/",

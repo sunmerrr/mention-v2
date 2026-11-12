@@ -54,6 +54,14 @@ describe("legacy public read adapter", () => {
               author_name: "테스트",
               time_ms: 1793850000000,
               own: 0,
+              promotion_reference: {
+                log_id: "123",
+                time_ms: 1793849990000,
+                keywords: ["샘플"],
+                targets: ["샘플"],
+                method: "topic_candidate",
+                ambiguous_targets: false,
+              },
             },
           ],
           context_summary: { limited: true, promotion_followup_needed: true },
@@ -63,6 +71,15 @@ describe("legacy public read adapter", () => {
     );
     const detail = await new LegacyReader("http://127.0.0.1:8766").detail(id);
     expect(detail.messages[0].own).toBe(false);
+    expect(detail.messages[0].text).toBe("합성 맥락");
+    expect(detail.messages[0].promotionReference).toEqual({
+      logId: "123",
+      at: 1793849990000,
+      keywords: ["샘플"],
+      targets: ["샘플"],
+      method: "topic_candidate",
+      ambiguousTargets: false,
+    });
     expect(detail.limited).toBe(true);
     expect(detail.promotionFollowupNeeded).toBe(true);
   });
