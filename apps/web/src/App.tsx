@@ -47,7 +47,7 @@ const navGroups: { label: string; Icon: typeof BarChart3; links: [string, string
     label: '분석·브리핑',
     Icon: BarChart3,
     links: [
-      ['/', '여론·동향'],
+      ['/', '카톡 여론'],
       ['/trends', '동향 분석'],
       ['/briefing', '일일 브리핑'],
     ],
@@ -248,7 +248,7 @@ function WorkspaceApp() {
                   element={
                     <Callout.Root>
                       <Callout.Text>
-                        찾을 수 없는 페이지입니다. <Link to="/">여론·동향으로 돌아가기</Link>
+                        찾을 수 없는 페이지입니다. <Link to="/">카톡 여론으로 돌아가기</Link>
                       </Callout.Text>
                     </Callout.Root>
                   }
