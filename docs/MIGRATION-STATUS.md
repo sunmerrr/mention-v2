@@ -47,3 +47,13 @@ Docker images build, but local Compose is not a claim of a populated independent
 production installation: host-loopback source/database settings need an explicit
 container deployment configuration. Global refresh invalidates browser queries;
 projection catch-up remains periodic or mutation-notified.
+
+## Excluded-promotion reaction continuity
+
+The preserved UI contract now carries optional promotionReference metadata and
+identifies direct replies versus topic candidates without fabricating literal
+keyword occurrences. Company API envelope tests preserve that nested provenance.
+The native analytics source owns metadata-only ad watches and actual reaction
+capture; this remains an explicit source dependency, not a claim that the Nest
+worker owns Kakao. Desktop/mobile synthetic browser checks and native boundary
+regressions passed; first natural-event verification is reported independently.

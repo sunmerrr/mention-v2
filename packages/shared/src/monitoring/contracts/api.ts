@@ -34,6 +34,14 @@ export interface Message {
   own: boolean;
   relation?: string;
   anchor?: boolean;
+  promotionReference?: {
+    logId: string;
+    at: number;
+    keywords: string[];
+    targets: string[];
+    method: 'explicit_reply' | 'topic_candidate';
+    ambiguousTargets: boolean;
+  };
   photos?: { url: string; thumbnail?: string | null }[];
 }
 export interface Detail {

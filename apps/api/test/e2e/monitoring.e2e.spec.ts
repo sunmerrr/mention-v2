@@ -27,6 +27,20 @@ describe('read-only monitoring migration contracts', () => {
     expected: 'synthetic-evidence-token',
     id: 'synthetic-canonical-1',
     nextCursor: 'synthetic-next-cursor',
+    messages: [
+      {
+        id: '1001',
+        text: '합성 반응',
+        promotionReference: {
+          logId: '900',
+          at: 1793850000000,
+          keywords: ['합성 대상'],
+          targets: ['합성 대상'],
+          method: 'topic_candidate',
+          ambiguousTargets: false,
+        },
+      },
+    ],
   };
   beforeAll(async () => {
     source = createServer(async (req, res) => {
