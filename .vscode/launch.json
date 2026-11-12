@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Mention: attach to managed Node process",
+      "type": "node",
+      "request": "attach",
+      "processId": "${command:PickProcess}",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "Mention: browser (managed server required)",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://127.0.0.1:8790",
+      "webRoot": "${workspaceFolder}/apps/web"
+    }
+  ]
+}

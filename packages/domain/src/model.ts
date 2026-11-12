@@ -59,15 +59,9 @@ export interface Scope {
 export interface ConversationFilter extends Scope {
   label: string;
 }
-const koreanDateFormatter = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Asia/Seoul",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-});
-export function koreanDay(timestamp: number): string {
-  return koreanDateFormatter.format(timestamp);
-}
+export { koreanDay } from "./time";
+
+import { koreanDay } from "./time";
 export function scopedConversations(
   dataset: Dataset,
   scope: Scope,

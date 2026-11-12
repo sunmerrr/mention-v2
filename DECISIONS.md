@@ -142,6 +142,21 @@ See `docs/DESIGN-SYSTEM.md` and the matching AGENTS.md requirement. Existing fea
 layouts migrate when touched; the foundation is not a claim of a completed visual
 redesign of every screen.
 
+## Pokergosu public monitoring (2026-11-10)
+
+The user authorized an independent program in this workspace to monitor Pokergosu
+free-board posts and comments using the project's include keywords, with a random
+15–30 minute cycle interval. This supersedes the no-new-collector setup boundary
+only for this separate public-site collector; the sole Kakao collector remains
+unchanged. Existing include matching policy is reused through a read-only
+settings adapter. The user subsequently required ignoring exclusion keywords for
+Pokergosu; they are neither read nor applied, and Kakao settings remain intact. Site records and revision history live only under ignored
+runtime/pokergosu, independently of Kakao IDs, classifications and source DBs.
+The implementation uses the installed browser/test library and Python SQLite,
+without adding an unrelated backend stack or UI. Actual board access is currently
+restricted and collection is paused; live selectors and populated-data performance
+are not verified. See docs/POKERGOSU.md for scope and lifecycle.
+
 ## Continuous AI sentiment review (2026-11-10)
 
 The user authorized reviewing the remaining PokerLulu backlog and future arrivals.
@@ -162,6 +177,32 @@ The user subsequently extended this queue to all remaining target keywords and
 future arrivals. Private config `target: "*"` discovers target evaluations and
 processes one target per batch, preserving independent decisions and human priority.
 
+## Manual Pokergosu Chrome extension trial (2026-11-11)
+
+The user authorized building and trying a private, unpacked Chrome extension.
+The first trial uses activeTab/scripting on an explicit user click, with Chrome's
+native action/menu/badge UI. There is no Web Store publishing, website navigation,
+periodic alarm or cookie access. A token-authenticated 127.0.0.1:8791 receiver is
+managed by scripts/pokergosu.sh and shares the headless collector's singleton
+lock. It reads only authoritative include keywords, saves public observations in
+the independent existing Pokergosu runtime DB, and records unknown markup as
+bounded structural evidence. Real Chrome installation/action/loopback transport
+passed using an isolated profile and synthetic pages; user-browser live content
+and unattended collection remain unverified. Kakao and the deployed web process
+are unchanged. See docs/POKERGOSU.md.
+
+## Fifteen-check Pokergosu trial (2026-11-11)
+
+The user authorized fifteen checks only to observe access restrictions, keeping
+the previously agreed random15–30minute cadence. Version0.2 adds optional Chrome
+alarms for a bounded board-list-only trial in the user-selected activeTab. This
+supersedes the earlier no-alarm prototype limit only after the explicit trial
+menu action. Each slot is persisted before reload; fifteen successes end the run,
+and any failure/ambiguity stops without automatic retry. A loopback audit retains
+attempt history and rejects counter regression or terminal-run reactivation.
+This is not authorization for an indefinite poller, another Kakao collector,
+proxy rotation or challenge solving. See docs/POKERGOSU.md.
+
 ## Conversation filters and editable evaluation notes (2026-11-11)
 
 Classification status and sentiment now live in the same header filter bar as
@@ -176,3 +217,131 @@ background refresh cannot silently rebase an old draft over newer evidence.
 The legacy episode evaluation form now includes its own editable evaluation note;
 source persistence preserves omitted notes and records verdict/note edit history.
 These are source-episode notes, distinct from grouped target-classification notes.
+
+## Automatic Pokergosu post/comment monitor (2026-11-11)
+
+The user stopped the finite trial after four successful list checks and then
+explicitly approved implementing post/comment collection without per-post physical
+clicks. A separate monitor uses the same temporary activeTab grant and dedicated
+browser tab, with one page navigation per alarm. Its cycle is bounded to three list
+pages and six thread reads, followed by a return to the list and random15–30minute
+rest. Page gaps are30–45seconds. It revisits recent unmatched threads to capture
+comment-only mentions, applies include-only matching and preserves source revisions.
+Paused/unknown access is never silently retried. The old trial audit stays stopped.
+The local receiver validates queue destinations and immutable navigation events;
+unknown structured author/time metadata remains flagged, with bounded header
+source evidence retained separately from matching text. No OS startup daemon or
+Kakao worker change is authorized by this implementation. Live operation requires
+one extension update/start and remains distinct from synthetic native-Chrome checks.
+
+## Pokergosu operational access logging (2026-11-11)
+
+The user requested logs identifying collection progress, verification prompts,
+access restriction and the visit count at first failure. Canonical SQLite audit
+records now have an automatically appended private JSONL projection and a read-only
+report command. A new optional DOM evidence field records only bounded titles and
+indicator labels. Bot verification, explicit access refusal, rate limiting,
+account-restriction notices, parser/local errors and user stops remain separate;
+neither HTTP status nor an account ban is inferred from unobserved state. Legacy
+generic restrictions retain their uncertainty. The running receiver was refreshed
+only during a resting window; exact browser-side distinctions require the prepared
+extension update. Logging does not add another website worker or change Kakao.
+
+## Continue past unreadable comments (2026-11-12)
+
+The user explicitly required skipping uninterpretable comments after identifying
+an image-only comment as the prior halt cause. Version0.3.2 retains media-only IDs
+with empty text and no OCR/classification, records individual skip reasons, and
+allows partial/unknown comment coverage with accurate counts. This supersedes
+comment-level hard stops, not access/post/source/transport guards. Per-page audit
+summaries retain omissions without claiming complete interpretation. The previous
+paused run is not resumed by deployment.
+
+## Template alignment extension (2026-11-12)
+
+The user authorized the audit, stability, verification and release preparation
+while excluding rate limiting from this pass. Keep the existing SSR/Radix/Python/
+SQLite decisions; no server-stack migration is authorized by that discussion.
+Web-only shutdown drains accepted requests and jobs before closing dependencies.
+Production errors retain metadata in a separate private web diagnostics DB.
+Pinned dayjs UTC/timezone helpers preserve UTC epoch contracts and explicit KST
+reporting boundaries. No operational source timestamp conversion is performed.
+
+Hermetic browser tests are the default CI suite; the broader operator integration
+suite remains available explicitly. CI exports one immutable web image; container
+promotion consumes it without rebuild, login or Kakao lifecycle operations.
+The existing managed Mac/tunnel deployment remains active. Docker is not installed
+locally; container source integration and production cutover remain separate,
+unexecuted deployment steps. See docs/TEMPLATE-MATRIX.md and docs/RELEASE.md.
+
+## Optional persistent Pokergosu permission and local commands (2026-11-12)
+
+The user authorized one native Chrome site-permission grant to remove repeated
+physical start clicks. Version0.4.0 adds only an optional Pokergosu origin and an
+authenticated loopback command channel. Grant alone does not start collection.
+Local start/resume/stop/reload commands use durable leases and execution receipts;
+manual stops supersede older starts, ambiguous execution is never replayed, and
+access-security holds reject automatic resumption. Chrome and the receiver must
+already be running. No Kakao lifecycle or worker changes are part of this work.
+No new live collection command is enqueued by preparation or testing; existing
+run snapshots remain intact.
+
+## Pokergosu daily quiet hours (2026-11-12)
+
+The user explicitly selected02:00–08:00 KST. Version0.4.1 defers running monitor
+alarms across that interval, preserves their work position, and continues at/after
+08:00 while retaining manual and security stops. The policy uses a fixed Korea
+UTC+9 clock, applies on restore and immediately before navigation, and is recorded
+in the next scheduled timestamp. Overnight new start/resume requests are refused
+before any site tab navigation. No OS startup action, extra worker, or Kakao change
+is included.
+
+## Affiliated-person target sentiment (2026-11-12)
+
+The user clarified that praise of people configured under SENT counts as positive
+SENT sentiment, including personality, appearance, skill and fandom. The former
+classifier requirement for an independent service evaluation is superseded.
+Apply sentiment to the configured parent while retaining the person-specific
+reason; mere mentions and informational questions are not sentiment. Preserve
+human edits and recheck AI exclusions against complete evidence rather than
+mass-changing labels. See docs/SENTIMENT-CLASSIFIER.md.
+
+## Pokergosu three-page discovery on every cycle (2026-11-12)
+
+The user authorized always checking the first three list pages rather than ending
+discovery as soon as a prior-page overlap appears. Keep discovered IDs durable,
+remember overlap across pages, and report a suspected gap when no prior boundary
+is reached after page3. Retain the10-navigation budget, six-thread maximum,
+15–30 minute cycle rest,02:00–08:00 KST quiet policy and security stops. This does
+not authorize an unbounded historical crawl or a fourth page. It changes neither
+the newest-first thread policy nor the distinction between discovered and read.
+
+## Pokergosu opinion page (2026-11-12)
+
+The user requested a dedicated Mention menu/page. `/pokergosu` and its post details
+read the existing independent public-board DB through a narrow read-only adapter;
+no new source requests or collector/Kakao lifecycle operations are authorized by
+viewing it. Summary/list/detail contracts, numeric keyset paging and route-specific
+SSR keep populated views bounded and hydrated without a duplicate initial read.
+Source keyword matching remains distinct from sentiment: posts are unclassified,
+not automatically neutral. Missing metadata, media omissions and discovery gaps
+stay visible. The existing design system owns all controls and the new shared
+ReadingTable layout; the catalog uses synthetic evidence only.
+
+## Longer Pokergosu interval, metadata recovery and image retention (2026-11-12)
+
+The user's later explicit selection is30–60 minutes between monitor starts and
+at most five list pages, stopping early upon reaching the prior discovery boundary.
+It supersedes mandatory three-page traversal. Preserve discovered unread IDs, the
+six-body bound, quiet hours and security/manual stops; log unresolved boundaries
+rather than extending into an unbounded crawl. Existing-rest migration changes the
+next alarm without starting another run.
+
+Author/time recovery uses retained visible-header evidence, preserves existing
+fields and capture times, and adds revisions instead of rewriting audit history.
+Image references are automatically retained inside body/comment scopes on future
+reads, while file downloads require an explicit viewer action and are cached.
+This deliberately minimizes additional source traffic; it is not automatic photo
+archiving at capture time. Keep first-party host/MIME/size bounds, no credential
+forwarding, no automatic retries after failure, and an HTTP403/429 image-download
+hold. No OCR, sentiment worker, Kakao session or unrelated schedule is changed.

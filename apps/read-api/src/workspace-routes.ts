@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import {
   localActions,
@@ -8,15 +8,9 @@ import {
   workspaceActions,
   workspaceReads,
 } from "../../../packages/application/src/workspace";
-export function isLocalRequest(request: FastifyRequest) {
-  return ![
-    "cf-ray",
-    "cf-connecting-ip",
-    "x-forwarded-for",
-    "forwarded",
-    "x-monitor-public",
-  ].some((key) => request.headers[key]);
-}
+import { isLocalRequest } from "./request-scope";
+
+export { isLocalRequest } from "./request-scope";
 export function registerWorkspace(
   app: FastifyInstance,
   queries: WorkspaceQueries,
@@ -27,7 +21,11 @@ export function registerWorkspace(
     "/api/workspace/:feature",
     async (request, reply) => {
       if (!Object.hasOwn(workspaceReads, request.params.feature))
-        return reply.code(404).send({ error: { message: "없는 기능입니다." } });
+        return reply.code(404).send({
+          success: false,
+          data: null,
+          error: { code: "NOT_FOUND", message: "없는 기능입니다." },
+        });
       const search = new URL(request.url, options.origin).search.slice(1);
       return {
         success: true,
@@ -46,7 +44,11 @@ export function registerWorkspace(
       const action = request.params.action as WorkspaceAction;
       const origin = request.headers.origin;
       if (!workspaceActions.includes(action))
-        return reply.code(404).send({ error: { message: "없는 작업입니다." } });
+        return reply.code(404).send({
+          success: false,
+          data: null,
+          error: { code: "NOT_FOUND", message: "없는 작업입니다." },
+        });
       if (
         !options.writesEnabled ||
         (origin !== options.origin &&
@@ -55,7 +57,10 @@ export function registerWorkspace(
           (!isLocalRequest(request) || origin !== options.origin))
       )
         return reply.code(403).send({
+          success: false,
+          data: null,
           error: {
+            code: "FORBIDDEN",
             message: localActions.has(action)
               ? "이 작업은 로컬 대시보드에서만 가능합니다."
               : "수정 권한이나 요청 출처를 확인해 주세요.",

@@ -23,6 +23,9 @@ importers:
       '@tanstack/react-query':
         specifier: 5.106.1
         version: 5.106.1(@types/react@18.3.31)(react@18.3.1)
+      dayjs:
+        specifier: 1.11.23
+        version: 1.11.23
       fastify:
         specifier: 5.12.8
         version: 5.12.8
@@ -41,6 +44,9 @@ importers:
       react-router-dom:
         specifier: 7.18.5
         version: 7.18.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      tsx:
+        specifier: 4.23.15
+        version: 4.23.15
       zod:
         specifier: 4.6.7
         version: 4.6.7
@@ -63,9 +69,6 @@ importers:
       '@vitejs/plugin-react':
         specifier: 6.2.1
         version: 6.2.1(vite@8.3.6(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15))
-      tsx:
-        specifier: 4.23.15
-        version: 4.23.15
       typescript:
         specifier: 5.9.3
         version: 5.9.3
@@ -1318,6 +1321,9 @@ packages:
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
+
+  dayjs@1.11.23:
+    resolution: {integrity: sha512-QDTCU0M0MxR3hQfnlDJfwekQiaanm1ubOD231u73WBckQ/fsamwRLiE2GBz6D3a/xF1NgfiDLJjXBa1hYOYTtQ==}
 
   depd@2.0.0:
     resolution: {integrity: sha512-g7nH6P6dyDioJogAAGprGpCtVImJhpPk/roCzdb3fIh61/s/nPsfR6onyMwkCAR/OlC3yBC0lESvUoQEAssIrw==}
@@ -3049,6 +3055,8 @@ snapshots:
   cookie@2.0.2: {}
 
   csstype@3.2.3: {}
+
+  dayjs@1.11.23: {}
 
   depd@2.0.0: {}
 

@@ -16,7 +16,11 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
-import { Failure, Pending } from "./components/ui";
+import {
+  GlobalRenderFailure,
+  PageRenderFailure,
+} from "./components/RenderFailure";
+import { Pending } from "./components/ui";
 import {
   Badge,
   Box,
@@ -35,6 +39,7 @@ import { routeFeature } from "./workspace-query";
 
 const imports = {
   designSystem: () => import("./design-system/Catalog"),
+  pokergosu: () => import("./pages/Pokergosu"),
   overview: () => import("./pages/Overview"),
   conversations: () => import("./pages/Conversations"),
   reviews: () => import("./pages/Reviews"),
@@ -43,12 +48,15 @@ const imports = {
 };
 const DesignSystemCatalog = lazy(imports.designSystem),
   Overview = lazy(imports.overview),
+  Pokergosu = lazy(imports.pokergosu),
   Conversations = lazy(imports.conversations),
   Reviews = lazy(imports.reviews),
   Detail = lazy(imports.detail),
   Workspace = lazy(imports.workspace);
 export async function preloadRoute(path: string) {
   if (path === "/design-system") await imports.designSystem();
+  else if (path === "/pokergosu" || path.startsWith("/pokergosu/"))
+    await imports.pokergosu();
   else if (routeFeature(path)) await imports.workspace();
   else if (path.startsWith("/conversations/")) await imports.detail();
   else if (path === "/reviews") await imports.reviews();
@@ -60,7 +68,8 @@ const navGroups = [
     label: "분석·브리핑",
     Icon: BarChart3,
     links: [
-      ["/", "여론·동향"],
+      ["/", "카톡 여론"],
+      ["/pokergosu", "포커고수 여론"],
       ["/trends", "동향 분석"],
       ["/briefing", "일일 브리핑"],
     ],
@@ -152,12 +161,20 @@ function PreviousConversation() {
 }
 function Refresh() {
   const client = useQueryClient();
+  const { pathname } = useLocation();
   return (
     <Button
       size="1"
       color="gray"
       variant="ghost"
       onClick={async () => {
+        if (pathname === "/pokergosu" || pathname.startsWith("/pokergosu/")) {
+          await Promise.all([
+            client.invalidateQueries({ queryKey: ["pokergosu"] }),
+            client.invalidateQueries({ queryKey: ["pokergosu-post"] }),
+          ]);
+          return;
+        }
         await api("/api/refresh", {});
         await client.invalidateQueries();
       }}
@@ -168,6 +185,13 @@ function Refresh() {
   );
 }
 export function App() {
+  return (
+    <ErrorBoundary FallbackComponent={GlobalRenderFailure}>
+      <WorkspaceApp />
+    </ErrorBoundary>
+  );
+}
+function WorkspaceApp() {
   const { writesEnabled, local } = useRuntime(),
     location = useLocation(),
     navigate = useNavigate(),
@@ -255,10 +279,8 @@ export function App() {
             </Flex>
           </Flex>
           <ErrorBoundary
-            key={location.pathname}
-            fallbackRender={({ error, resetErrorBoundary }) => (
-              <Failure error={error} retry={resetErrorBoundary} />
-            )}
+            resetKeys={[location.pathname]}
+            FallbackComponent={PageRenderFailure}
           >
             <Suspense fallback={<Pending />}>
               <Routes>
@@ -269,6 +291,8 @@ export function App() {
                 <Route path="/" element={<Overview />} />
                 <Route path="/conversations" element={<Conversations />} />
                 <Route path="/conversations/:id" element={<Detail />} />
+                <Route path="/pokergosu" element={<Pokergosu />} />
+                <Route path="/pokergosu/:id" element={<Pokergosu />} />
                 <Route path="/reviews" element={<Reviews />} />
                 <Route
                   path="/conversation"
@@ -296,7 +320,7 @@ export function App() {
                     <Callout.Root>
                       <Callout.Text>
                         찾을 수 없는 페이지입니다.{" "}
-                        <Link to="/">여론·동향으로 돌아가기</Link>
+                        <Link to="/">카톡 여론으로 돌아가기</Link>
                       </Callout.Text>
                     </Callout.Root>
                   }

@@ -5,18 +5,30 @@ import compress from "@fastify/compress";
 import middie from "@fastify/middie";
 import fastifyStatic from "@fastify/static";
 import Fastify from "fastify";
+import { PokergosuQueries } from "../../../packages/application/src/pokergosu";
 import { WorkspaceQueries } from "../../../packages/application/src/workspace";
 import { AliasSuggestions } from "./adapters/alias-suggestions";
 import { AnalyticsTransport } from "./adapters/analytics";
 import { CollectorTransport } from "./adapters/collector";
 import { JudgmentExclusions } from "./adapters/judgment-exclusions";
 import { LegacyReader } from "./adapters/legacy";
+import { PokergosuSqliteReader } from "./adapters/pokergosu";
+import { PokergosuMediaCache } from "./adapters/pokergosu-media";
 import { MonitoringReadModel } from "./adapters/read-model";
+import { readConfig } from "./config";
+import { Lifecycle, registerDrainHeaders } from "./lifecycle";
+import { isPagePath } from "./page-paths";
+import { registerPokergosu } from "./pokergosu-routes";
 import { registerApi } from "./routes";
+import { SystemErrors } from "./system-errors";
 import { isLocalRequest, registerWorkspace } from "./workspace-routes";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url)),
   production = process.argv.includes("--production");
+const config = readConfig(process.env);
+const runtimeDir = config.runtimeDir
+  ? path.resolve(config.runtimeDir)
+  : path.join(root, "runtime");
 let deployment: {
   legacyRoot?: string;
   publicOrigin?: string;
@@ -24,20 +36,37 @@ let deployment: {
 } = {};
 try {
   deployment = JSON.parse(
-    await readFile(path.join(root, "runtime/deployment.json"), "utf8"),
+    await readFile(path.join(runtimeDir, "deployment.json"), "utf8"),
   );
 } catch {}
-const port = Number(process.env.MENTION_PORT || 8790),
+const port = config.port,
   host = "127.0.0.1",
   origin = `http://${host}:${port}`,
-  writesEnabled =
-    process.env.MENTION_ENABLE_WRITES !== undefined
-      ? process.env.MENTION_ENABLE_WRITES === "1"
-      : deployment.writesEnabled === true;
+  writesEnabled = config.writesEnabled ?? deployment.writesEnabled === true;
 const app = Fastify({
   logger: { level: "info" },
   bodyLimit: 131072,
   trustProxy: false,
+  keepAliveTimeout: config.keepAliveTimeoutMs,
+});
+app.server.headersTimeout = config.keepAliveTimeoutMs + 10000;
+const systemErrors = new SystemErrors(
+  path.join(runtimeDir, "system-errors.db"),
+);
+app.addHook("onResponse", async (request, reply) => {
+  if (reply.statusCode < 500) return;
+  try {
+    systemErrors.record(
+      request.method,
+      request.routeOptions.url || "unmatched",
+      reply.statusCode,
+    );
+  } catch {
+    app.log.error(
+      { event: "system_error_record_failed" },
+      "Could not retain web failure metadata",
+    );
+  }
 });
 if (production) await app.register(compress);
 const transport = deployment.legacyRoot
@@ -55,25 +84,25 @@ const analytics =
 const aliases = analytics
   ? new AliasSuggestions(
       analytics,
-      path.join(root, "runtime/alias-suggestions.json"),
+      path.join(runtimeDir, "alias-suggestions.json"),
     )
   : undefined;
 const workspace = transport
   ? new WorkspaceQueries(aliases || analytics || transport)
   : undefined;
 const sourceReader = new LegacyReader(
-  process.env.MENTION_LEGACY_URL || "http://127.0.0.1:8766",
+  config.legacyUrl,
   (message) => app.log.warn({ event: "snapshot_refresh_failed" }, message),
   30000,
   analytics || transport,
 );
 const reader = new JudgmentExclusions(
   sourceReader,
-  path.join(root, "runtime/judgment-decisions.db"),
+  path.join(runtimeDir, "judgment-decisions.db"),
 );
 const readModel = new MonitoringReadModel(
   reader,
-  path.join(root, "runtime/public-read-model.db"),
+  path.join(runtimeDir, "public-read-model.db"),
 );
 const queries = registerApi(
   app,
@@ -86,25 +115,39 @@ const queries = registerApi(
   },
   readModel,
 );
+const pokergosu = new PokergosuQueries(
+  new PokergosuSqliteReader(path.join(runtimeDir, "pokergosu/monitor.sqlite3")),
+  new PokergosuMediaCache(path.join(runtimeDir, "pokergosu/media")),
+);
+registerPokergosu(app, pokergosu, [
+  origin,
+  ...(deployment.publicOrigin ? [deployment.publicOrigin] : []),
+]);
+const lifecycle = new Lifecycle();
+registerDrainHeaders(app, lifecycle);
 const refreshReadModel = () =>
-  readModel
-    .refresh()
-    .catch(() =>
-      app.log.warn(
-        { event: "read_model_refresh_failed" },
-        "Public read model retained its last successful generation",
+  lifecycle.run(() =>
+    readModel
+      .refresh()
+      .catch(() =>
+        app.log.warn(
+          { event: "read_model_refresh_failed" },
+          "Public read model retained its last successful generation",
+        ),
       ),
-    );
+  );
 void refreshReadModel();
 const refreshAliases = () =>
-  aliases
-    ?.refresh()
-    .catch(() =>
-      app.log.warn(
-        { event: "alias_refresh_failed" },
-        "Alias suggestions retained their last successful generation",
+  lifecycle.run(async () =>
+    aliases
+      ?.refresh()
+      .catch(() =>
+        app.log.warn(
+          { event: "alias_refresh_failed" },
+          "Alias suggestions retained their last successful generation",
+        ),
       ),
-    );
+  );
 void refreshAliases();
 const aliasTimer = setInterval(refreshAliases, 60000);
 aliasTimer.unref();
@@ -127,12 +170,17 @@ app.addHook("onRequest", async (request, reply) => {
   )
     return reply.code(403).send("Invalid host");
 });
-app.get("/health", async () => ({
-  role: "mention-web",
-  writesEnabled,
-  source: "legacy",
-  pid: process.pid,
-}));
+app.get("/health", async (_request, reply) => {
+  if (lifecycle.draining) reply.code(503);
+  return {
+    status: lifecycle.draining ? "draining" : "ok",
+    build: config.buildId,
+    role: "mention-web",
+    writesEnabled,
+    source: "legacy",
+    pid: process.pid,
+  };
+});
 let vite: import("vite").ViteDevServer | undefined;
 if (!production) {
   await app.register(middie);
@@ -161,8 +209,16 @@ app.get("/*", async (request, reply) => {
     return reply.code(404).send({
       success: false,
       data: null,
-      error: { message: "존재하지 않는 API입니다." },
+      error: { code: "NOT_FOUND", message: "존재하지 않는 API입니다." },
     });
+  if (!isPagePath(new URL(request.url, origin).pathname))
+    return reply
+      .code(404)
+      .type("text/html")
+      .send(
+        '<!doctype html><html lang="ko"><meta charset="utf-8"><title>Mention</title><h1>페이지를 찾을 수 없어요.</h1><a href="/">홈으로 돌아가기</a></html>',
+      );
+  reply.header("Cache-Control", "no-store");
   const started = performance.now();
   try {
     let template = await readFile(
@@ -188,6 +244,7 @@ app.get("/*", async (request, reply) => {
       writesEnabled,
       workspace,
       isLocalRequest(request),
+      pokergosu,
     );
     const state = JSON.stringify(page.state)
       .replace(/</g, "\\u003c")
@@ -206,6 +263,17 @@ app.get("/*", async (request, reply) => {
     );
     return reply.type("text/html").send(html);
   } catch (error) {
+    if (
+      error instanceof Error &&
+      "statusCode" in error &&
+      error.statusCode === 404
+    )
+      return reply
+        .code(404)
+        .type("text/html")
+        .send(
+          '<!doctype html><html lang="ko"><meta charset="utf-8"><title>Mention</title><h1>저장된 게시글을 찾을 수 없습니다.</h1><a href="/pokergosu">포커고수 여론으로 돌아가기</a></html>',
+        );
     if (vite && error instanceof Error) vite.ssrFixStacktrace(error);
     app.log.error(
       {
@@ -225,13 +293,41 @@ app.get("/*", async (request, reply) => {
 async function shutdown() {
   clearInterval(readModelTimer);
   clearInterval(aliasTimer);
-  analytics?.close();
-  await app.close();
-  await vite?.close();
-  readModel.close();
-  reader.close();
-  process.exit(0);
+  app.log.info(
+    { event: "shutdown_started" },
+    "Draining web requests and read jobs",
+  );
+  try {
+    const clean = await lifecycle.stop({
+      stopAccepting: () => app.close(),
+      drainAdapters: async () => {
+        await Promise.all([readModel.drain(), aliases?.drain()]);
+        await analytics?.drain();
+      },
+      cleanup: async () => {
+        analytics?.close();
+        await vite?.close();
+        readModel.close();
+        reader.close();
+        systemErrors.close();
+      },
+      timeoutMs: 25000,
+      onTimeout: () =>
+        app.log.error(
+          { event: "shutdown_timeout" },
+          "Web drain exceeded deadline; interrupted writes must be reconciled from receipts",
+        ),
+    });
+    app.log.info(
+      { event: "shutdown_complete", clean },
+      "Web shutdown completed",
+    );
+    process.exit(clean ? 0 : 1);
+  } catch {
+    app.log.error({ event: "shutdown_failed" }, "Web cleanup failed");
+    process.exit(1);
+  }
 }
 process.once("SIGTERM", shutdown);
 process.once("SIGINT", shutdown);
-await app.listen({ host, port });
+await app.listen({ host: config.listenHost, port });

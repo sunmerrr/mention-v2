@@ -5,10 +5,20 @@ import {
 } from "@tanstack/react-query";
 import { renderToReadableStream } from "react-dom/server.browser";
 import { StaticRouter } from "react-router-dom";
+import {
+  PokergosuPostNotFound,
+  type PokergosuQueries,
+} from "../../../packages/application/src/pokergosu";
 import type { MonitoringQueries } from "../../../packages/application/src/queries";
 import type { WorkspaceQueries } from "../../../packages/application/src/workspace";
 import { listSchema } from "../../../packages/contracts/src/api";
+import { pokergosuListSchema } from "../../../packages/contracts/src/pokergosu";
 import { App, preloadRoute } from "./App";
+import {
+  pokergosuDetailQuery,
+  pokergosuFilters,
+  pokergosuQuery,
+} from "./pokergosu-query";
 import {
   classificationQuery,
   conversationsQuery,
@@ -25,6 +35,7 @@ export async function render(
   writesEnabled: boolean,
   workspace?: WorkspaceQueries,
   local = false,
+  pokergosu?: PokergosuQueries,
 ) {
   const requestUrl = new URL(url, "http://localhost"),
     scope = scopeFrom(requestUrl.search),
@@ -42,7 +53,27 @@ export async function render(
   });
   const detail = /^\/conversations\/([^/]+)$/.exec(requestUrl.pathname);
   const feature = routeFeature(requestUrl.pathname);
-  if (feature && workspace) {
+  const pokergosuId = /^\/pokergosu\/([1-9][0-9]{0,18})$/.exec(
+    requestUrl.pathname,
+  )?.[1];
+  if (pokergosuId && pokergosu) {
+    await client.fetchQuery({
+      ...pokergosuDetailQuery(pokergosuId),
+      queryFn: async () => {
+        const result = await pokergosu.detail(pokergosuId);
+        if (!result) throw new PokergosuPostNotFound("Post not found");
+        return result;
+      },
+    });
+  } else if (requestUrl.pathname === "/pokergosu" && pokergosu) {
+    await client.fetchInfiniteQuery({
+      ...pokergosuQuery(requestUrl.search),
+      queryFn: () =>
+        pokergosu.list(
+          pokergosuListSchema.parse(pokergosuFilters(requestUrl.search)),
+        ),
+    });
+  } else if (feature && workspace) {
     await client.fetchQuery({
       ...workspaceQuery(feature, requestUrl.search),
       queryFn: () => workspace.read(feature, requestUrl.search, local),

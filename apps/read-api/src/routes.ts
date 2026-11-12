@@ -15,6 +15,7 @@ import {
   scopeSchema,
 } from "../../../packages/contracts/src/api";
 import { UpstreamError } from "./adapters/legacy";
+import { isLocalRequest } from "./request-scope";
 export function registerApi(
   app: FastifyInstance,
   reader: MonitoringReader,
@@ -23,6 +24,13 @@ export function registerApi(
   projection?: MonitoringProjection,
 ) {
   const queries = new MonitoringQueries(reader, projection);
+  app.setNotFoundHandler((_request, reply) =>
+    reply.code(404).send({
+      success: false,
+      data: null,
+      error: { code: "NOT_FOUND", message: "존재하지 않는 경로입니다." },
+    }),
+  );
   app.setErrorHandler((error, _request, reply) => {
     const status =
       error instanceof z.ZodError || error instanceof InvalidCursor
@@ -132,6 +140,7 @@ export function registerApi(
     "/api/classifications/request-state/:requestId",
     async (request, reply) => {
       if (
+        !isLocalRequest(request) ||
         request.headers.origin !== options.origin ||
         request.headers["x-monitor-public"] === "1"
       )
@@ -153,6 +162,7 @@ export function registerApi(
   app.post("/api/classifications/ai-batch", async (request, reply) => {
     if (
       !options.writesEnabled ||
+      !isLocalRequest(request) ||
       request.headers.origin !== options.origin ||
       request.headers["x-monitor-public"] === "1"
     )

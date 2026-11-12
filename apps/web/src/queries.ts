@@ -11,21 +11,48 @@ export class ApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly code = "REQUEST_FAILED",
   ) {
     super(message);
   }
 }
 export async function api<T>(path: string, input?: unknown): Promise<T> {
-  const r = await fetch(path, {
-    method: input ? "POST" : "GET",
-    headers: input ? { "Content-Type": "application/json" } : undefined,
-    body: input ? JSON.stringify(input) : undefined,
-  });
-  const data = await r.json();
-  if (!r.ok)
+  let r: Response;
+  try {
+    r = await fetch(path, {
+      method: input === undefined ? "GET" : "POST",
+      headers:
+        input === undefined
+          ? undefined
+          : { "Content-Type": "application/json" },
+      body: input === undefined ? undefined : JSON.stringify(input),
+    });
+  } catch {
+    throw new ApiError(
+      "서버에 연결하지 못했습니다. 연결 상태를 확인해 주세요.",
+      0,
+    );
+  }
+  let data: {
+    success?: boolean;
+    data?: T;
+    error?: { message?: string; code?: string };
+  };
+  try {
+    data = await r.json();
+    if (!data || typeof data !== "object" || typeof data.success !== "boolean")
+      throw new Error();
+  } catch {
+    throw new ApiError(
+      "서버 응답을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      r.ok ? 502 : r.status,
+    );
+  }
+  if (!r.ok || !data.success)
     throw new ApiError(
       data.error?.message || "데이터를 불러오지 못했습니다.",
-      r.status,
+      r.ok ? 502 : r.status,
+      data.error?.code || "REQUEST_FAILED",
     );
   return data.data as T;
 }

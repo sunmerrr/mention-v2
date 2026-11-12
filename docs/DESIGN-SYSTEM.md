@@ -101,3 +101,22 @@ MetricCard standardizes label/value/unit/description/action stacking. Overview c
 Judgment choices distinguish uncertain (insufficient evidence) from excluded (not a subject for sentiment judgment). Excluded uses a neutral badge and a dedicated state filter; it is not a sentiment color in the distribution legend. Source collection inclusion is independent.
 
 PreviewDisclosure is a keyboard-accessible native details row with title/metadata, compact preview and an inline editor. Use it for editable collections where showing every form at once obscures the overview. Editors remain mounted so collapsed fields keep their form values. Keyword group rows allow one editor open at a time and expose add/delete at their relevant scope.
+
+`ReadingTable` bounds the primary reading column and preserves metadata widths for
+long public-source text. Its minimum width and reading-column ratio are semantic
+tokens; overflow stays inside a named, keyboard-focusable region with a mobile
+scroll hint. The catalog includes synthetic long text/URL evidence. Pokergosu
+uses this pattern together with MetricCard, Section and the standard filter controls;
+source text is escaped and rendered as text, never injected HTML or fetched media.
+
+ReadingTable retains Radix Table.Root's existing ScrollArea. Because that root
+does not expose viewport props, the named region adapts left/right keys to the
+vendor viewport only when the region itself has focus and horizontal overflow
+exists. This is kept at the design-system boundary; feature screens do not inspect
+vendor internals or replace the table's pointer/touch scrolling implementation.
+
+Source-image presentation separates an uncached reference, explicit loading,
+retained local pixels and an unsupported/failed result. It uses standard Button,
+Text and native image/link elements; the shared maximum image height is tokenized
+as `source-image-max`. The catalog's reference/cache example is synthetic and makes
+no network calls. Media remains contextual evidence, not a sentiment judgment.

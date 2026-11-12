@@ -147,6 +147,17 @@ recreated. The old Cloudflare address is retired.
 
 Design system: [rules and component ownership](docs/DESIGN-SYSTEM.md), with a synthetic interactive catalog at `/design-system`. All UI changes must actively use it.
 
+## Pokergosu monitoring
+
+An independent local public-board collector reads this workspace's include
+keywords (exclusion keywords are ignored for this source) and checks new posts and recent comments on a randomized30–60 minute
+cycle (up to five list pages), with daily02:00–08:00 KST quiet hours. The private Chrome extension performs
+the authorized site reads; it does not modify or reconnect Kakao. The **포커고수
+여론** menu at `/pokergosu` now displays retained posts/comments, keyword matches,
+collection counts and gaps with search and cursor pagination. Sentiment remains
+unclassified. See [scope, commands and verification limits](docs/POKERGOSU.md) for
+the current extension workflow and earlier implementation history.
+
 ## Continuous sentiment review
 
 A separate bounded AI review queue classifies pending target context and future
@@ -155,6 +166,13 @@ AI attribution and concrete reasons, and rechecks changed AI context. Procedural
 questions and promotional notices are judgment-excluded rather than neutral.
 See [classifier operation and rubric](docs/SENTIMENT-CLASSIFIER.md). Runtime
 snapshots, queue state and model outputs remain private under ignored runtime/.
+
+The manual Chrome extension trial is ready via
+`./scripts/pokergosu.sh extension-prepare` and `extension-start`. Load
+`runtime/pokergosu/extension` in Chrome developer mode, open a free-board post
+normally, and press **Mention · 포커고수 읽기**. The extension reads only on click;
+there is no automatic site navigation. See the manual trial section in
+[Pokergosu monitoring](docs/POKERGOSU.md).
 
 ## Processing service boundary (2026-11-11)
 
@@ -165,3 +183,18 @@ SQLite and request contracts. This web app's source URL/socket, settings and
 classification workers are unchanged. The operator verified that guide service
 remains available during analytics replacement; processing changes need no Kakao
 login. Physical monitoring DB failure/lock contention remains shared.
+
+Version0.3 adds **자동 수집 시작 (이 탭)**: after one update/start on a dedicated
+free-board tab, the extension automatically opens queued posts, captures their
+visible comments, returns to the list and waits15–30minutes. Page visits are paced
+and bounded; access/coverage errors pause collection. The old15-check trial remains
+separate. See [automatic collection and its limits](docs/POKERGOSU.md).
+
+## Verification and release preparation
+
+Run `pnpm verify:full` for type/lint/unit/build checks, isolated synthetic browser
+checks and release-definition validation. `pnpm test:e2e:live` retains the operator
+suite against an explicitly running source; it is separate from hermetic CI.
+See [guide disposition](docs/TEMPLATE-MATRIX.md) and [release/rollback instructions](docs/RELEASE.md).
+The current Mac web deployment remains active; prepared Docker/CI definitions do
+not imply a container production cutover or a change to the single Kakao owner.

@@ -2,6 +2,7 @@ import { useLocation } from "react-router-dom";
 
 const menuPaths = new Set([
   "/",
+  "/pokergosu",
   "/conversations",
   "/reviews",
   "/trends",
@@ -18,6 +19,7 @@ const menuPaths = new Set([
   "/design-system",
 ]);
 export function selectedMenu(pathname: string, search: string) {
+  if (pathname.startsWith("/pokergosu/")) return "/pokergosu";
   const workflow =
     pathname === "/reviews" ||
     pathname === "/episode" ||

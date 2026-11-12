@@ -1,0 +1,18 @@
+name: mention-local
+services:
+  web:
+    image: ${MENTION_IMAGE:?Set an immutable mention-web image tag}
+    env_file: .env
+    ports:
+      - "127.0.0.1:8792:8790"
+    volumes:
+      - web-runtime:/app/runtime
+    stop_grace_period: 35s
+    restart: "on-failure:3"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+volumes:
+  web-runtime:

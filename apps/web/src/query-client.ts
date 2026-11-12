@@ -9,7 +9,11 @@ export function createQueryClient() {
         refetchOnWindowFocus: false,
         refetchOnReconnect: true,
         retry: (count, error) =>
-          !(error instanceof ApiError && error.status < 500) && count < 1,
+          !(
+            error instanceof ApiError &&
+            error.status > 0 &&
+            error.status < 500
+          ) && count < 1,
       },
       mutations: { retry: false },
     },

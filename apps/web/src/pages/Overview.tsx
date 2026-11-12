@@ -58,7 +58,7 @@ export default function Overview() {
   return (
     <>
       <PageHeader
-        title="여론·동향"
+        title="카톡 여론"
         description="우리 서비스에 어떤 이야기가 오가는지, 맥락과 함께 살펴보세요."
         actions={<Filters metadata={metadata} />}
       />

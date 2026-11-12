@@ -76,6 +76,9 @@ export class MonitoringReadModel implements MonitoringProjection {
       source: this.required<Dataset["source"]>("source"),
     };
   }
+  async drain() {
+    await this.flight?.catch(() => {});
+  }
   async refresh(fresh = false): Promise<void> {
     if (fresh && this.flight) await this.flight.catch(() => {});
     if (this.flight) return this.flight;

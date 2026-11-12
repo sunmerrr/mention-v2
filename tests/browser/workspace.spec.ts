@@ -8,7 +8,7 @@ test("SSR contains data without JavaScript", async ({ browser, baseURL }) => {
   const page = await context.newPage();
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "여론·동향", exact: true }),
+    page.getByRole("heading", { name: "카톡 여론", exact: true }),
   ).toBeVisible();
   await expect(page.getByText("대상별 여론", { exact: true })).toBeVisible();
   await expect(page.locator(".conversation-link").first()).toBeVisible();
@@ -53,9 +53,9 @@ test("hydration reuses data and navigation retains the document", async ({
     await expect(
       page.getByRole("heading", { name: "분류 검토", exact: true }),
     ).toBeVisible();
-    await page.getByRole("link", { name: "여론·동향", exact: true }).click();
+    await page.getByRole("link", { name: "카톡 여론", exact: true }).click();
     await expect(
-      page.getByRole("heading", { name: "여론·동향", exact: true }),
+      page.getByRole("heading", { name: "카톡 여론", exact: true }),
     ).toBeVisible();
   }
   expect(documents).toBe(1);

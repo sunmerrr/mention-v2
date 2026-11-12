@@ -36,6 +36,9 @@
   --mention-weight-medium: var(--font-weight-medium);
   --mention-line-body: 1.75;
   --mention-line-conversation: 1.85;
+  --mention-source-image-max: 42rem;
+  --mention-reading-table-min: 44rem;
+  --mention-reading-column-width: 52%;
   --mention-sidebar-width: 218px;
   --mention-content-max: 1550px;
   --mention-page-gutter: var(--space-7);

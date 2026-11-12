@@ -32,6 +32,9 @@ export class AliasSuggestions implements WorkspacePort {
       chmodSync(filename, 0o600);
     } catch {}
   }
+  async drain() {
+    await this.flight?.catch(() => {});
+  }
   async refresh(fresh = false) {
     if (fresh && this.flight) await this.flight.catch(() => {});
     if (this.flight) return this.flight;

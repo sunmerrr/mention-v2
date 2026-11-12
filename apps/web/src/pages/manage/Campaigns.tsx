@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { koreanLocalToEpoch } from "../../../../../packages/domain/src/time";
 import { labels, time } from "../../components/ui";
 import {
   Box,
@@ -120,9 +121,7 @@ export function Campaigns({ data }: { data: Row }) {
             } else {
               request.current ||= `mention_v2_${crypto.randomUUID()}`;
               input.request_id = request.current;
-              input.anchor_ms = new Date(
-                `${f.get("start")}:00+09:00`,
-              ).getTime();
+              input.anchor_ms = koreanLocalToEpoch(String(f.get("start")));
             }
             const r = await state.run(
               mode === "send" ? "campaign-send" : "campaign-start",

@@ -697,3 +697,44 @@ mark {
     padding: var(--mention-space-4);
   }
 }
+
+.ds-reading-table {
+  overflow-x: auto;
+}
+.ds-reading-table table {
+  table-layout: fixed;
+  min-width: var(--mention-reading-table-min);
+  width: 100%;
+}
+.ds-reading-table th:first-child {
+  width: var(--mention-reading-column-width);
+}
+.ds-reading-table td {
+  overflow-wrap: anywhere;
+}
+.ds-reading-table:focus-visible {
+  outline: 2px solid var(--mention-focus);
+  outline-offset: var(--mention-space-1);
+}
+.ds-reading-table-hint {
+  display: none;
+}
+@media (max-width: 700px) {
+  .ds-reading-table-hint {
+    display: block;
+    margin-bottom: var(--mention-space-3);
+  }
+}
+
+.ds-source-image {
+  margin: 0;
+}
+.ds-source-image img {
+  display: block;
+  max-width: 100%;
+  max-height: var(--mention-source-image-max);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--mention-radius-control);
+}

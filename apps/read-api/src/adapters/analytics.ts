@@ -116,6 +116,9 @@ export class AnalyticsTransport implements WorkspacePort {
     child.once("close", failed);
     child.stdin.on("error", () => {});
   }
+  async drain() {
+    await this.queue;
+  }
   close() {
     this.closed = true;
     this.reset();

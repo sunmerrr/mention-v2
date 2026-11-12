@@ -38,7 +38,7 @@ describe("native React SSR", () => {
       new MonitoringQueries(new FakeReader()),
       false,
     );
-    expect(result.html).toContain("여론·동향");
+    expect(result.html).toContain("카톡 여론");
     expect(result.html).toContain("샘플 A");
     expect(result.html).toContain("합성 분류 근거");
     expect(

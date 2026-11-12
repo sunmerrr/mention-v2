@@ -7,6 +7,7 @@ import {
   MetricCard,
   PageHeader,
   PreviewDisclosure,
+  ReadingTable,
   Section,
   SelectionPanel,
 } from "./patterns";
@@ -291,6 +292,62 @@ export default function Catalog() {
             <TextField.Root id="ds-preview-name" defaultValue="예제 대상" />
           </Field>
         </PreviewDisclosure>
+      </Section>
+      <Section
+        title="긴 글을 읽는 표"
+        description="읽기 열과 메타데이터 너비 · 키보드·모바일 가로 스크롤"
+      >
+        <ReadingTable label="합성 원문 표">
+          <Table.Header>
+            <Table.Row>
+              <Table.ColumnHeaderCell>원문</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>키워드</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>댓글</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>확인</Table.ColumnHeaderCell>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            <Table.Row>
+              <Table.Cell>
+                합성 게시글 · 긴 본문과
+                https://example.invalid/abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz
+                같은 주소도 메타데이터 열을 밀어내지 않습니다.
+              </Table.Cell>
+              <Table.Cell>
+                <Badge>합성 대상</Badge>
+              </Table.Cell>
+              <Table.Cell>저장 12개</Table.Cell>
+              <Table.Cell>11. 12. 12:00</Table.Cell>
+            </Table.Row>
+          </Table.Body>
+        </ReadingTable>
+      </Section>
+      <Section
+        title="원문 이미지 보관 상태"
+        description="주소 수집과 파일 보관을 구분하는 합성 예시 · 외부 요청 없음"
+      >
+        <Flex gap="4" direction={{ initial: "column", sm: "row" }}>
+          <div>
+            <Text as="p" size="2" mb="2">
+              주소만 수집됨 · 파일 미보관
+            </Text>
+            <Button intent="secondary" disabled>
+              이미지 불러오기
+            </Button>
+            <Text as="p" size="1" color="gray" mt="2">
+              처음 볼 때만 외부 다운로드 · 이후 로컬 보관
+            </Text>
+          </div>
+          <figure className="ds-source-image">
+            <img
+              src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAACACAIAAABr1yBdAAABe0lEQVR4nO3TsQ2AMADAsB7MzKl8wcDC3CdAVRVLPiBLxv28kDWWF8BCBiDNAKQZgDQDkGYA0gxAmgFIMwBpBiDNAKQZgDQDkGYA0gxAmgFIMwBpBiDNAKQZgDQDkGYA0gxAmgFIMwBpBiDNAKQZgLS/BjiPC75lANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCk7TQAbMEApBmANAOQZgDSDECaAUgzAGkGIM0ApBmANAOQZgDSDECaAUgzAGkGIM0ApBmANAOQZgDSDECaAUgzAGkGIM0ApBmANAOQNgHsR9c5jf951AAAAABJRU5ErkJggg=="
+              alt="합성 보관 이미지"
+            />
+            <Text as="p" size="1" color="gray">
+              로컬 보관 이미지 (합성)
+            </Text>
+          </figure>
+        </Flex>
       </Section>
     </>
   );

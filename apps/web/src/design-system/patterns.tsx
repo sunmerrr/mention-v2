@@ -1,6 +1,15 @@
 import { ChevronDown } from "lucide-react";
 import type { ReactNode } from "react";
-import { Box, Card, Checkbox, Dialog, Flex, Heading, Text } from "./primitives";
+import {
+  Box,
+  Card,
+  Checkbox,
+  Dialog,
+  Flex,
+  Heading,
+  Table,
+  Text,
+} from "./primitives";
 
 export function PageHeader({
   title,
@@ -354,5 +363,50 @@ export function PreviewDisclosure({
       </summary>
       <Box className="ds-preview-editor">{children}</Box>
     </details>
+  );
+}
+
+/** A bounded reading column and readable metadata, with keyboard scrolling. */
+export function ReadingTable({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <>
+      <Text as="p" size="1" color="gray" className="ds-reading-table-hint">
+        표를 좌우로 움직여 나머지 항목을 볼 수 있습니다.
+      </Text>
+      <Box
+        className="ds-reading-table"
+        role="region"
+        aria-label={label}
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (
+            event.target !== event.currentTarget ||
+            !["ArrowLeft", "ArrowRight"].includes(event.key)
+          )
+            return;
+          // Table.Root owns its ScrollArea viewport, so adapt region keyboard
+          // navigation here rather than replacing the vendor scrolling control.
+          const viewport = event.currentTarget.querySelector<HTMLElement>(
+            "[data-radix-scroll-area-viewport]",
+          );
+          if (viewport && viewport.scrollWidth > viewport.clientWidth) {
+            viewport.scrollBy({
+              left:
+                ((event.key === "ArrowRight" ? 1 : -1) * viewport.clientWidth) /
+                2,
+            });
+            event.preventDefault();
+          }
+        }}
+      >
+        <Table.Root>{children}</Table.Root>
+      </Box>
+    </>
   );
 }
