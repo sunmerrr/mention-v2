@@ -58,12 +58,12 @@ async function bootstrap() {
     const { importNativeReference } = await import('./modules/evidence/native-reference.js');
     const target = new EvidenceRepository();
     try {
-      const result = await importNativeReference(
-        parseOwnerJson(await readFile(config.NATIVE_REFERENCE_IMPORT_FILE, 'utf8')),
-        target,
-      );
+      const value = parseOwnerJson(await readFile(config.NATIVE_REFERENCE_IMPORT_FILE, 'utf8'));
+      const result = await importNativeReference(value, target);
+      const { importNativeMessages } = await import('./modules/context/import-native-messages.js');
+      const messages = await importNativeMessages(value, target);
       const { default: pino } = await import('pino');
-      pino().info({ event: 'native_reference_import_complete', ...result });
+      pino().info({ event: 'native_reference_import_complete', ...result, messages });
     } finally {
       await target.close();
     }

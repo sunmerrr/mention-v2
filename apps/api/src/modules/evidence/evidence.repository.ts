@@ -60,6 +60,8 @@ export class EvidenceRepository {
         'forum-receipts',
         'forum-history',
         'forum-source',
+        'native-context-reference',
+        'native-episode-reference',
         'judgment-exclusions',
         'judgment-decisions',
         'judgment-events',

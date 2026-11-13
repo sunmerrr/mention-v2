@@ -6,6 +6,7 @@ import { createDatabase } from '../../src/db/client.js';
 import { intakeEvents } from '../../src/db/schema.js';
 import { IntakeStore } from '../../src/modules/connection/intake-store.js';
 import type { OwnerReply } from '../../src/modules/connection/owner-client.js';
+import { importNativeMessages } from '../../src/modules/context/import-native-messages.js';
 import { NativeNormalizer } from '../../src/modules/context/native-normalizer.service.js';
 import { EvidenceRepository } from '../../src/modules/evidence/evidence.repository.js';
 import { config } from '../../src/shared/config/index.js';
@@ -156,12 +157,59 @@ describe('native intake on disposable PostgreSQL', () => {
       await evidence.close();
     }
   });
+  it('imports historical context without replacing newer live messages or creating answering events', async () => {
+    const evidence = new EvidenceRepository();
+    try {
+      const old = {
+        room_id: '18497500347065223',
+        log_id: '3970073012646000642',
+        author_id: '7175652408034127965',
+        text: '과거 스냅샷',
+        type: 1,
+        own: 0,
+        observed_at: '2026-11-12T17:00:00+09:00',
+        sent_at: 'None',
+      };
+      const other = { ...old, log_id: '3970073012646000645' };
+      const groups = [{ room_id: old.room_id, messages: [old, other] }];
+      expect(await importNativeMessages({ groups }, evidence)).toEqual({
+        memberships: 2,
+        unique: 2,
+        imported: 1,
+      });
+      const rows = (await evidence.db.execute('select body from kakao_messages order by order_id'))
+        .rows;
+      expect(rows[0]?.body).toMatchObject({ text: '합성 원문', source: 'live' });
+      expect(rows[1]?.body).toMatchObject({ text: '과거 스냅샷', source: 'reference' });
+      expect(
+        (await evidence.db.execute('select count(*)::int n from intake_events')).rows[0]?.n,
+      ).toBe(1);
+      expect(await new NativeNormalizer(evidence).processBatch()).toEqual({
+        scanned: 0,
+        normalized: 0,
+      });
+      await expect(
+        importNativeMessages(
+          {
+            groups: [
+              { room_id: old.room_id, messages: [old, { ...old, text: '충돌한 다른 원문' }] },
+            ],
+          },
+          evidence,
+        ),
+      ).rejects.toThrow('MESSAGE_CONFLICT');
+    } finally {
+      await evidence.close();
+    }
+  });
   it('rolls back a partial normalization batch on native identity mismatch while retaining the raw data', async () => {
     const evidence = new EvidenceRepository(),
       processor = new NativeNormalizer(evidence);
     try {
       const before = (await evidence.db.execute('select last_pk from native_worker_offsets'))
         .rows[0]?.last_pk;
+      const savedCount = (await evidence.db.execute('select count(*)::int n from kakao_messages'))
+        .rows[0]?.n;
       await evidence.db.insert(intakeEvents).values(
         ['3970073012646000643', '3970073012646000644'].map((logId, i) => ({
           source: 'kakao',
@@ -187,7 +235,7 @@ describe('native intake on disposable PostgreSQL', () => {
       ).toBe(before);
       expect(
         (await evidence.db.execute('select count(*)::int n from kakao_messages')).rows[0]?.n,
-      ).toBe(1);
+      ).toBe(savedCount);
       expect(
         (await evidence.db.execute('select count(*)::int n from intake_events')).rows[0]?.n,
       ).toBe(3);

@@ -94,6 +94,23 @@ Existing canonical public detail remains unchanged. Latest `verify:full` passed
 48 unit and48 integration tests, Docker image and Compose checks, including a
 mid-batch identity failure that preserves both raw input and the prior checkpoint.
 
+## Populated native-message baseline
+
+Native reference import now also builds the PostgreSQL message baseline. The
+14220 saved conversation memberships contain13281 distinct room/message IDs.
+Repeated memberships must agree on author, text, type, own flag, native timestamp
+and reply identity; conflicting source content stops import before any message
+write. Reference rows cannot replace intake-owned live messages and do not create
+live events, room work or answering tasks.
+
+Current and previous native group/episode reference bodies are retained in the
+append-only migration archive before materialized references are replaced.
+The original Python timeline rule provided an independent populated comparison:
+all13281 normalized messages matched, including timestamps and exact IDs. The741
+canonical public details and953 classifications also remained identical. Real
+live intake count remained zero. Latest `verify:full` passed50 unit and49
+integration tests plus the common image/Compose checks.
+
 The new preparation and remaining gates are documented in SERVER-CONSOLIDATION.md
 and USEFUL-CONTEXT.md. Node owner intake, durable PostgreSQL raw inbox/cursors,
 independent Node forum intake and a common role image have been implemented for

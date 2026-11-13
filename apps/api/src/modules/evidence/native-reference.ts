@@ -1,11 +1,14 @@
+import { createHash } from 'node:crypto';
 import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
   evidenceAliases,
   evidenceConversations,
+  evidenceLegacyAudit,
   nativeEpisodeReferences,
   nativeEvidenceReferences,
 } from '../../db/schema.js';
+import { stableJson } from '../connection/stable-json.js';
 import type { EvidenceRepository } from './evidence.repository.js';
 
 const id = z.string().min(1).max(100),
@@ -82,9 +85,29 @@ export async function importNativeReference(
       if (canonical && existing.get(canonical) !== row.conversationPk)
         throw Error('NATIVE_REFERENCE_RETARGET_BLOCKED');
     }
+    const archive = async (source: string, body: Record<string, unknown>) =>
+      tx
+        .insert(evidenceLegacyAudit)
+        .values({
+          identity: createHash('sha256')
+            .update(stableJson([source, body]))
+            .digest('hex'),
+          source,
+          body,
+        })
+        .onConflictDoNothing();
+    for (const row of await tx
+      .select({ body: nativeEvidenceReferences.body })
+      .from(nativeEvidenceReferences))
+      await archive('native-context-reference', row.body);
+    for (const row of await tx
+      .select({ body: nativeEpisodeReferences.body })
+      .from(nativeEpisodeReferences))
+      await archive('native-episode-reference', row.body);
     for (const g of groups) {
       const pk = existing.get(g.id);
       if (!pk) throw Error('NATIVE_REFERENCE_UNKNOWN_GROUP');
+      await archive('native-context-reference', g);
       await tx
         .insert(nativeEvidenceReferences)
         .values({ conversationPk: pk, roomId: g.room_id, body: g })
@@ -99,6 +122,7 @@ export async function importNativeReference(
       if (!pk || groups.find((g) => g.id === canonical)?.room_id !== episode.room_id)
         throw Error('NATIVE_EPISODE_MEMBERSHIP_MISMATCH');
       z.array(z.string()).parse(JSON.parse(episode.services));
+      await archive('native-episode-reference', episode);
       await tx
         .insert(nativeEpisodeReferences)
         .values({ sourceId: episode.id, conversationPk: pk, body: episode })
