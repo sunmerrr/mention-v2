@@ -26,9 +26,8 @@ const pageSchema = z.object({
   nextCursor: z.string().nullable(),
   total: z.number().int().nonnegative(),
 });
-export async function importProjection(
+export async function readSourceDataset(
   source: Pick<MonitoringRepository, 'read'>,
-  target: Pick<ProjectionRepository, 'replace'>,
   datasetSchema = projectionDatasetSchema,
   listSchema = monitoringListSchema,
 ) {
@@ -55,5 +54,14 @@ export async function importProjection(
     throw new Error('Source snapshot is incomplete or changed');
   const parsed = datasetSchema.parse({ ...header, conversations });
   const dataset: Dataset = { ...parsed, conversations: parsed.conversations as Conversation[] };
-  return target.replace(dataset);
+  return dataset;
+}
+
+export async function importProjection(
+  source: Pick<MonitoringRepository, 'read'>,
+  target: Pick<ProjectionRepository, 'replace'>,
+  datasetSchema = projectionDatasetSchema,
+  listSchema = monitoringListSchema,
+) {
+  return target.replace(await readSourceDataset(source, datasetSchema, listSchema));
 }

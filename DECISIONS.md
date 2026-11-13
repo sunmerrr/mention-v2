@@ -191,3 +191,40 @@ Preserve the previously requested15 useful messages per direction and15-message
 presentation increments, with explicit scan bounds and honest shortage/gap reasons.
 Only item8-1 (local owner durable buffer/database retention) remains deferred until
 the current server migration is complete. No local retention policy is changed.
+
+## Renewed operational migration instruction — 2026-11-13
+
+The user explicitly clarified that proceeding includes complete feature/data
+migration and actual operational cutover, not preparation alone. Continue through
+populated parity checks and controlled routing/worker handoff. Preserve the one
+existing Kakao connection owner, authentication, private-assistant boundaries,
+schedules and durable receipt semantics. Preparation-only restrictions from
+previous checkpoints do not revoke this instruction. No live test message or
+native owner restart/login is required or implicitly authorized. AWS execution
+still requires the actual SSH destination; unavailable destination information
+must not block independent code/data migration work or justify claiming cutover.
+
+## Operational migration execution — 2026-11-13
+
+Authoritative conversation/detail/classification storage now has a PostgreSQL
+implementation. It preserves guarded expected tokens, human priority, notes,
+append-only changes and durable request receipts. Public read projections are
+rebuilt by a separate Node worker from those canonical tables when the evidence
+backend selects PostgreSQL. API reads do not run aggregate work.
+
+The first HTTP import stopped on a20-second legacy detail timeout. A one-off
+read-only reference export instead runs the existing legacy rules on a disposable
+in-memory snapshot, without Store initialization, owner IPC or source writes.
+That export is an offline migration reference, not a new production Python role.
+The Node import-evidence role imports bounded JSONL into PostgreSQL. Private
+snapshot files remain ignored and mode0600. Original review/uncertain receipt
+records are retained separately from public DTOs and old request IDs cannot execute
+again. Seven legacy detail/guarded-option stale-state mismatches were identified;
+when detail omitted the guard, guarded options retain the authoritative stale and
+human-attribution state. Changed summaries/tokens still fail import.
+
+The isolated3GiB Docker VM's kernel confirmed an OOM kill of dockerd during the
+common image build. Increase only this development VM to6GiB, preserving its
+PostgreSQL volume. Fix its lifecycle start path to resume an existing VM instead
+of attempting to create another instance. Production web/Kakao processes are
+outside this VM and are not restarted by that recovery.

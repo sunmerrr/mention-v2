@@ -21,6 +21,35 @@ async function bootstrap() {
     await import('./db/migrate.js');
     return;
   }
+  if (config.APP_ROLE === 'import-evidence') {
+    const { MonitoringRepository } = await import('./modules/monitoring/monitoring.repository.js');
+    const { EvidenceRepository } = await import('./modules/evidence/evidence.repository.js');
+    const { importEvidence } = await import('./modules/evidence/import-evidence.js');
+    const source = new MonitoringRepository({
+      origin: config.MENTION_SOURCE_URL,
+      timeoutMs: config.MENTION_SOURCE_TIMEOUT_MS,
+    });
+    const target = new EvidenceRepository();
+    const { default: pino } = await import('pino');
+    const log = pino();
+    try {
+      const progress = (done: number, total: number) => {
+        if (done % 25 === 0 || done === total)
+          log.info({ event: 'evidence_import_progress', done, total });
+      };
+      const result = config.EVIDENCE_IMPORT_FILE
+        ? await (await import('./modules/evidence/import-evidence-file.js')).importEvidenceFile(
+            config.EVIDENCE_IMPORT_FILE,
+            target,
+            progress,
+          )
+        : await importEvidence(source, target, progress);
+      log.info({ event: 'evidence_import_complete', ...result });
+    } finally {
+      await target.close();
+    }
+    return;
+  }
   if (config.APP_ROLE === 'register-collector') {
     if (!config.COLLECTOR_ID || !config.COLLECTOR_EXTENSION_ID || !config.COLLECTOR_TOKEN)
       throw new Error('COLLECTOR_REGISTRATION_ENV_REQUIRED');

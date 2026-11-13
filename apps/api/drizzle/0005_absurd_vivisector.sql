@@ -1,0 +1,1 @@
+ALTER TABLE "evidence_conversations" ADD COLUMN "active" boolean DEFAULT false NOT NULL;

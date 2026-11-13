@@ -248,3 +248,79 @@ export const collectorCommands = pgTable(
   },
   (t) => [index('idx_collector_commands_queue').on(t.collectorPk, t.status, t.createdAt)],
 );
+
+/** Authoritative saved evidence, independent of the rebuildable public projection. */
+export const evidenceConversations = pgTable('evidence_conversations', {
+  active: boolean('active').notNull().default(false),
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  sourceId: varchar('source_id', { length: 100 }).notNull().unique(),
+  detail: jsonb('detail').$type<import('@app/shared/monitoring/contracts/api').Detail>().notNull(),
+  sourceDigest: char('source_digest', { length: 64 }).notNull(),
+  revision: integer('revision').notNull().default(0),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+export const evidenceClassifications = pgTable(
+  'evidence_classifications',
+  {
+    pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+    conversationPk: integer('conversation_pk')
+      .notNull()
+      .references(() => evidenceConversations.pk),
+    sourceId: varchar('source_id', { length: 100 }).notNull(),
+    target: varchar('target', { length: 100 }).notNull(),
+    label: varchar('label', { length: 20 }).notNull(),
+    reviewState: varchar('review_state', { length: 20 }).notNull(),
+    day: date('day', { mode: 'string' }).notNull(),
+    occurredAt: timestamp('occurred_at', { withTimezone: true, precision: 3 }).notNull(),
+    body: jsonb('body')
+      .$type<import('@app/shared/monitoring/contracts/api').Classification>()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex('uniq_evidence_target').on(t.conversationPk, t.target),
+    index('idx_evidence_classification_filter').on(t.target, t.label, t.day),
+    index('idx_evidence_classification_order').on(t.occurredAt, t.sourceId),
+  ],
+);
+export const evidenceReceipts = pgTable('evidence_receipts', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  requestId: uuid('request_id').notNull().unique(),
+  payloadHash: char('payload_hash', { length: 64 }).notNull(),
+  result: jsonb('result').$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+export const evidenceHistory = pgTable('evidence_history', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  conversationPk: integer('conversation_pk')
+    .notNull()
+    .references(() => evidenceConversations.pk),
+  target: varchar('target', { length: 100 }).notNull(),
+  requestId: uuid('request_id').notNull().unique(),
+  previous: jsonb('previous')
+    .$type<import('@app/shared/monitoring/contracts/api').Classification>()
+    .notNull(),
+  next: jsonb('next')
+    .$type<import('@app/shared/monitoring/contracts/api').Classification>()
+    .notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+export const evidenceMetadata = pgTable('evidence_metadata', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  key: varchar('key', { length: 40 }).notNull().unique(),
+  body: jsonb('body').$type<Omit<Dataset, 'conversations'>>().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+/** Immutable original review events and uncertain receipts, kept outside public DTOs. */
+export const evidenceLegacyAudit = pgTable(
+  'evidence_legacy_audit',
+  {
+    pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+    identity: char('identity', { length: 64 }).notNull().unique(),
+    source: varchar('source', { length: 100 }).notNull(),
+    requestId: varchar('request_id', { length: 100 }),
+    state: varchar('state', { length: 40 }),
+    body: jsonb('body').$type<Record<string, unknown>>().notNull(),
+    importedAt: timestamp('imported_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('idx_evidence_legacy_request').on(t.requestId)],
+);

@@ -22,6 +22,34 @@
       "when": 1794556294019,
       "tag": "0002_rapid_radioactive_man",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794558267694,
+      "tag": "0003_clumsy_kabuki",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794558350320,
+      "tag": "0004_sharp_invisible_woman",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794558449771,
+      "tag": "0005_absurd_vivisector",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794559397528,
+      "tag": "0006_violet_lethal_legion",
+      "breakpoints": true
     }
   ]
 }

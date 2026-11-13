@@ -2,6 +2,7 @@ import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@ne
 import { Interval } from '@nestjs/schedule';
 import type { PoolClient } from 'pg';
 import { config } from '../../shared/config/index.js';
+import { EvidenceRepository } from '../evidence/evidence.repository.js';
 import { MonitoringRepository } from '../monitoring/monitoring.repository.js';
 import { importProjection } from './import-projection.js';
 import { ProjectionRepository } from './projection.repository.js';
@@ -16,6 +17,7 @@ export class ProjectionSync implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly source: MonitoringRepository,
     private readonly target: ProjectionRepository,
+    private readonly evidence: EvidenceRepository,
   ) {}
   async onModuleInit() {
     if (config.MONITORING_READ_BACKEND !== 'postgres') return;
@@ -48,7 +50,9 @@ export class ProjectionSync implements OnModuleInit, OnModuleDestroy {
   }
   private async run() {
     try {
-      await importProjection(this.source, this.target);
+      if (config.MONITORING_EVIDENCE_BACKEND === 'postgres')
+        await this.target.replace(await this.evidence.dataset());
+      else await importProjection(this.source, this.target);
     } catch (error) {
       // The source may advance while paging; retain the previous committed generation.
       this.logger.warn(

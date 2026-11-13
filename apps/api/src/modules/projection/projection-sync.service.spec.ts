@@ -1,5 +1,6 @@
 import { afterEach, expect, it } from 'vitest';
 import { config } from '../../shared/config/index.js';
+import type { EvidenceRepository } from '../evidence/evidence.repository.js';
 import type { MonitoringRepository } from '../monitoring/monitoring.repository.js';
 import type { ProjectionRepository } from './projection.repository.js';
 import { ProjectionSync } from './projection-sync.service.js';
@@ -17,6 +18,7 @@ function service() {
       },
     } as unknown as MonitoringRepository,
     {} as ProjectionRepository,
+    {} as EvidenceRepository,
   );
 }
 it('a cron one-shot fails instead of reporting success when projection import fails', async () => {

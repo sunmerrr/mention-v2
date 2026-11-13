@@ -11,6 +11,7 @@ import { z } from 'zod';
  * 그 블록의 키를 여기 스키마에 추가한다.
  */
 const envSchema = z.object({
+  EVIDENCE_IMPORT_FILE: z.string().min(1).optional(),
   COLLECTOR_ID: z.string().max(128).optional(),
   COLLECTOR_EXTENSION_ID: z
     .string()
@@ -32,6 +33,7 @@ const envSchema = z.object({
     .default('0')
     .transform((value) => value === '1'),
   DATABASE_URL: z.string().url().optional(),
+  MONITORING_EVIDENCE_BACKEND: z.enum(['source', 'postgres']).default('source'),
   MONITORING_READ_BACKEND: z.enum(['source', 'postgres']).default('source'),
   MENTION_WEB_ROOT: z.string().min(1).default('../web'),
   MENTION_SOURCE_URL: z

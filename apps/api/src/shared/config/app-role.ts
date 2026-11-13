@@ -8,7 +8,14 @@
  */
 import { config } from './index.js';
 
-export type AppRole = 'api' | 'worker' | 'ingest' | 'migrate' | 'register-collector' | 'all';
+export type AppRole =
+  | 'api'
+  | 'worker'
+  | 'ingest'
+  | 'migrate'
+  | 'import-evidence'
+  | 'register-collector'
+  | 'all';
 
 const KNOWN_ROLES: readonly string[] = [
   'api',
@@ -16,6 +23,7 @@ const KNOWN_ROLES: readonly string[] = [
   'ingest',
   'migrate',
   'register-collector',
+  'import-evidence',
   'all',
 ];
 

@@ -15,6 +15,13 @@ import { mutationScope } from './mutation-scope.js';
 @Controller('api/v1/monitoring')
 export class MonitoringController {
   constructor(private readonly monitoring: MonitoringService) {}
+  @Get('classifications/request-state/:requestId') requestState(
+    @Param('requestId') requestId: string,
+    @Req() request: FastifyRequest,
+  ) {
+    mutationScope(request, true);
+    return this.monitoring.requestState(z.string().uuid().parse(requestId));
+  }
   @Post('classifications/correct') correct(
     @Body() input: CorrectionDto,
     @Req() request: FastifyRequest,
