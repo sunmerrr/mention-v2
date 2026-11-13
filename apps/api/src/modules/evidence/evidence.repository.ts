@@ -15,6 +15,7 @@ import { createDatabase } from '../../db/client.js';
 import {
   evidenceClassifications as classifications,
   evidenceConversations as conversations,
+  evidenceAliases,
   evidenceLegacyAudit,
   evidenceMetadata,
   evidenceHistory as history,
@@ -39,6 +40,14 @@ export class EvidenceRepository {
   async close() {
     await this.connection?.pool.end();
     this.connection = undefined;
+  }
+  async canonicalId(id: string) {
+    const [alias] = await this.db
+      .select({ id: conversations.sourceId })
+      .from(evidenceAliases)
+      .innerJoin(conversations, eq(evidenceAliases.conversationPk, conversations.pk))
+      .where(and(eq(evidenceAliases.alias, id), eq(conversations.active, true)));
+    return alias?.id ?? id;
   }
   async onApplicationShutdown() {
     await this.close();
@@ -185,6 +194,7 @@ export class EvidenceRepository {
     });
   }
   async detail(id: string): Promise<Detail> {
+    id = await this.canonicalId(id);
     const [row] = await this.db
       .select({ detail: conversations.detail })
       .from(conversations)
@@ -193,6 +203,7 @@ export class EvidenceRepository {
     return row.detail;
   }
   async options(id: string): Promise<Classification[]> {
+    id = await this.canonicalId(id);
     return this.db.transaction(
       async (tx) => {
         const [conversation] = await tx
@@ -282,6 +293,7 @@ export class EvidenceRepository {
     const input = correctionSchema.parse(value),
       origin = input.origin ?? 'human',
       hash = digest({ ...input, origin });
+    const canonicalId = await this.canonicalId(input.id);
     return this.db.transaction(async (tx) => {
       // The receipt lock also fences requests racing across different conversations.
       await tx.execute(sql`select pg_advisory_xact_lock(271815,hashtext(${input.request_id}))`);
@@ -305,11 +317,11 @@ export class EvidenceRepository {
           '기존 처리 기록이 있는 요청입니다. 저장 상태를 먼저 확인해 주세요.',
           409,
         );
-      await tx.execute(sql`select pg_advisory_xact_lock(271814,hashtext(${input.id}))`);
+      await tx.execute(sql`select pg_advisory_xact_lock(271814,hashtext(${canonicalId}))`);
       const [row] = await tx
         .select()
         .from(conversations)
-        .where(and(eq(conversations.sourceId, input.id), eq(conversations.active, true)))
+        .where(and(eq(conversations.sourceId, canonicalId), eq(conversations.active, true)))
         .for('update');
       if (!row) throw new AppError('NOT_FOUND', '저장된 대화를 찾을 수 없습니다.', 404);
       const [current] = await tx

@@ -48,6 +48,27 @@ async function bootstrap() {
     }
     return;
   }
+  if (config.APP_ROLE === 'import-native-reference') {
+    if (!config.NATIVE_REFERENCE_IMPORT_FILE) throw Error('NATIVE_REFERENCE_IMPORT_FILE_REQUIRED');
+    const { readFile, stat } = await import('node:fs/promises');
+    if ((await stat(config.NATIVE_REFERENCE_IMPORT_FILE)).size > 128 * 1024 * 1024)
+      throw Error('NATIVE_REFERENCE_TOO_LARGE');
+    const { parseOwnerJson } = await import('./modules/connection/owner-wire.js');
+    const { EvidenceRepository } = await import('./modules/evidence/evidence.repository.js');
+    const { importNativeReference } = await import('./modules/evidence/native-reference.js');
+    const target = new EvidenceRepository();
+    try {
+      const result = await importNativeReference(
+        parseOwnerJson(await readFile(config.NATIVE_REFERENCE_IMPORT_FILE, 'utf8')),
+        target,
+      );
+      const { default: pino } = await import('pino');
+      pino().info({ event: 'native_reference_import_complete', ...result });
+    } finally {
+      await target.close();
+    }
+    return;
+  }
   if (config.APP_ROLE === 'import-workspace') {
     if (!config.WORKSPACE_IMPORT_FILE) throw Error('WORKSPACE_IMPORT_FILE_REQUIRED');
     const { KeywordSettingsRepository } = await import(

@@ -5,6 +5,7 @@ import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDatabase } from '../../src/db/client.js';
 import { EvidenceRepository } from '../../src/modules/evidence/evidence.repository.js';
+import { importNativeReference } from '../../src/modules/evidence/native-reference.js';
 import { config } from '../../src/shared/config/index.js';
 
 const bundle = (id = 'synthetic-first') => ({
@@ -98,9 +99,40 @@ describe('authoritative PostgreSQL evidence and classifications', () => {
     badOption.expected = 'changed';
     await expect(store.importBundle(bad)).rejects.toThrow('Classification changed');
   });
+  it('resolves old episode IDs while preserving guarded classifications and native room identity', async () => {
+    const nativeGroup = {
+      id: 'synthetic-first',
+      room_id: '18497500347065223',
+      members: [{ id: 'synthetic-first' }, { id: 'legacy-episode' }],
+      messages: [
+        {
+          room_id: '18497500347065223',
+          log_id: '3970073012646000642',
+          author_id: '7175652408034127965',
+        },
+      ],
+    };
+    expect(await importNativeReference({ groups: [nativeGroup] }, store)).toEqual({
+      groups: 1,
+      aliases: 2,
+      messages: 1,
+    });
+    expect((await store.detail('legacy-episode')).conversation.id).toBe('synthetic-first');
+    expect(await store.options('legacy-episode')).toEqual(await store.options('synthetic-first'));
+    await expect(
+      importNativeReference(
+        { groups: [nativeGroup, { ...nativeGroup, id: 'another-group' }] },
+        store,
+      ),
+    ).rejects.toThrow('ALIAS_COLLISION');
+    await expect(
+      importNativeReference({ groups: [{ ...nativeGroup, room_id: '1' }] }, store),
+    ).rejects.toThrow('WRONG_ROOM');
+    expect((await store.options('legacy-episode'))[0]?.expected).toBe('baseline-token');
+  });
   it('atomically commits label, memo, evidence revision, append-only audit and request receipt', async () => {
     const request = {
-      id: 'synthetic-first',
+      id: 'legacy-episode',
       service: 'APL',
       verdict: 'excluded' as const,
       summary: '티켓 사용처 문의이므로 여론 판단 제외',

@@ -15,6 +15,7 @@ export type AppRole =
   | 'migrate'
   | 'import-workspace'
   | 'import-forum-archive'
+  | 'import-native-reference'
   | 'import-evidence'
   | 'register-collector'
   | 'all';
@@ -28,6 +29,7 @@ const KNOWN_ROLES: readonly string[] = [
   'import-evidence',
   'import-workspace',
   'import-forum-archive',
+  'import-native-reference',
   'all',
 ];
 

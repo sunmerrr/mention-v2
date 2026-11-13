@@ -288,6 +288,22 @@ export const evidenceClassifications = pgTable(
     index('idx_evidence_classification_order').on(t.occurredAt, t.sourceId),
   ],
 );
+export const evidenceAliases = pgTable('evidence_aliases', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  alias: varchar('alias', { length: 100 }).notNull().unique(),
+  conversationPk: integer('conversation_pk')
+    .notNull()
+    .references(() => evidenceConversations.pk),
+});
+export const nativeEvidenceReferences = pgTable('native_evidence_references', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  conversationPk: integer('conversation_pk')
+    .notNull()
+    .unique()
+    .references(() => evidenceConversations.pk),
+  roomId: varchar('room_id', { length: 19 }).notNull(),
+  body: jsonb('body').$type<Record<string, unknown>>().notNull(),
+});
 export const evidenceReceipts = pgTable('evidence_receipts', {
   pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
   requestId: uuid('request_id').notNull().unique(),

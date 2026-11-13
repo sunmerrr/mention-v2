@@ -1,5 +1,31 @@
 # Server consolidation update — 2026-11-13
 
+## Latest populated checkpoints
+
+- Authoritative PostgreSQL conversation detail/classifications/guarded corrections
+  and receipts are implemented. The frozen source reference contains741 public
+  conversations,14220 context-message memberships and953 classifications; full
+  detail/options comparisons remain identical after the migrations below.
+- Native provenance now retains those741 public groups, their exact room IDs and
+  all1661 episode-to-conversation aliases. Import validates complete active
+  membership, room consistency and alias ownership atomically. It refuses silent
+  retargeting. Old episode IDs resolve through detail/options/correction without
+  changing human reviews or request-payload hashes. Full native-body/alias
+  comparison found zero differences, alongside unchanged detail/classification
+  parity. This is a source snapshot, not a running native collector or live
+  history expansion implementation.
+- Forum Node raw processing, resumed keyword reindex, finished read models and
+  full historical archive have populated verification. See FORUM-MIGRATION.md.
+- Latest native-reference `verify:full`:39 unit and44 integration tests, common
+  Docker image and Compose checks. Live owner authentication, Chrome profile,
+  native intake cursor, personal assistant and outgoing work remain unchanged.
+
+Native raw-to-context/guide processing, quota-backed expansion, remaining
+workspace functions and dialogue/schedule ownership still require implementation
+and cutover verification. AWS SSH destination has not been supplied; there is no
+real remote tunnel or public routing cutover. Prepared code and passing staging
+checks are not reported as operational migration completion.
+
 The new preparation and remaining gates are documented in SERVER-CONSOLIDATION.md
 and USEFUL-CONTEXT.md. Node owner intake, durable PostgreSQL raw inbox/cursors,
 independent Node forum intake and a common role image have been implemented for
