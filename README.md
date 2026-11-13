@@ -29,16 +29,75 @@
 
 ## 서비스 구조
 
-```text
-브라우저 → React SSR / Fastify → SQLite 조회 모델·분류 저장소
-                            → 로컬 수집기 인터페이스
-                               ├─ 카카오톡: 연결 소유 프로세스 1개
-                               │            ├─ 분석 수집 워커
-                               │            └─ 대화 처리 워커
-                               └─ 포커고수: Chrome 확장 → 로컬 수신 서버
+실제 운영 구조를 수집 흐름과 대시보드 요청 흐름으로 나눴습니다. 실선은 요청·응답, 굵은 화살표는 수집 데이터의 저장 방향입니다.
+
+### 수집 연결
+
+```mermaid
+flowchart TB
+    Kakao["카카오톡 서버"]
+    Forum["포커고수 웹사이트"]
+
+    subgraph Local["운영 Mac · 로컬 서비스"]
+        Owner["카카오톡 연결 소유 프로세스<br/>역공학 Python 클라이언트 · 계정 연결 1개"]
+        Analytics["분석 수집 워커"]
+        Dialogue["오픈채팅 대화 처리 워커"]
+        Private["개인 비서 처리<br/>전용 소켓·별도 상태"]
+        NativeDB[("카톡 운영 SQLite<br/>분석·대화 기록 및 설정")]
+        Extension["Chrome 확장 프로그램<br/>브라우저에 표시된 글·댓글 읽기"]
+        Receiver["포커고수 로컬 수신 서버<br/>127.0.0.1:8791"]
+        ForumDB[("포커고수 SQLite")]
+    end
+
+    Owner <-->|"LOCO 메시지 수신·발송"| Kakao
+    Analytics <-->|"connection.sock · 이벤트 조회"| Owner
+    Dialogue <-->|"connection.sock · 이벤트 조회·발송 요청"| Owner
+    Private <-->|"개인 비서 전용 인터페이스"| Owner
+    Analytics ==>|"분석 대상·맥락 저장"| NativeDB
+    Dialogue ==>|"대화 처리 기록 저장"| NativeDB
+    Extension <-->|"브라우저에서 페이지 열기"| Forum
+    Extension ==>|"캡처한 글·댓글 전달"| Receiver
+    Receiver ==>|"키워드 판정·저장"| ForumDB
 ```
 
-도메인 규칙, 유스케이스, 외부 연동, UI를 분리합니다. 화면 조회에는 미리 집계한 데이터를 활용합니다. 카톡 데이터 변경은 기존 수집기 인터페이스를 통하고, 포커고수 분류는 별도 저장소에서 관리합니다. 웹 서버를 재시작해도 카카오톡 연결은 유지합니다.
+PC 카카오톡 화면을 대시보드가 읽는 구조가 아닙니다. 카카오톡 서버와 통신하는 연결은 소유 프로세스 하나가 유지하고, 수집·대화 처리가 이를 공유합니다. 개인 비서의 전용 상태는 공개 대시보드 조회 대상에서 제외합니다.
+
+### 대시보드 연결·조회
+
+```mermaid
+flowchart TB
+    Shared["공유 링크 접속자"]
+    Cloudflare["Cloudflare Tunnel"]
+    LocalBrowser["로컬 브라우저"]
+
+    subgraph Local["운영 Mac · 로컬 서비스"]
+        Web["Mention 웹 서버<br/>React SSR · Fastify · 127.0.0.1:8790"]
+        Projection["읽기 전용 Python 집계 프로세스"]
+        NativeDB[("카톡 운영 SQLite")]
+        ReadDB[("웹 조회 모델 SQLite")]
+        ForumDB[("포커고수 SQLite")]
+        Reviews[("포커고수 분류 SQLite")]
+        Bridge["Python 연동 어댑터"]
+        Router["collector.sock<br/>요청 라우터"]
+        Analytics["analytics.sock<br/>분석 수집 워커"]
+        Dialogue["dialogue.sock<br/>대화 처리 워커"]
+    end
+
+    Shared <-->|"HTTPS"| Cloudflare
+    Cloudflare <-->|"터널을 통한 HTTP 요청·응답 전달"| Web
+    LocalBrowser <-->|"로컬 HTTP"| Web
+    Web <-->|"집계 저장·목록 조회"| ReadDB
+    Web <-->|"집계 요청·결과"| Projection
+    Projection -->|"허용된 분석 테이블만 읽기 전용 조회"| NativeDB
+    Web -->|"저장된 글·댓글 조회"| ForumDB
+    Web <-->|"분류·메모 저장 및 조회"| Reviews
+    Web <-->|"설정·카톡 분류 수정·상세 조회 등"| Bridge
+    Bridge <-->|"로컬 Unix 소켓"| Router
+    Router <-->|"분석 관련 요청"| Analytics
+    Router <-->|"대화·발송 관련 요청"| Dialogue
+```
+
+터널 화살표는 웹 요청의 전달 경로입니다. 실제 터널 연결은 Mac의 `cloudflared`가 Cloudflare 쪽으로 생성합니다. 웹 서버가 카카오톡이나 포커고수에 직접 메시지 연결을 만드는 것은 아니며, 웹 재시작과 카카오톡 연결은 분리돼 있습니다. 발송 등 로컬 전용 작업은 공유 링크에서 제한합니다.
 
 ### 역공학
 
