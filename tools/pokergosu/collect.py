@@ -104,14 +104,31 @@ def execute(args, repository):
 def main():
     os.umask(0o077)
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['start', 'run', 'stop', 'status', 'once', 'setup', 'resume', 'export', 'keywords', 'extension-prepare', 'extension-start', 'extension-run', 'extension-stop', 'logs', 'monitor-start', 'monitor-resume', 'monitor-stop', 'extension-reload', 'control-status', 'metadata-repair'])
+    parser.add_argument('command', choices=['start', 'run', 'stop', 'status', 'once', 'setup', 'resume', 'export', 'keywords', 'extension-prepare', 'extension-start', 'extension-run', 'extension-stop', 'logs', 'monitor-start', 'monitor-resume', 'monitor-stop', 'extension-reload', 'control-status', 'inspect-search', 'search-today', 'search-off', 'metadata-repair'])
     parser.add_argument('--legacy-root')
+    parser.add_argument('--asset')
+    parser.add_argument('--search-term',action='append',default=[])
     parser.add_argument('--limit', type=int, default=100)
     parser.add_argument('--before', type=int)
     parser.add_argument('--jsonl', action='store_true')
     args = parser.parse_args()
     directory = (PROJECT / 'runtime/pokergosu').resolve()
     directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+    if args.command in ('search-today','search-off'):
+        from search_policy import configure_today
+        repository=Repository(directory)
+        try:
+            if args.command=='search-today':
+                state=repository.get('extension_monitor',{})
+                cycle=state.get('cycle',0)+1
+                config=configure_today(directory,args.search_term,cycle,time.time())
+            else:
+                config={'enabled':False}
+                filename=directory/'search-policy.pending';filename.write_text(json.dumps(config));os.chmod(filename,0o600);os.replace(filename,directory/'search-policy.json')
+            repository.set('search_policy_event:'+str(time.time_ns()),{'at':time.time(),**config})
+            emit({'policy':config,'applies':'next-cycle','monitor_restarted':False})
+        finally:repository.close()
+        return 0
     if args.command == 'metadata-repair':
         from metadata import recover_metadata
         from hashlib import sha256
@@ -132,15 +149,15 @@ def main():
             emit({'repaired_threads': changed, 'source': 'retained-visible-header', 'site_requests': 0, 'checked_times_preserved': True})
         finally:repository.close()
         return 0
-    if args.command in ('monitor-start','monitor-resume','monitor-stop','extension-reload','control-status'):
+    if args.command in ('monitor-start','monitor-resume','monitor-stop','extension-reload','control-status','inspect-search'):
         from control import ControlStore
         store=ControlStore(directory)
         try:
             if args.command=='control-status':emit(store.status())
             else:
-                action={'monitor-start':'start','monitor-resume':'resume','monitor-stop':'stop','extension-reload':'reload'}[args.command]
+                action={'monitor-start':'start','monitor-resume':'resume','monitor-stop':'stop','extension-reload':'reload','inspect-search':'inspect-search'}[args.command]
                 version=json.loads((directory/'extension/manifest.json').read_text())['version'] if action=='reload' else None
-                emit(store.enqueue(action,version))
+                emit(store.enqueue(action,args.asset if action=='inspect-search' else version))
         finally:store.close()
         return 0
     if args.command == 'logs':

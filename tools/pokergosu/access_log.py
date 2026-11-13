@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 def category(event):
     if event.get('access'):
         return event['access']['kind']
+    if event['outcome']=='skipped':return 'search_fallback' if event.get('reason')=='BOARD_MARKUP_UNKNOWN' else 'content_skipped'
     if event['outcome']=='success':return 'normal'
     reason=event.get('reason') or ''
     if reason in ('BOT_CHALLENGE','ACCESS_DENIED','RATE_LIMITED','ACCOUNT_RESTRICTION_NOTICE'):
@@ -42,14 +43,14 @@ def report(directory):
         _,run_id,_=key.split(':')
         parsed.append((run_id,json.loads(value)))
     parsed.sort(key=lambda pair:(pair[1].get('startedAt') or 0,pair[0],pair[1]['sequence']))
-    labels={'normal':'정상 저장','bot_challenge':'봇·사람 확인 화면','access_denied':'접근 거부 화면','rate_limited':'요청 제한 화면','account_restriction_notice':'계정 제한 안내','access_restricted_unknown':'접근 제한(유형 미확인)','user_stop':'사용자 중지','local_error':'로컬 수집기 오류','execution_error':'실행·연결 오류','tab_or_permission_change':'탭·권한 변경','content_validation_error':'본문·댓글 검증 실패','in_progress':'진행 중','unclassified_error':'분류되지 않은 오류'}
+    labels={'search_fallback':'검색 화면 오류 · 일반 수집 전환','content_skipped':'본문 읽기 실패 · 건너뜀','normal':'정상 저장','bot_challenge':'봇·사람 확인 화면','access_denied':'접근 거부 화면','rate_limited':'요청 제한 화면','account_restriction_notice':'계정 제한 안내','access_restricted_unknown':'접근 제한(유형 미확인)','user_stop':'사용자 중지','local_error':'로컬 수집기 오류','execution_error':'실행·연결 오류','tab_or_permission_change':'탭·권한 변경','content_validation_error':'본문·댓글 검증 실패','in_progress':'진행 중','unclassified_error':'분류되지 않은 오류'}
     successes=Counter();failures=Counter();events=[]
     for ordinal,(run_id,event) in enumerate(parsed,1):
         kind=category(event)
         evidence=event.get('access') or {}
         item={'record_type':'navigation','run_id':run_id,'request_number':event['sequence'],'cycle':event['cycle'],
               'started_at':timestamp(event.get('startedAt')),'finished_at':timestamp(event.get('finishedAt')),
-              'page_type':'board_list' if event['url'].split('?')[0].rstrip('/').endswith('/free') else 'post',
+              'page_type':'keyword_search' if '/free/search?' in event['url'] else 'board_list' if event['url'].split('?')[0].rstrip('/').endswith('/free') else 'post',
               'url':event['url'],'outcome':event['outcome'],'category':kind,'category_label':labels.get(kind,'분류되지 않은 상태'),'reason':event.get('reason'),
               'successful_requests_before':successes[run_id],'all_runs_request_number':ordinal,
               'page_title':evidence.get('title'),'indicators':evidence.get('indicators',[]),
@@ -73,6 +74,7 @@ def report(directory):
                          'account_ban_confirmed':False}
         runs.append({'run_id':run_id,'status':state['status'],'requests':state['navigations'],
                      'successful_requests':successes[run_id],'finished_issues':failures[run_id],
+                     'skipped_requests':sum(e['outcome']=='skipped' for e in run_events),
                      'threads_saved':state['threadsSaved'],'cycles_completed':state['cyclesCompleted'],
                      'discovery_gaps':state.get('discoveryGaps',0),'last_gap_at':timestamp(state.get('lastGapAt')),
                      'started_at':timestamp(state.get('startedAt')),'finished_at':timestamp(state.get('finishedAt')),

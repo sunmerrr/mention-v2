@@ -104,6 +104,77 @@ export function createControl({
       await chrome.runtime.reload();
       return null; // The next worker acknowledges only after checking its version.
     }
+    if (command.action === "inspect-search") {
+      if (!(await chrome.permissions.contains(SITE_PERMISSION)))
+        return { ok: false, code: "SITE_PERMISSION_REQUIRED" };
+      const state = await read("monitor");
+      const tab = state && (await chrome.tabs.get(state.tabId));
+      if (!tab || !boardTab(tab))
+        return { ok: false, code: "BOARD_NOT_LOADED" };
+      const [result] = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        args: [command.targetVersion || null],
+        func: async (asset) => ({
+          assets: await Promise.all(
+            (asset
+              ? [asset]
+              : Array.from(document.querySelectorAll("script[src]")).map(
+                  (e) => e.src,
+                )
+            )
+              .filter(
+                (u) =>
+                  new URL(u).origin === location.origin &&
+                  /^\/pokergosu\/[\w-]+\.js$/.test(new URL(u).pathname),
+              )
+              .slice(0, 1)
+              .map(async (url) => {
+                const response = await fetch(url, {
+                  signal: AbortSignal.timeout(10000),
+                  redirect: "error",
+                });
+                if (!response.ok) return { url, source: "" };
+                return {
+                  url,
+                  source: (await response.text()).slice(0, 600000),
+                };
+              }),
+          ),
+          controls: Array.from(
+            document.querySelectorAll(
+              "select,input:not([type=password]):not([type=hidden]),button",
+            ),
+          )
+            .slice(0, 60)
+            .map((e) => ({
+              tag: e.tagName,
+              type: e.type || "",
+              name: e.name || "",
+              placeholder: e.getAttribute("placeholder") || "",
+              label:
+                e.tagName === "BUTTON"
+                  ? (e.textContent || "").trim().slice(0, 100)
+                  : "",
+              options:
+                e.tagName === "SELECT"
+                  ? Array.from(e.options)
+                      .slice(0, 20)
+                      .map((o) => ({ value: o.value, label: o.textContent }))
+                  : [],
+            })),
+          scripts: Array.from(document.querySelectorAll("script[src]"))
+            .map((e) => e.src)
+            .filter((u) => u.startsWith(`${location.origin}/`))
+            .slice(0, 30),
+        }),
+      });
+      await local("/capture", {
+        operation: "search-inspection",
+        page_url: BOARD,
+        data: result.result,
+      });
+      return { ok: true, code: "SEARCH_CONTROLS_INSPECTED" };
+    }
     if (!["start", "resume"].includes(command.action))
       return { ok: false, code: "UNKNOWN_COMMAND" };
     if (!(await chrome.permissions.contains(SITE_PERMISSION)))
@@ -154,7 +225,9 @@ export function createControl({
         typeof command.id !== "string" ||
         !Number.isFinite(command.expiresAt) ||
         !Number.isFinite(command.createdAt) ||
-        !["start", "resume", "stop", "reload"].includes(command.action)
+        !["start", "resume", "stop", "reload", "inspect-search"].includes(
+          command.action,
+        )
       )
         throw new Error("INVALID_COMMAND");
       const receipt = { command, result: null };

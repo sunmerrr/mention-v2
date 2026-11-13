@@ -87,6 +87,34 @@ const server = createServer(async (req, res) => {
     res.end('{"threads":0,"matched":0}');
     return;
   }
+  if (req.url.startsWith("/strategy?cycle=")) {
+    res.end(
+      JSON.stringify({
+        mode: "search",
+        term: "APL",
+        scope: "1",
+        url: "https://www.pokergosu.com/free/search?s=1&v=APL",
+        expiresAt: Date.now() + 3600000,
+      }),
+    );
+    return;
+  }
+  if (req.url === "/search/plan") {
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    const data = JSON.parse(body);
+    assert.deepEqual(data, {
+      url: "https://www.pokergosu.com/free/search?s=1&v=APL",
+      ids: ["124"],
+    });
+    res.end(
+      JSON.stringify({
+        queue: [{ id: "124", url: "https://www.pokergosu.com/free/124" }],
+        pending_threads: 1,
+      }),
+    );
+    return;
+  }
   if (req.url === "/plan") {
     res.end(
       JSON.stringify({
@@ -182,9 +210,11 @@ try {
       status: 200,
       contentType: "text/html; charset=utf-8",
       body:
-        new URL(route.request().url()).pathname === "/free"
-          ? '<div class="col-main"><h1>자유 게시판</h1><article><table><tr><td><a href="/free/123">synthetic topic</a></td></tr></table></article></div>'
-          : '<h1>synthetic</h1><article><div class="post-content">ordinary</div></article><span data-comment-count="3">댓글 수 3</span><div id="comment_42"><div class="comment-content">APL 광고</div></div><div id="comment_43"><div class="comment-content"><img src="/synthetic.png"></div></div><div id="comment_44"><div class="comment-content"></div></div>',
+        new URL(route.request().url()).pathname === "/free/search"
+          ? '<title>검색 - 포커고수</title><div><div class="lg:px-6"><p>"APL" 검색결과 1개</p><div class="boarddocument"><table><tr><td><a href="/free/124?s=1&v=APL">synthetic result</a></td></tr></table></div></div></div>'
+          : new URL(route.request().url()).pathname === "/free"
+            ? '<div class="col-main"><h1>자유 게시판</h1><article><table><tr><td><a href="/free/123">synthetic topic</a></td></tr></table></article></div>'
+            : '<h1>synthetic</h1><article><div class="post-content">ordinary</div></article><span data-comment-count="3">댓글 수 3</span><div id="comment_42"><div class="comment-content">APL 광고</div></div><div id="comment_43"><div class="comment-content"><img src="/synthetic.png"></div></div><div id="comment_44"><div class="comment-content"></div></div>',
     });
   });
   let firstPopulatedMs;
@@ -297,6 +327,17 @@ try {
     async () => (await chrome.storage.local.get("monitor")).monitor,
   );
   assert.equal(auto.threadsSaved, 1);
+  assert.equal(
+    auto.history[0].url,
+    "https://www.pokergosu.com/free/search?s=1&v=APL",
+  );
+  assert.ok(
+    captures.some(
+      (c) =>
+        c.operation === "list" &&
+        c.page_url === "https://www.pokergosu.com/free/search?s=1&v=APL",
+    ),
+  );
   assert.deepEqual(
     auto.history.find((e) => e.url.endsWith("/124")).comment_summary,
     {
@@ -364,12 +405,12 @@ try {
   await issue("stop");
   assert.equal(controlReceipts.at(-1).result.code, "STOPPED");
   const beforeRemoteReload = navigations;
-  fixtureManifest.version = "0.4.5";
+  fixtureManifest.version = "0.5.2";
   await writeFile(`${folder}/manifest.json`, JSON.stringify(fixtureManifest));
   controlCommand = {
     id: "synthetic-reload",
     action: "reload",
-    targetVersion: "0.4.5",
+    targetVersion: "0.5.2",
     createdAt: Date.now(),
     expiresAt: Date.now() + 120000,
   };
@@ -405,6 +446,7 @@ try {
       unreadable_comment_skipped_without_stopping: true,
       advanced_by_native_alarms_without_action_clicks: true,
       automatic_return_and_next_cycle: true,
+      keyword_search_and_result_only_plan: true,
       first_populated_after_due_ms: firstPopulatedMs,
       populated_capture_bytes: Buffer.byteLength(
         JSON.stringify(

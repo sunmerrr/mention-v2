@@ -275,4 +275,34 @@ let checks = 0;
   assert.equal(f.created(), 0);
   checks++;
 }
+{
+  const f = fixture();
+  f.seed({ localControlEnabled: true, monitor: { tabId: 99 } });
+  f.queue(f.command("inspect-search"));
+  await f.control.poll();
+  assert.equal(f.acks.at(-1).result.code, "COMMAND_EXECUTION_FAILED");
+  assert.equal(f.created(), 0);
+  assert.equal(f.starts(), 0);
+  checks++;
+}
+{
+  const f = fixture();
+  f.seed({ localControlEnabled: true, monitor: { tabId: 99 } });
+  f.tabs.set(99, { id: 99, url: "https://www.pokergosu.com/free" });
+  let inspected = 0;
+  f.options.chrome.scripting = {
+    executeScript: async ({ target }) => {
+      assert.equal(target.tabId, 99);
+      inspected++;
+      return [{ result: { controls: [], scripts: [], assets: [] } }];
+    },
+  };
+  f.queue(f.command("inspect-search"));
+  await f.control.poll();
+  assert.equal(f.acks.at(-1).result.code, "SEARCH_CONTROLS_INSPECTED");
+  assert.equal(inspected, 1);
+  assert.equal(f.created(), 0);
+  assert.equal(f.starts(), 0);
+  checks++;
+}
 console.log(JSON.stringify({ checks, site_requests: 0, per_post_clicks: 0 }));

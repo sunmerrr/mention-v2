@@ -17,6 +17,7 @@ import time
 from adapters import Repository
 from domain import evaluate_thread, keyword_revision
 from monitor_policy import monitor_record, monitor_transition
+from search_policy import search_url, strategy
 
 ADDRESS = ('127.0.0.1', 8791)
 ORIGIN = 'https://www.pokergosu.com'
@@ -63,6 +64,9 @@ def page(value):
     if not isinstance(value, str):
         raise ValueError('INVALID_PAGE_URL')
     parsed = urlparse(value)
+    if parsed.path=='/free/search':
+        search_url(value)
+        return parsed.path
     if parsed.netloc != 'www.pokergosu.com' or parsed.scheme != 'https' or parsed.query or parsed.fragment or not re.fullmatch(r'/free(?:/'+ID+r')?/?', parsed.path):
         raise ValueError('INVALID_PAGE_URL')
     return parsed.path
@@ -213,6 +217,19 @@ class CaptureService:
         finally:
             repository.close()
 
+    def strategy(self,cycle):
+        return strategy(self.directory,cycle,time.time())
+
+    def search_plan(self,data):
+        if not isinstance(data,dict):raise ValueError('INVALID_SEARCH_PLAN')
+        search_url(data.get('url'))
+        ids=data.get('ids')
+        if not isinstance(ids,list) or len(ids)>300 or len(set(ids))!=len(ids):raise ValueError('INVALID_SEARCH_PLAN')
+        for value in ids:identity(value)
+        repository=Repository(self.directory)
+        try:return repository.search_plan(data['url'],ids)
+        finally:repository.close()
+
     def capture(self, request):
         if not isinstance(request, dict):
             raise ValueError('INVALID_CAPTURE')
@@ -241,6 +258,28 @@ class CaptureService:
                 repository.set(key, clean)
                 repository.set('extension_trial', clean)
                 result = {'trial_saved': True, 'status': clean['status'], 'attempted': clean['attempted']}
+            elif operation == 'search-inspection' and path.rstrip('/') == '/free':
+                if not isinstance(data,dict) or not isinstance(data.get('controls'),list) or len(data['controls'])>60 or not isinstance(data.get('scripts'),list) or len(data['scripts'])>30:raise ValueError('INVALID_SEARCH_INSPECTION')
+                clean={'controls':[],'scripts':[]}
+                assets=data.get('assets',[])
+                if not isinstance(assets,list) or len(assets)>1:raise ValueError('INVALID_SEARCH_INSPECTION')
+                clean['assets']=[]
+                for asset in assets:
+                    asset_url=text(asset.get('url'),1000)
+                    if not re.fullmatch(r'https://www\.pokergosu\.com/pokergosu/[\w-]+\.js',asset_url):raise ValueError('INVALID_SEARCH_INSPECTION')
+                    clean['assets'].append({'url':asset_url,'source':text(asset.get('source'),600000)})
+                for control in data['controls']:
+                    item={k:text(control.get(k),200) for k in ('tag','type','name','placeholder','label')}
+                    options=control.get('options')
+                    if not isinstance(options,list) or len(options)>20:raise ValueError('INVALID_SEARCH_INSPECTION')
+                    item['options']=[{k:text(o.get(k),200) for k in ('value','label')} for o in options]
+                    clean['controls'].append(item)
+                for url in data['scripts']:
+                    parsed=urlparse(text(url,1000))
+                    if parsed.scheme!='https' or parsed.netloc!='www.pokergosu.com' or parsed.query or parsed.fragment:raise ValueError('INVALID_SEARCH_INSPECTION')
+                    clean['scripts'].append(url)
+                repository.set('search_inspection',{'at':now,**clean})
+                result={'inspected':True}
             elif operation == 'diagnostic':
                 structure = request.get('structure')
                 if not isinstance(structure, dict) or structure.get('url') != request['page_url']:
@@ -255,10 +294,12 @@ class CaptureService:
                 for node in nodes:
                     clean['nodes'].append({key: text(node.get(key), limit) for key,limit in (('tag',20),('id',160),('classes',240),('parent',20))})
                 reason = text(request.get('reason'), 80)
-                repository.set('extension_diagnostic', {'observed_at': now, 'reason': reason, 'structure': clean})
+                diagnostic={'observed_at':now,'reason':reason,'structure':clean}
+                repository.set('extension_diagnostic_event:'+path.rsplit('/',1)[-1]+':'+str(time.time_ns()),diagnostic)
+                repository.set('extension_diagnostic', diagnostic)
                 result = {'diagnostic_saved': True, 'reason': reason}
-            elif operation == 'list' and path.rstrip('/') == '/free':
-                if not isinstance(data, list) or not 1 <= len(data) <= 300:
+            elif operation == 'list' and path.rstrip('/') in ('/free','/free/search'):
+                if not isinstance(data, list) or not (0 if path=='/free/search' else 1) <= len(data) <= 300:
                     raise ValueError('INVALID_LIST')
                 posts = []
                 for item in data:
@@ -266,7 +307,8 @@ class CaptureService:
                     if item.get('url') != f'{ORIGIN}/free/{pid}':
                         raise ValueError('THREAD_URL_MISMATCH')
                     posts.append({'id': pid, 'url': item['url']})
-                repository.discover(posts, now)
+                if path=='/free/search':repository.discover_search(posts,request['page_url'],now)
+                else:repository.discover(posts, now)
                 result = {'discovered': len(posts), 'pending_threads': repository.pending_count()}
             elif operation == 'thread':
                 value = thread(data)
@@ -341,11 +383,12 @@ def make_handler(service, token, port=8791):
             if not self.authorized():
                 self.respond(403, {'error': 'FORBIDDEN'})
                 return
-            if self.path not in ('/status', '/plan'):
+            route=urlparse(self.path)
+            if self.path not in ('/status', '/plan') and not re.fullmatch(r'/strategy\?cycle=[1-9][0-9]{0,11}',self.path):
                 self.respond(404, {'error': 'NOT_FOUND'})
                 return
             try:
-                self.respond(200, service.plan() if self.path == '/plan' else service.status())
+                self.respond(200, service.strategy(int(route.query.split('=')[1])) if route.path=='/strategy' else service.plan() if self.path == '/plan' else service.status())
             except Exception:
                 self.respond(503, {'error': 'LOCAL_UNAVAILABLE'})
 
@@ -353,7 +396,7 @@ def make_handler(service, token, port=8791):
             if not self.authorized():
                 self.respond(403, {'error': 'FORBIDDEN'})
                 return
-            if self.path not in ('/capture','/control/poll','/control/ack'):
+            if self.path not in ('/capture','/control/poll','/control/ack','/search/plan'):
                 self.respond(404, {'error': 'NOT_FOUND'})
                 return
             try:
@@ -375,6 +418,7 @@ def make_handler(service, token, port=8791):
                         owner=self.headers.get('X-Mention-Extension')+':'+request['instance']
                         result=store.poll(owner,request['version'],request['permission'],request['enabled']) if self.path=='/control/poll' else store.ack(owner,request['id'],request['result'])
                     finally:store.close()
+                elif self.path=='/search/plan':result=service.search_plan(request)
                 else:result = service.capture(request)
                 self.respond(200, result)
             except (ValueError, TypeError, KeyError, AttributeError):
@@ -392,6 +436,11 @@ def run(directory, source, stop):
     server = HTTPServer(ADDRESS, make_handler(service, token))
     server.timeout = 0.5
     repository = Repository(directory)
+    repository.backfill_read_errors()
+    previous_diagnostic=repository.get('extension_diagnostic')
+    if previous_diagnostic:
+        key='extension_diagnostic_event:legacy:'+str(previous_diagnostic.get('observed_at',0))
+        if repository.get(key) is None:repository.set(key,previous_diagnostic)
     repository.set('extension_receiver', {'port': ADDRESS[1], 'started_at': time.time()})
     repository.close()
     try:

@@ -3,7 +3,7 @@ import { boardTab, reloadBoard } from "./trial.mjs";
 export const MONITOR_ALARM = "mention-pokergosu-monitor";
 const BOARD = "https://www.pokergosu.com/free";
 const MAX_THREADS = 6;
-const MAX_REQUESTS = 12;
+const MAX_REQUESTS = 14;
 
 // Korea uses UTC+9 year-round. The policy is independent of the Mac timezone.
 export function afterQuietHours(stamp) {
@@ -19,14 +19,42 @@ export function nextMonitorTime(start, finished, random = Math.random) {
   return candidate > finished ? candidate : finished + 30 * 60 * 1000;
 }
 
+export function searchDescriptor(value) {
+  const url = new URL(value);
+  const keys = [...url.searchParams.keys()];
+  if (
+    url.origin !== "https://www.pokergosu.com" ||
+    url.pathname !== "/free/search" ||
+    url.hash ||
+    url.username ||
+    url.password ||
+    value.length > 600 ||
+    keys.length !== 2 ||
+    !keys.includes("s") ||
+    !keys.includes("v") ||
+    !["1", "4"].includes(url.searchParams.get("s"))
+  )
+    throw new Error("INVALID_SEARCH_URL");
+  const term = decodeURIComponent(url.searchParams.get("v"));
+  if (
+    [...term].length < 2 ||
+    [...term].length > 20 ||
+    term !== term.trim() ||
+    [...term].some((c) => c.codePointAt(0) < 32)
+  )
+    throw new Error("INVALID_SEARCH_TERM");
+  return { url: value, term, scope: url.searchParams.get("s") };
+}
+
 export function allowedMonitorUrl(value) {
   try {
     const url = new URL(value);
     return (
       url.origin === "https://www.pokergosu.com" &&
       !url.hash &&
-      ((/^\/free\/?$/.test(url.pathname) &&
-        (!url.search || /^\?page=[1-5]$/.test(url.search))) ||
+      ((url.pathname === "/free/search" && Boolean(searchDescriptor(value))) ||
+        (/^\/free\/?$/.test(url.pathname) &&
+          (!url.search || /^\?page=[1-7]$/.test(url.search))) ||
         (/^\/free\/[1-9][0-9]{0,18}$/.test(url.pathname) && !url.search))
     );
   } catch {
@@ -77,7 +105,7 @@ export function createMonitor({
       ? ` · 다음 ${new Date(s.nextAt).toLocaleTimeString("ko-KR", { timeZone: "Asia/Seoul" })}`
       : "";
     await show(
-      `자동 수집 ${state} · 본문 ${s.threadsSaved}회 · 일치 ${s.matchedThreads}회 · 완료 ${s.cyclesCompleted}주기${next}`,
+      `자동 수집 ${state}${s.search ? ` · 검색 ${s.search.term}(${s.search.scope === "4" ? "댓글" : "제목·본문"})` : ""} · 본문 ${s.threadsSaved}회 · 일치 ${s.matchedThreads}회 · 완료 ${s.cyclesCompleted}주기${next}`,
       active(s)
         ? afterQuietHours(now()) > now()
           ? "휴식"
@@ -155,8 +183,11 @@ export function createMonitor({
     s.page = 1;
     s.nextAt = nextMonitorTime(s.cycleStartedAt || now(), now(), random);
   }
-  async function plan(s) {
-    const result = await local("/plan");
+  async function plan(s, discoveredIds) {
+    const result =
+      s.search && discoveredIds
+        ? await local("/search/plan", { url: s.search.url, ids: discoveredIds })
+        : await local("/plan");
     if (
       !Array.isArray(result.queue) ||
       result.queue.length > MAX_THREADS ||
@@ -166,6 +197,8 @@ export function createMonitor({
       throw new Error("INVALID_PLAN");
     const ids = new Set();
     for (const post of result.queue) {
+      if (s.search && discoveredIds && !discoveredIds.includes(post.id))
+        throw new Error("INVALID_PLAN");
       if (
         typeof post.id !== "string" ||
         !/^[1-9][0-9]{0,18}$/.test(post.id) ||
@@ -188,6 +221,14 @@ export function createMonitor({
     }
   }
   async function acceptList(s, result) {
+    if (s.search) {
+      if (!Array.isArray(result.data)) throw new Error("BOARD_MARKUP_UNKNOWN");
+      await plan(
+        s,
+        result.data.filter((p) => !p.pinned).map((p) => p.id),
+      );
+      return;
+    }
     if (!Array.isArray(result.data) || !result.data.length)
       throw new Error("BOARD_MARKUP_UNKNOWN");
     const ids = result.data.filter((p) => !p.pinned).map((p) => p.id);
@@ -199,8 +240,11 @@ export function createMonitor({
     s.discoveryOverlap =
       Boolean(s.discoveryOverlap) ||
       ids.some((id) => s.previousHeadIds.includes(id));
-    // Stop when the previous discovery boundary is reached; never exceed five pages.
-    if (!s.discoveryOverlap && s.page < 5) {
+    // Stop when the previous discovery boundary is reached; never exceed seven pages.
+    if (
+      !s.discoveryOverlap &&
+      s.page < (s.searchFallbackCycle === s.cycle ? 6 : 7)
+    ) {
       s.page++;
       s.phase = "board";
       s.nextAt = stepDelay();
@@ -341,12 +385,34 @@ export function createMonitor({
         await stop("CYCLE_REQUEST_LIMIT");
         return;
       }
+      if (s.phase === "board" && s.page === 1 && s.cycleRequests === 0) {
+        s.search = null;
+        s.searchWarning = null;
+        try {
+          const policy = await local(`/strategy?cycle=${s.cycle}`);
+          if (policy.mode === "search" && !s.searchDisabled) {
+            const parsed = searchDescriptor(policy.url);
+            if (
+              policy.term !== parsed.term ||
+              policy.scope !== parsed.scope ||
+              !Number.isFinite(policy.expiresAt) ||
+              policy.expiresAt <= now()
+            )
+              throw new Error("INVALID_SEARCH_STRATEGY");
+            s.search = { ...parsed, expiresAt: policy.expiresAt };
+          }
+        } catch {
+          s.searchWarning = "SEARCH_POLICY_UNAVAILABLE_USING_BOARD";
+        }
+      }
       const target =
         s.phase === "thread"
           ? s.queue[s.index]?.url
-          : s.phase === "board" && s.page > 1
-            ? `${BOARD}?page=${s.page}`
-            : BOARD;
+          : s.phase === "board" && s.search
+            ? s.search.url
+            : s.phase === "board" && s.page > 1
+              ? `${BOARD}?page=${s.page}`
+              : BOARD;
       if (!allowedMonitorUrl(target)) {
         await stop("INVALID_TARGET");
         return;
@@ -393,6 +459,50 @@ export function createMonitor({
       s = await current(id);
       if (!s) return;
       const expected = s.phase === "thread" ? "thread" : "list";
+      if (
+        s.phase === "board" &&
+        s.search &&
+        !result?.ok &&
+        result?.reason === "BOARD_MARKUP_UNKNOWN" &&
+        !result.access &&
+        samePage(tab.url, target)
+      ) {
+        s.inFlight = false;
+        s.expectedUrl = tab.url;
+        Object.assign(s.history.at(-1), {
+          outcome: "skipped",
+          reason: "BOARD_MARKUP_UNKNOWN",
+          finishedAt: now(),
+        });
+        s.searchDisabled = true;
+        s.searchFallbackCycle = s.cycle;
+        s.searchWarning = "SEARCH_MARKUP_UNKNOWN_USING_BOARD";
+        s.search = null;
+        s.page = 1;
+        s.nextAt = stepDelay();
+        if (await checkpoint(s)) await arm(s);
+        return;
+      }
+      if (
+        s.phase === "thread" &&
+        !result?.ok &&
+        result?.reason === "THREAD_MARKUP_UNKNOWN" &&
+        !result.access &&
+        samePage(tab.url, target)
+      ) {
+        s.inFlight = false;
+        s.expectedUrl = tab.url;
+        Object.assign(s.history.at(-1), {
+          outcome: "skipped",
+          reason: result.reason,
+          finishedAt: now(),
+        });
+        s.index++;
+        s.phase = s.index < s.queue.length ? "thread" : "return";
+        s.nextAt = stepDelay();
+        if (await checkpoint(s)) await arm(s);
+        return;
+      }
       if (!result?.ok || result.operation !== expected) {
         await stop(result?.reason || "CAPTURE_FAILED", result?.access);
         return;

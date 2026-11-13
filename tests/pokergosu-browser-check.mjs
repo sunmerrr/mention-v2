@@ -232,6 +232,33 @@ try {
   assert.equal(value.data.comments[0].published_at, null);
   assert.equal(value.data.comments[1].author, "child writer");
   checks++;
+  await load(
+    '<title>검색 - 포커고수</title><div class="w-full font-medium"><div class="lg:px-6"><p>"APL" 검색결과 1개</p><div class="boarddocument"><table><tr><td><a href="/free/123?s=1&v=APL">synthetic result</a></td></tr></table></div></div></div><aside><li><a href="/free/888">popular</a></li></aside>',
+    "/free/search?s=1&v=APL",
+  );
+  value = await extract(page, "list");
+  assert.deepEqual(value.data, [
+    { id: "123", url: "https://www.pokergosu.com/free/123", pinned: false },
+  ]);
+  checks++;
+  await load(
+    '<title>검색 - 포커고수</title><main class="col-main"><p>"APL" 검색결과 &nbsp; 0개</p><table></table></main>',
+    "/free/search?s=4&v=APL",
+  );
+  assert.deepEqual(await extract(page, "list"), { data: [], empty: true });
+  checks++;
+  await load(
+    '<title>검색 - 포커고수</title><main class="col-main"><p>"APL" 검색결과 5개</p><table></table></main>',
+    "/free/search?s=4&v=APL",
+  );
+  assert.equal((await extract(page, "list")).paused, "BOARD_MARKUP_UNKNOWN");
+  checks++;
+  await load(
+    '<title>Just a moment...</title><div id="challenge-running">Verify human</div>',
+    "/free/search?s=4&v=APL",
+  );
+  assert.equal((await extract(page, "list")).paused, "BOT_CHALLENGE");
+  checks++;
   console.log(JSON.stringify({ checks, external_requests: 0 }));
 } finally {
   await browser.close();

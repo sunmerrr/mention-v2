@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Mention · 포커고수 읽기",
-  "version": "0.4.4",
+  "version": "0.5.1",
   "description": "자유 게시판 새 글과 최근 댓글을 한 번 시작한 탭에서 자동으로 읽고 로컬에 저장합니다.",
   "permissions": [
     "activeTab",

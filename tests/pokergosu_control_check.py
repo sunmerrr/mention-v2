@@ -54,6 +54,7 @@ class ControlTests(unittest.TestCase):
         self.assertEqual(manifest['host_permissions'],['http://127.0.0.1/*'])
         with self.assertRaisesRegex(ValueError,'INVALID_CONTROL_ACTION'):self.store.enqueue('eval')
         with self.assertRaisesRegex(ValueError,'INVALID_TARGET_VERSION'):self.store.enqueue('reload','https://evil.invalid')
+        with self.assertRaisesRegex(ValueError,'INVALID_SEARCH_ASSET'):self.store.enqueue('inspect-search','https://www.pokergosu.com/api/private')
         command=self.store.enqueue('reload','0.4.1');self.assertEqual(self.poll()['command']['targetVersion'],'0.4.1')
         self.assertEqual(command['status'],'queued')
 

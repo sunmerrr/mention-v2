@@ -1,12 +1,23 @@
 import assert from "node:assert/strict";
 import {
   afterQuietHours,
+  allowedMonitorUrl,
   createMonitor,
   MONITOR_ALARM,
   nextMonitorTime,
+  searchDescriptor,
 } from "../tools/pokergosu/extension/monitor.mjs";
 
-function fixture({ count = 2, navHook, deniedAt = 0, access } = {}) {
+function fixture({
+  count = 2,
+  navHook,
+  deniedAt = 0,
+  access,
+  badAt = 0,
+  strategy,
+  strategyUnavailable = false,
+  searchMarkupUnknown = false,
+} = {}) {
   let clock = 1000000,
     store = {},
     navigations = [],
@@ -50,31 +61,47 @@ function fixture({ count = 2, navHook, deniedAt = 0, access } = {}) {
     local: async (path, body) => {
       if (offline) throw new Error("offline");
       if (body) reports.push(structuredClone(body.data));
+      if (path.startsWith("/strategy?") && strategyUnavailable)
+        throw new Error("unavailable");
+      if (path.startsWith("/strategy?"))
+        return strategy && clock < strategy.expiresAt ? strategy : {};
+      if (path === "/search/plan") {
+        assert.equal(body.url, strategy.url);
+        assert.deepEqual(body.ids, heads);
+        return {
+          queue: heads.length ? posts : [],
+          pending_threads: heads.length,
+        };
+      }
       return path === "/plan" ? { queue: posts, pending_threads: 9 } : {};
     },
     capture: async (t) =>
-      navigations.length && navigations.length === deniedAt
-        ? {
-            ok: false,
-            reason: access ? "BOT_CHALLENGE" : "ACCESS_RESTRICTED",
-            access,
-          }
-        : /^\/free\/?$/.test(new URL(t.url).pathname)
-          ? {
-              ok: true,
-              operation: "list",
-              data: heads.map((id) => ({
-                id,
-                url: `https://www.pokergosu.com/free/${id}`,
-              })),
-              saved: { discovered: heads.length },
-            }
-          : {
-              ok: true,
-              operation: "thread",
-              data: { id: new URL(t.url).pathname.split("/").at(-1) },
-              saved: { eligible: true, metadata_missing: true },
-            },
+      searchMarkupUnknown && new URL(t.url).pathname === "/free/search"
+        ? { ok: false, reason: "BOARD_MARKUP_UNKNOWN" }
+        : navigations.length && navigations.length === badAt
+          ? { ok: false, reason: "THREAD_MARKUP_UNKNOWN" }
+          : navigations.length && navigations.length === deniedAt
+            ? {
+                ok: false,
+                reason: access ? "BOT_CHALLENGE" : "ACCESS_RESTRICTED",
+                access,
+              }
+            : /^\/free(?:\/search)?\/?$/.test(new URL(t.url).pathname)
+              ? {
+                  ok: true,
+                  operation: "list",
+                  data: heads.map((id) => ({
+                    id,
+                    url: `https://www.pokergosu.com/free/${id}`,
+                  })),
+                  saved: { discovered: heads.length },
+                }
+              : {
+                  ok: true,
+                  operation: "thread",
+                  data: { id: new URL(t.url).pathname.split("/").at(-1) },
+                  saved: { eligible: true, metadata_missing: true },
+                },
     navigate: async (_id, url) => {
       navigations.push(url);
       await navHook?.();
@@ -113,6 +140,8 @@ function fixture({ count = 2, navHook, deniedAt = 0, access } = {}) {
     },
   };
 }
+assert.equal(allowedMonitorUrl("https://www.pokergosu.com/free?page=7"), true);
+assert.equal(allowedMonitorUrl("https://www.pokergosu.com/free?page=8"), false);
 let checks = 0;
 {
   const f = fixture();
@@ -160,17 +189,17 @@ let checks = 0;
     await f.monitor.tick();
   }
   f.heads(["999"]);
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 14; i++) {
     f.due();
     await f.monitor.tick();
   }
   assert.equal(f.state().cyclesCompleted, 2);
-  assert.equal(f.state().cycleRequests, 12);
+  assert.equal(f.state().cycleRequests, 14);
   assert.equal(f.state().discoveryGaps, 1);
   checks++;
-  assert.equal(f.nav().filter((u) => u.includes("?page=")).length, 4);
+  assert.equal(f.nav().filter((u) => u.includes("?page=")).length, 6);
   checks++;
-  assert.equal(f.nav().length, 20);
+  assert.equal(f.nav().length, 22);
   assert.equal(f.state().threadsSaved, 12);
   checks++;
 }
@@ -322,18 +351,18 @@ let checks = 0;
   const f = fixture();
   await f.monitor.start(f.tab);
   f.heads(["999"]);
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 6; i++) {
     f.due();
     await f.monitor.tick();
   }
-  assert.equal(f.state().page, 4);
+  assert.equal(f.state().page, 7);
   f.heads(["103"]);
   await createMonitor(f.options).restore();
   f.due();
   await f.monitor.tick();
   assert.equal(f.state().discoveryGaps, 0);
   assert.equal(f.state().phase, "thread");
-  assert.equal(f.nav().length, 4);
+  assert.equal(f.nav().length, 7);
   checks++;
 }
 assert.equal(
@@ -365,6 +394,23 @@ assert.equal(
   assert.equal(f.nav().length, 4);
   assert.ok(f.state().nextAt - f.state().cycleStartedAt >= 1800000);
   assert.ok(f.state().nextAt - f.state().cycleStartedAt <= 3600000);
+  checks++;
+}
+for (const badAt of [2, 3]) {
+  const f = fixture({ badAt });
+  await f.monitor.start(f.tab);
+  for (let i = 0; i < 4; i++) {
+    f.due();
+    await f.monitor.tick();
+  }
+  assert.equal(f.state().status, "running");
+  assert.equal(f.state().phase, "rest");
+  assert.equal(f.state().threadsSaved, 1);
+  assert.equal(f.state().cyclesCompleted, 1);
+  assert.equal(f.state().history[badAt - 1].outcome, "skipped");
+  assert.equal(f.state().history[badAt - 1].reason, "THREAD_MARKUP_UNKNOWN");
+  assert.equal(f.nav().length, 4);
+  assert.equal(f.state().reason, null);
   checks++;
 }
 const kst = (time) => Date.parse(`2026-11-13T${time}+09:00`);
@@ -428,12 +474,125 @@ const kst = (time) => Date.parse(`2026-11-13T${time}+09:00`);
   assert.equal(f.state(), undefined);
   checks++;
 }
+{
+  const url =
+    "https://www.pokergosu.com/free/search?s=1&v=%25ED%258F%25AC%25EC%25BB%25A4%25EB%25A3%25B0%25EB%25A3%25A8";
+  assert.equal(searchDescriptor(url).term, "포커룰루");
+  assert.equal(allowedMonitorUrl(url), true);
+  for (const bad of [
+    `${url}&page=2`,
+    `${url}&s=4`,
+    url.replace("s=1", "s=5"),
+    url.replace("/free/search", "/news/search"),
+  ])
+    assert.equal(allowedMonitorUrl(bad), false);
+  checks++;
+  const policy = { mode: "search", ...searchDescriptor(url), expiresAt: 1e12 };
+  const f = fixture({ strategy: policy });
+  f.heads(["103", "104"]);
+  await f.monitor.start(f.tab);
+  f.due();
+  await f.monitor.tick();
+  assert.equal(f.nav()[0], url);
+  assert.equal(f.state().phase, "thread");
+  assert.equal(f.state().discoveryGaps, 0);
+  await createMonitor(f.options).restore();
+  for (let i = 0; i < 3; i++) {
+    f.due();
+    await f.monitor.tick();
+  }
+  assert.equal(f.state().threadsSaved, 2);
+  assert.equal(f.state().phase, "rest");
+  assert.equal(f.nav().length, 4);
+  checks++;
+  policy.expiresAt = 0;
+  f.due();
+  await f.monitor.tick();
+  assert.equal(f.nav().at(-1), "https://www.pokergosu.com/free");
+  assert.equal(f.state().search, null);
+  checks++;
+}
+{
+  const url = "https://www.pokergosu.com/free/search?s=4&v=APL";
+  const strategy = {
+    mode: "search",
+    ...searchDescriptor(url),
+    expiresAt: 1e12,
+  };
+  const f = fixture({ strategy, count: 0 });
+  await f.monitor.start(f.tab);
+  f.heads([]);
+  f.due();
+  await f.monitor.tick();
+  assert.equal(f.state().phase, "return");
+  f.heads(["103"]);
+  f.due();
+  await f.monitor.tick();
+  assert.equal(f.state().phase, "rest");
+  assert.equal(f.state().threadsSaved, 0);
+  assert.equal(f.state().discoveryGaps, 0);
+  checks++;
+  const denied = fixture({
+    strategy,
+    deniedAt: 1,
+    access: { kind: "bot_challenge" },
+  });
+  await denied.monitor.start(denied.tab);
+  denied.due();
+  await denied.monitor.tick();
+  assert.equal(denied.state().reason, "BOT_CHALLENGE");
+  assert.equal(denied.nav().length, 1);
+  checks++;
+}
+{
+  const f = fixture({ strategyUnavailable: true });
+  await f.monitor.start(f.tab);
+  f.due();
+  await f.monitor.tick();
+  assert.equal(f.state().status, "running");
+  assert.equal(
+    f.state().searchWarning,
+    "SEARCH_POLICY_UNAVAILABLE_USING_BOARD",
+  );
+  assert.equal(f.nav()[0], "https://www.pokergosu.com/free");
+  checks++;
+}
+{
+  const url = "https://www.pokergosu.com/free/search?s=1&v=APL";
+  const strategy = {
+    mode: "search",
+    ...searchDescriptor(url),
+    expiresAt: 1e12,
+  };
+  const f = fixture({ strategy, searchMarkupUnknown: true, count: 6 });
+  await f.monitor.start(f.tab);
+  f.due();
+  await f.monitor.tick();
+  assert.equal(f.state().status, "running");
+  assert.equal(f.state().phase, "board");
+  assert.equal(f.state().searchDisabled, true);
+  assert.equal(f.state().history[0].outcome, "skipped");
+  f.heads(["999"]);
+  for (let i = 0; i < 13; i++) {
+    f.due();
+    await f.monitor.tick();
+  }
+  assert.equal(f.state().phase, "rest");
+  assert.equal(f.state().status, "running");
+  assert.equal(f.state().cycleRequests, 14);
+  assert.equal(f.state().threadsSaved, 6);
+  assert.equal(f.nav().filter((u) => u.includes("/search?")).length, 1);
+  f.due();
+  await f.monitor.tick();
+  assert.equal(f.nav().at(-1), "https://www.pokergosu.com/free");
+  checks++;
+}
 console.log(
   JSON.stringify({
     checks,
     site_requests: 0,
     automatic_thread_reads: true,
     max_threads_per_cycle: 6,
-    max_pages_per_cycle: 5,
+    max_pages_per_cycle: 7,
   }),
 );

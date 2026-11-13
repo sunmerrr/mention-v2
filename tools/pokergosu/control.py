@@ -6,7 +6,7 @@ import sqlite3
 import time
 import uuid
 
-ACTIONS=('start','resume','stop','reload')
+ACTIONS=('start','resume','stop','reload','inspect-search')
 
 
 class ControlStore:
@@ -35,6 +35,7 @@ class ControlStore:
 
     def enqueue(self,action,target_version=None):
         if action not in ACTIONS:raise ValueError('INVALID_CONTROL_ACTION')
+        if action=='inspect-search' and target_version is not None and not re.fullmatch(r'https://www\.pokergosu\.com/pokergosu/[\w-]+\.js',target_version):raise ValueError('INVALID_SEARCH_ASSET')
         if action=='reload' and (not isinstance(target_version,str) or not re.fullmatch(r'[0-9]+(?:\.[0-9]+){1,3}',target_version)):
             raise ValueError('INVALID_TARGET_VERSION')
         with self.db:

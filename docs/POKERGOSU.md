@@ -852,3 +852,185 @@ were visible; API, detail page and public page returned200; hydration had no pag
 errors, failed requests, external requests or390px document overflow. The runtime
 verification records contain aggregates only. No additional source-page read was
 performed to backfill missing historical photo references.
+
+## Seven-page discovery cap — version0.4.5 (2026-11-13)
+
+The user requested increasing the discovery cap from five to seven pages. Keep
+30–60 minute scheduling, early exit upon the previous discovery boundary, six-body
+processing,02:00–08:00 KST quiet hours and security/manual stop rules unchanged.
+The maximum navigation budget is14 (seven lists, six threads and one return).
+Both the browser URL allowlist and receiver state/history validation accept pages
+1–7 and reject page8. Tests exercise boundary discovery on page7, a full capped
+cycle with a logged gap, early overlap, and the bounded request budget.
+
+The existing run is paused with THREAD_MARKUP_UNKNOWN from2026-11-13 08:04:02.
+Increasing list depth does not address that separate body-extraction failure.
+Deployment must retain the pause and must not enqueue a start/resume command or
+retry the failed page merely to validate the new cap.
+
+Verification/deployment: all11 Pokergosu test wrappers and the isolated native
+Chrome scenario passed; focused formatting/boundary checks passed with the existing
+informational lone-block notice. The connected Chrome acknowledged version0.4.5
+(RELOADED). The existing run retained199 visits, THREAD_MARKUP_UNKNOWN, paused
+status and no next alarm. No extra live website navigation or resume was issued.
+
+## Continue after unreadable thread bodies — version0.4.6 (2026-11-13)
+
+The user's collection-priority instruction supersedes the previous body-structure
+pause policy. A thread capture returning THREAD_MARKUP_UNKNOWN without access
+evidence records a skipped navigation and advances the queue. It does not create
+a fake body or increment saved-thread counts. Access challenges, rate limits,
+list failures and other existing stop conditions remain guarded.
+
+The receiver projects skipped threads into durable thread_read_errors and excludes
+them from automatic pending/recheck selection. Historical body-failure evidence is
+backfilled without another site read. A successful later read clears the marker;
+replaying older evidence cannot restore it over newer successful content. Diagnostic
+events are archived separately from the latest diagnostic snapshot. Original run
+history is preserved.
+
+Verification: all11 Pokergosu wrappers passed, including33 monitor scenarios and10
+monitor-policy/storage cases. The isolated native Chrome capture/reload test passed.
+The owning Chrome acknowledged0.4.6 and the authorized resume. Live verification
+confirmed a completed cycle with six saved bodies and eight navigations,124 total
+stored bodies and one retained read-error marker. The run remained running/rest
+with the next list check reserved for2026-11-13 11:21 KST. The original failed
+thread's extraction is not claimed fixed; it is skipped for later investigation.
+
+## Opinion overview and separate post list (2026-11-13)
+
+/pokergosu now renders collection totals, keyword summaries and classification
+coverage without post rows. /posts under 대화·반응 contains the searchable,
+filtered and cursor-paginated full retained post list. /posts/:id shows detail;
+legacy /pokergosu/:id links remain supported. A narrow /api/pokergosu/summary
+endpoint supplies overview SSR hydration without full post payloads. Read failures
+and the next scheduled collection are visible in the overview. No source-site
+fetch, classifier or Kakao lifecycle operation is introduced by this split.
+
+Verification:102 unit/contract tests, seven synthetic browser tests, TypeScript
+and formatting checks passed. Existing informational lint notices remain. Browser
+coverage includes overview-to-list navigation, active menus, search, cursor paging,
+details, explicit cached images and mobile behavior. The web was built and deployed
+through the existing lifecycle script. Live desktop/mobile inspection confirmed
+zero overview post rows, a310-byte summary response, zero hydration API reads,
+no page errors and no390px document overflow. Populated overview navigation took
+352ms in the local probe; public /posts returned HTTP200. These measurements
+describe this retained-data probe rather than a general performance guarantee.
+
+## Expiring keyword-focused discovery — version0.5.0 (2026-11-13)
+
+The site's public search offers title/body(s=1), title(2), body(3), comments(4)
+and author(5). The monitor supports only scopes1 and4 on /free/search, with the
+observed native v=encodeURIComponent(term) query serialization. Strict browser
+and receiver URL validation rejects additional parameters, other boards/scopes,
+duplicate query keys and malformed targets. Search pages use the existing DOM
+reader with an explicit search header; zero results require a visible zero-result
+marker and board table, rather than treating unknown markup as empty. Access
+challenge detection is unchanged.
+
+A private search-policy.json activates a bounded trial until Korean midnight. At
+each existing cycle start, /strategy selects one term/scope. The monitor reads one
+result page, at most six result threads and returns to the regular board: at most
+eight navigations, retaining30–45second navigation spacing and30–60minute cycle
+starts. There is no historical pagination or source API shortcut. Search results
+are recorded in search_results; /search/plan intersects supplied IDs with this
+provenance, omits durable read failures, prioritizes unread threads and then older
+checks. The unrelated general pending queue is excluded. Empty results finish
+normally. A missing/inactive/expired policy falls back to normal discovery; an
+unavailable policy records SEARCH_POLICY_UNAVAILABLE_USING_BOARD rather than
+stalling collection. Expiry is checked between cycles so in-progress work can finish.
+
+Commands modify only this independent local policy and never start/resume a run:
+
+```sh
+./scripts/pokergosu.sh search-today --search-term 포커룰루 --search-term 룰루 --search-term 루루 --search-term APL --search-term ㅈPL
+./scripts/pokergosu.sh search-off
+```
+
+The experiment deliberately stops collecting the ordinary stream during active
+search cycles. One result page/six bodies is a traffic bound, not a completeness
+guarantee. Keyword variants rotate over successive cycles; comment search is a
+separate round. Source-page views, captures and later AI sentiment classification
+remain distinct operations. This does not add a classifier schedule or change
+Kakao/assistant workers.
+
+An operator-only inspect-search command inspects controls in the existing managed
+board tab without navigating. Its optional --asset accepts only one same-origin
+/pokergosu/<filename>.js static asset, with timeout, no redirects and bounded text.
+It never executes downloaded code or reads input values, cookies or storage. This
+was used to establish the public search shape; it is never called by monitoring.
+Direct server-side page/asset attempts returned403; no retry loop, challenge solver
+or alternative identity was added. All actual collection remains in the owning
+Chrome extension with its previously granted site permission.
+
+Verification: all12 Pokergosu wrappers passed, including39 monitor scenarios,38
+DOM-reader checks, five search policy/provenance/expiry cases and20 local-control
+scenarios. The isolated native Chrome test passed search-page capture, result-only
+planning, body/comment capture, return/rest, reload and stop with all site requests
+intercepted. Formatting/boundary checks passed with the existing informational
+lone-block notice. No web UI change or web restart was required for this feature.
+
+Before rollout the live run completed its third cycle:27 navigations and18 saved
+bodies since resume,136 bodies total. Configuration starts at cycle4 with the five
+terms above and expires at2026-11-14 00:00 KST. The owning Chrome acknowledged0.5.0 (RELOADED) during rest; the same run,27 visits
+and next alarm at2026-11-13 12:59:06 KST were preserved. The authenticated next-cycle
+strategy returned 포커룰루/title-body and the expected Korean-midnight expiry.
+The first live search capture remains pending
+the scheduled cycle; synthetic success does not claim a live result or immunity
+from future site restrictions.
+
+## Full retained-text review snapshot (2026-11-13)
+
+The delegated reviewer completed all136 retained posts and312 stored comments,
+including six new bodies during review. Per-post hashes, relevance reasons, title
+quotes, media limits and no-write reasons are stored privately under ignored
+runtime/forum-sentiment-review, mode0600. Ledger IDs and comment counts were
+independently reconciled.123 posts were textually unrelated,11 lacked sufficient
+target attribution and two were ordinary bounty false positives with existing AI
+exclusions retained.41 posts included unreviewed media and four had empty bodies;
+no image contents were inferred. No additional actual evaluation of a configured
+target was established from retained text, and no human classification changed.
+
+## First live search failure and collection fallback — version0.5.1 (2026-11-13)
+
+At12:59 KST the first live keyword search stopped with BOARD_MARKUP_UNKNOWN.
+The retained diagnostic showed a search results table under .boarddocument inside
+a padding container, without the ordinary .col-main marker. This was an extractor
+scope bug; the navigation carried no access/challenge evidence. No live search
+bodies were saved by that attempt. The earlier synthetic fixture incorrectly
+reused .col-main and therefore did not establish live markup compatibility.
+
+Upon the13:32 status check the independent search policy was disabled and normal
+collection explicitly resumed while fixing the reader. The failed run and exact
+error history remain preserved. The reader now scopes search to the observed
+.boarddocument parent containing its search-result header and table. Synthetic DOM
+and native-extension fixtures reproduce this missing-marker structure.
+
+A search-only BOARD_MARKUP_UNKNOWN without access evidence now records a skipped
+search navigation, disables search for that run and immediately continues ordinary
+list/body discovery. It never creates a failed-body marker or fake body. The
+fallback cycle allows at most six regular list pages so one failed search plus
+six lists, six bodies and one return remain inside14 navigations. Subsequent
+ordinary cycles retain the seven-page cap. The skipped search is logged distinctly
+as search_fallback. Security/access failures still pause and cannot be relabeled
+as a benign skip. An operator must fix the search problem and resume a new run
+before search can be enabled again after this fallback.
+
+Verification:12 Pokergosu wrappers passed, including40 monitor scenarios and six
+search policy/storage/fallback cases. The native Chrome synthetic search test
+passed against the corrected .boarddocument structure. The first corrected live
+search remains pending its normal scheduled cycle; completion estimates describe
+a bounded first-result-page sweep rather than exhaustive historical collection.
+
+Deployment verification: the resumed ordinary cycle completed with five saved
+bodies and one unreadable-body skip, bringing retained data to141 bodies/332
+comments. The skipped body did not stop the run. The delegated reviewer completed
+the new five bodies and reconciled the141-post ledger. Version0.5.1 was then
+acknowledged by the owning Chrome (RELOADED) during rest, preserving the run ID,
+eight navigations and next alarm at2026-11-13 14:31:37 KST. Today's search policy
+was reapplied starting at cycle2; the authenticated strategy returns 포커룰루 as
+the next title/body search and expires at Korean midnight. The first corrected
+live search remains unverified until that reserved cycle. Estimated first-page
+results follow5–10minutes after the alarm; ten rotating term/scope cycles span
+roughly4.5–9hours plus the final capture cycle and do not establish historical
+coverage or successful completion in the presence of later access failures.

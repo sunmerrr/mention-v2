@@ -18,7 +18,7 @@ it("extracts posts/replies and preserves skipped and partial comment coverage", 
   });
   expect(result.status, result.stderr).toBe(0);
   expect(JSON.parse(result.stdout)).toEqual({
-    checks: 34,
+    checks: 38,
     external_requests: 0,
   });
 }, 35000);
@@ -69,11 +69,11 @@ it("automatically reads threads/comments across bounded alarm-driven cycles and 
   });
   expect(result.status, result.stderr).toBe(0);
   expect(JSON.parse(result.stdout)).toEqual({
-    checks: 31,
+    checks: 40,
     site_requests: 0,
     automatic_thread_reads: true,
     max_threads_per_cycle: 6,
-    max_pages_per_cycle: 5,
+    max_pages_per_cycle: 7,
   });
 });
 
@@ -84,7 +84,7 @@ it("plans bounded new/recent threads, validates source/audit history and caches 
     env: { ...process.env, PYTHONDONTWRITEBYTECODE: "1" },
   });
   expect(result.status, result.stderr).toBe(0);
-  expect(result.stderr).toContain("Ran 8 tests");
+  expect(result.stderr).toContain("Ran 10 tests");
 });
 
 it("reports exact failure ordinals and distinguishes access evidence without inventing account bans", () => {
@@ -113,7 +113,7 @@ it("controls collection without per-post clicks and preserves manual/security st
   });
   expect(result.status, result.stderr).toBe(0);
   expect(JSON.parse(result.stdout)).toEqual({
-    checks: 18,
+    checks: 20,
     site_requests: 0,
     per_post_clicks: 0,
   });
@@ -127,4 +127,14 @@ it("repairs missing metadata from retained headers without changing checked time
   });
   expect(result.status, result.stderr).toBe(0);
   expect(result.stderr).toContain("Ran 5 tests");
+});
+
+it("rotates expiring forum searches and keeps result queues isolated from the general backlog", () => {
+  const result = spawnSync("python3", ["tests/pokergosu_search_check.py"], {
+    encoding: "utf8",
+    timeout: 20000,
+    env: { ...process.env, PYTHONDONTWRITEBYTECODE: "1" },
+  });
+  expect(result.status, result.stderr).toBe(0);
+  expect(result.stderr).toContain("Ran 6 tests");
 });

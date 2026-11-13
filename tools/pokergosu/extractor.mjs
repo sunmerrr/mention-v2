@@ -5,7 +5,7 @@ export function extractDocument(operation) {
     '[data-comment-id], [id^="comment_"], [id^="comment-"], .comment-item, .comment_item, article.comment, .comments .comment[id^="C"]';
   if (
     location.origin !== origin ||
-    !/^\/free(?:\/[1-9][0-9]*)?\/?$/.test(location.pathname)
+    !/^\/free(?:\/[1-9][0-9]*|\/search)?\/?$/.test(location.pathname)
   ) {
     return { paused: "OUTSIDE_FREE_BOARD" };
   }
@@ -18,7 +18,9 @@ export function extractDocument(operation) {
     ) ||
     (operation === "list" &&
       Boolean(
-        document.querySelector(".col-main table,main table,#board table"),
+        document.querySelector(
+          ".col-main table,main table,#board table,.boarddocument table",
+        ),
       ));
   if (!readable) {
     const title = document.title.slice(0, 200);
@@ -169,15 +171,21 @@ export function extractDocument(operation) {
   };
   if (operation === "list") {
     const heading = document.querySelector("h1");
-    const board = document.querySelector(
-      "main,#content,#board,.board,.col-main",
-    );
+    const search = location.pathname === "/free/search";
+    const board =
+      (search
+        ? document.querySelector(".boarddocument")?.parentElement
+        : null) ||
+      document.querySelector("main,#content,#board,.board,.col-main");
     if (
       !board ||
-      ![heading?.textContent, document.title].some((text) =>
-        (text || "").replace(/\s+/g, "").includes("자유게시판"),
-      ) ||
-      location.pathname !== "/free"
+      !(search
+        ? /검색/.test(document.title) &&
+          /검색\s*결과/.test(board.textContent || "")
+        : [heading?.textContent, document.title].some((text) =>
+            (text || "").replace(/\s+/g, "").includes("자유게시판"),
+          )) ||
+      !["/free", "/free/search"].includes(location.pathname)
     ) {
       return { paused: "BOARD_MARKUP_UNKNOWN" };
     }
@@ -219,7 +227,17 @@ export function extractDocument(operation) {
         pinned,
       });
     }
-    if (!links.size) return { paused: "BOARD_MARKUP_UNKNOWN" };
+    if (!links.size) {
+      if (
+        search &&
+        /검색\s*결과\s*0\s*개/.test(
+          (board.textContent || "").replace(/\u00a0/g, " "),
+        ) &&
+        board.querySelector("table")
+      )
+        return { data: [], empty: true };
+      return { paused: "BOARD_MARKUP_UNKNOWN" };
+    }
     return { data: [...links.values()] };
   }
   const id = location.pathname.match(/^\/free\/([1-9][0-9]*)\/?$/)?.[1];

@@ -60,7 +60,10 @@ async function show(text, badge, tabId) {
 // never input values, scripts, storage, cookies or full HTML.
 export function inspectStructure() {
   return {
-    url: `${location.origin}${location.pathname}`,
+    url:
+      location.pathname === "/free/search"
+        ? location.href
+        : `${location.origin}${location.pathname}`,
     headings: [...document.querySelectorAll("h1,h2")]
       .slice(0, 12)
       .map((e) => (e.textContent || "").slice(0, 160)),
@@ -93,14 +96,16 @@ export async function capture(tab) {
     }
     if (
       url.origin !== "https://www.pokergosu.com" ||
-      !/^\/free(?:\/[1-9][0-9]*)?\/?$/.test(url.pathname) ||
+      !/^\/free(?:\/[1-9][0-9]*|\/search)?\/?$/.test(url.pathname) ||
       !Number.isInteger(tab.id)
     )
       throw new Error("OUTSIDE_FREE_BOARD");
     // Check the local receiver before extracting public content. There is no
     // website fetch, reload, navigation or content-script message listener.
     await local("/status");
-    const operation = /^\/free\/?$/.test(url.pathname) ? "list" : "thread";
+    const operation = /^\/free(?:\/search)?\/?$/.test(url.pathname)
+      ? "list"
+      : "thread";
     const [injection] = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       func: extractDocument,
@@ -119,7 +124,10 @@ export async function capture(tab) {
         });
         await local("/capture", {
           operation: "diagnostic",
-          page_url: `${url.origin}${url.pathname}`,
+          page_url:
+            url.pathname === "/free/search"
+              ? url.href
+              : `${url.origin}${url.pathname}`,
           reason: result.paused,
           structure: structure.result,
         });
@@ -133,7 +141,10 @@ export async function capture(tab) {
     }
     const saved = await local("/capture", {
       operation,
-      page_url: `${url.origin}${url.pathname}`,
+      page_url:
+        url.pathname === "/free/search"
+          ? url.href
+          : `${url.origin}${url.pathname}`,
       data: result.data,
     });
     const text =

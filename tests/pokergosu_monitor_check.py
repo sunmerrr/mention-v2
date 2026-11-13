@@ -115,16 +115,41 @@ class MonitorTests(unittest.TestCase):
         self.assertEqual(self.service.status()['trial'],trial)
 
     def test_budget_and_queue_do_not_accept_unbounded_or_foreign_navigation(self):
+        from monitor_policy import monitor_url
+        self.assertEqual(monitor_url('https://www.pokergosu.com/free?page=7'),'https://www.pokergosu.com/free?page=7')
+        with self.assertRaisesRegex(ValueError,'INVALID_MONITOR_URL'):monitor_url('https://www.pokergosu.com/free?page=8')
         value=snapshot();value['discoveryOverlap']='true'
         with self.assertRaisesRegex(ValueError,'INVALID_MONITOR_OVERLAP'):self.save(value)
         value=snapshot();value['discoveryOverlap']=True;self.save(value)
         repository=Repository(self.temp.name)
         self.assertTrue(repository.get('extension_monitor')['discoveryOverlap'])
         repository.close()
-        value=snapshot();value['cycleRequests']=13
+        value=snapshot();value['cycleRequests']=15
         with self.assertRaisesRegex(ValueError,'INVALID_MONITOR_BUDGET'):self.save(value)
         value=snapshot();value['queue']=[{'id':'1','url':'https://evil.invalid/free/1'}]
         with self.assertRaisesRegex(ValueError,'INVALID_MONITOR_PLAN'):self.save(value)
+
+    def test_failed_thread_is_skipped_without_success_or_repeat_planning(self):
+        repository=Repository(self.temp.name);now=time.time()
+        for identity in ('101','102'):repository.discover([{'id':identity,'url':f'https://www.pokergosu.com/free/{identity}'}],now)
+        value=snapshot();value.update(phase='return',index=1,queue=[{'id':'101','url':'https://www.pokergosu.com/free/101'}],navigations=1,cycleRequests=1,expectedUrl='https://www.pokergosu.com/free/101')
+        value['history']=[{'sequence':1,'cycle':1,'url':'https://www.pokergosu.com/free/101','startedAt':31000,'finishedAt':32000,'outcome':'skipped','reason':'THREAD_MARKUP_UNKNOWN'}]
+        self.save(value)
+        self.assertEqual(repository.get('extension_monitor')['status'],'running')
+        self.assertEqual([p['id'] for p in repository.monitor_plan(now)['queue']],['102'])
+        self.assertIsNone(repository.db.execute("select payload from threads where id='101'").fetchone()[0])
+        repository.backfill_read_errors();repository.backfill_read_errors()
+        self.assertEqual(repository.db.execute('select count(*) from thread_read_errors').fetchone()[0],1)
+        repository.save({'id':'101','eligible':False},now)
+        repository.backfill_read_errors();self.save(value)
+        self.assertEqual(repository.db.execute('select count(*) from thread_read_errors').fetchone()[0],0)
+        repository.close()
+
+    def test_skip_cannot_hide_an_access_restriction_or_list_failure(self):
+        for reason,url in [('BOT_CHALLENGE','https://www.pokergosu.com/free/101'),('THREAD_MARKUP_UNKNOWN','https://www.pokergosu.com/free')]:
+            value=snapshot();value.update(navigations=1,cycleRequests=1)
+            value['history']=[{'sequence':1,'cycle':1,'url':url,'startedAt':31000,'finishedAt':32000,'outcome':'skipped','reason':reason}]
+            with self.assertRaisesRegex(ValueError,'INVALID_THREAD_SKIP'):self.save(value)
 
     def test_long_run_retains_events_outside_the_extension_window_and_stays_terminal(self):
         value=snapshot();self.save(value)
