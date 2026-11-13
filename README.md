@@ -1,200 +1,72 @@
 # Mention
 
-React SSR replacement for the Kakao open-chat sentiment and trend dashboard.
-Workspace: `/Users/we/mention`. Legacy service remains separate and unchanged.
+카카오톡 오픈채팅과 포커고수에서 서비스 관련 대화를 수집하고, 맥락을 바탕으로 여론을 파악하는 모니터링 대시보드입니다.
 
-## Restored monitoring workspace
+## 주요 기능
 
-The existing monitoring features now run in the replacement React SSR application:
+- **종합 여론:** 같은 대상에 대한 카톡·포커고수 반응을 출처별 수치와 근거로 비교합니다.
+- **대화 맥락·분류:** 전후 대화와 게시글·댓글을 확인하고, 여론 분류와 메모를 수정합니다. 사람의 수정과 변경 이력을 보존합니다.
+- **키워드 관리:** 대상별 별칭을 묶고, 출처별 수집 여부를 한 번에 설정합니다. 개별 예외와 카톡 제외 문구도 관리합니다.
+- **수집·보고:** 수집 대상 방, 누락 구간, 날짜별 CSV, 일일 브리핑과 저장된 이미지 참조를 확인합니다.
 
-- Sentiment overview, meaningful reaction examples, dated trends and evidence.
-- Cursor-paged conversations, keyword highlights, photos, context expansion,
-  relevance review/undo and source episode/campaign evaluation.
-- Confirmed-classification editing with evidence/conflict checks and audit history.
-- Include/exclude keywords, manual target/alias groups and automatic suggestions.
-- Room exclusions, compact guide management and per-room rules/references.
-- Searchable message/photo records, date-specific message/context CSV and JSON.
-- Reaction observation/feedback comparison, daily brief versions and image exports.
-- Bookmarks/owners/workflow, alias candidate decisions and reconsideration.
-- Collection-gap/recovery evidence and existing backup/restore verification actions.
-- Local-only campaign delivery, briefing recipients/schedules/delivery and backups
-  retain the existing collector restrictions and durable receipts.
+미분류는 중립으로 취급하지 않습니다. 카톡 대화와 포커고수 글은 집계 단위가 달라 여론 비율을 합산하지 않습니다. 일부 운영 메뉴는 로컬에서만 표시됩니다.
 
-Local UI: **http://127.0.0.1:8790/**. The existing user-authorized Cloudflare tunnel
-serves this same application; `runtime/deployment.json` records its public origin.
-The deployed instance now has monitoring writes enabled, as requested for feature
-parity. Default code configuration remains read-only; `MENTION_ENABLE_WRITES`
-overrides the local deployment setting. Chat sends and backup actions remain local.
-This does not enable a private assistant, change workers, log in or reconnect Kakao.
-See [feature parity and verification](docs/FEATURE-PARITY.md).
+## 기술 스택
 
-## Run
+| 구분             | 사용 기술                                                  |
+| ---------------- | ---------------------------------------------------------- |
+| 프론트엔드       | React 18, TypeScript, React Router 7                       |
+| 렌더링·빌드      | React SSR 및 hydration, Vite 8                             |
+| 데이터 조회·캐시 | TanStack Query 5                                           |
+| UI               | Radix Themes 3, Lucide, 공통 디자인 토큰·컴포넌트          |
+| 웹 API           | Node.js 24.14+, Fastify 5, Zod 4                           |
+| 저장소           | SQLite — 조회 모델, 포커고수 기록, 분류 이력·처리 영수증   |
+| 수집 연동        | Python 어댑터, Unix 도메인 소켓, 로컬 Chrome 확장 프로그램 |
+| 검증             | Vitest, Playwright, Biome, Python unittest                 |
+| 외부 공유        | Cloudflare Tunnel                                          |
 
-Use Node 24.14+ (verified locally on 26.13.0) and pnpm 9.15.9. Exact dependencies
-are pinned in package.json and pnpm-lock.yaml.
+의존성 버전은 `package.json`과 `pnpm-lock.yaml`에서 고정합니다. 회사 표준 스택으로의 이전은 별도 작업 공간에서 진행하며, 현재 운영 웹의 기술 스택은 NestJS·PostgreSQL이 아닙니다.
+
+## 서비스 구조
+
+```text
+브라우저 → React SSR / Fastify → SQLite 조회 모델·분류 저장소
+                            → 로컬 수집기 인터페이스
+                               ├─ 카카오톡: 연결 소유 프로세스 1개
+                               │            ├─ 분석 수집 워커
+                               │            └─ 대화 처리 워커
+                               └─ 포커고수: Chrome 확장 → 로컬 수신 서버
+```
+
+도메인 규칙, 유스케이스, 외부 연동, UI를 분리합니다. 화면 조회에는 미리 집계한 데이터를 활용합니다. 카톡 데이터 변경은 기존 수집기 인터페이스를 통하고, 포커고수 분류는 별도 저장소에서 관리합니다. 웹 서버를 재시작해도 카카오톡 연결은 유지합니다.
+
+### 역공학
+
+카카오톡의 LOCO 메시징 프로토콜을 분석·재구현한 별도 Python 클라이언트와 연동합니다. 대시보드는 해당 클라이언트의 로컬 인터페이스를 사용하며, 별도의 카카오톡 연결을 만들지 않습니다. 클라이언트 구현은 이 저장소 밖에서 관리합니다.
+
+## 개발·실행
+
+Node.js 24.14 이상·27 미만, pnpm 9.15.9가 필요합니다. 실제 카톡 데이터를 보려면 설정된 기존 수집 서비스가 있어야 하며, 이 저장소 설치만으로 카카오톡에 로그인하지 않습니다.
 
 ```sh
-npx --yes pnpm@9.15.9 install --frozen-lockfile
-./scripts/dev.sh start                  # development, one managed web process
-./scripts/dev.sh stop
-npx --yes pnpm@9.15.9 build
-MENTION_PRODUCTION=1 ./scripts/dev.sh start
+pnpm install --frozen-lockfile
+./scripts/dev.sh start       # http://127.0.0.1:8790
 ./scripts/dev.sh status
+./scripts/dev.sh stop
+
+pnpm verify                 # 타입·린트·단위 테스트·운영 빌드
+pnpm test:e2e               # 운영 데이터와 분리한 브라우저 테스트
 ```
 
-The lifecycle script starts only this new web process. It never launches or
-restarts the legacy collector. It records the web PID and private logs in ignored
-`runtime/`. Set `MENTION_LEGACY_URL` to the existing loopback dashboard (default
-`http://127.0.0.1:8766`). The deployed instance uses the collector Unix socket via
-its configured legacyRoot, not that retired TCP port. Never substitute a public
-remote source or credentials.
-`MENTION_ENABLE_WRITES=1` opts into existing confirmed-classification corrections
-at process start; it does not authorize chat sending or other collector actions.
+운영 모드는 먼저 빌드한 뒤 `MENTION_PRODUCTION=1 ./scripts/dev.sh start`로 실행합니다. 웹 시작·종료·재시작에는 이 스크립트를 사용합니다. macOS 브라우저 테스트는 Google Chrome을 사용하며, 실행 경로는 `MENTION_CHROME`으로 지정할 수 있습니다.
 
-## Checks
+로컬 배포 설정은 Git에서 제외한 `runtime/deployment.json`에 둡니다. 운영 DB, 인증정보, 원본 대화, 로그, 개인 비서 상태는 커밋하지 않습니다. 수정 요청에는 쓰기 설정과 허용된 요청 출처를 확인하며, 발송·백업 작업은 로컬 전용 제한을 유지합니다.
 
-```sh
-npx --yes pnpm@9.15.9 typecheck
-npx --yes pnpm@9.15.9 check
-npx --yes pnpm@9.15.9 test
-npx --yes pnpm@9.15.9 audit
-npx --yes pnpm@9.15.9 test:e2e
-```
+## 관련 문서
 
-Browser integration checks require the replacement and existing source to
-be running. Live writes in browser tests are intercepted with synthetic responses. macOS uses installed Google Chrome; `MENTION_CHROME` overrides its
-path. Other systems can install Playwright Chromium. Tests never save live edits.
-
-## Performance boundary
-
-The overview and conversation list now read a durable, rebuildable public projection
-at ignored `runtime/public-read-model.db`. Overview counts/highlights are prepared
-outside page requests. Conversation filters, counts and keyset pagination run in
-SQLite and decode only the requested page. A web restart serves the last committed
-generation immediately while the existing public collector API refreshes it in the
-background every 30 seconds (one in-flight rebuild). The overview shows the actual
-aggregation time. Failed rebuilds retain the last successful generation; an empty
-installation must complete its first rebuild before returning data.
-
-This DB contains only the public monitoring read model. A separate read-only Python
-analytics worker now opens the source DB with `mode=ro`/`query_only`, copies an
-explicit allowlist of public monitoring tables into process memory and releases
-the source transaction before computation. Only keyword/group settings are read;
-private assistant/guide/outbox/token tables are excluded. Operational Store/Context/
-Coverage constructors are never executed by this worker. All original writes,
-detail/media access, deliveries and lifecycle operations remain with the collector.
-
-The worker reuses existing quality/grouping/review/briefing rules. Public-input
-fingerprints skip unchanged aggregates; room fingerprints retain unchanged episode
-and grouping results when another room changes. Overview, trends, briefing and
-classification listing share grouped conversations instead of regrouping for each
-widget or page. Korean dates, keyword exclusions, manual corrections, evidence
-signatures, saved brief versions/staleness and classification audit history remain
-unchanged. One serialized worker handles these public read operations and coalesces
-identical concurrent requests. Its bounded caches stay in process memory; only the
-existing concise public read model is persisted under ignored runtime/.
-
-The first generation still takes seconds. An unchanged file/audit version can
-reuse a retained result immediately; otherwise reads include a public-source
-snapshot/fingerprint cost (currently about a second end to end). This is not yet
-row-level change-stream processing: public tables are still scanned on a read, and
-a changed room can require rebuilding all its historical candidates. Explicit
-refresh waits for that work. Briefing save/send/image creation and other mutations
-still run through the authoritative collector and can retain its computation cost.
-No automatic mutation retries or additional Kakao session are introduced.
-
-## Project documents
-
-- [Agent agreement](AGENTS.md)
-- [Decisions and version exceptions](DECISIONS.md)
-- [Development standards](DEVELOPMENT.md)
-- [Migration inventory](docs/MIGRATION.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [UI foundation](docs/UI.md)
-- [Verification and limits](docs/VERIFICATION.md)
-
-Legacy feature documentation is at
-`/Users/we/Desktop/kakao-0.4.0-analysis-20261102/monitor/README.md`.
-
-## Active connection after preview switchover
-
-The old dashboard HTTP/gateway/preview listeners (8766/8767/8776) and its
-Cloudflare tunnel were stopped at the user's explicit request. The collector
-is still the same running owner and was not restarted. The new app now uses
-`CollectorTransport` with a small Python compatibility bridge over that owner's
-Unix socket. It reuses the existing public data/classification contracts and
-history without creating a Kakao session. The analytics worker described above
-adds a separate read-only public-table snapshot; it never opens the DB for writes.
-
-`runtime/deployment.json` records `legacyRoot` and the current public origin.
-The bridge imports only the existing transport and classification adapter; no
-collector entrypoint is executed. No private assistant endpoint is allowed.
-HTTP adapter mode remains available for isolated tests or a running compatible
-source, but the deployed preview no longer depends on the retired old web port.
-
-```sh
-./scripts/tunnel.sh start
-MENTION_PRODUCTION=1 ./scripts/dev.sh restart  # load the new public origin
-./scripts/tunnel.sh status
-./scripts/tunnel.sh stop
-```
-
-The new tunnel targets only port 8790 with the expected Host header. Existing
-unrelated tunnels and private workers are not managed by these scripts. Public
-refresh and monitoring writes are restricted to configured origins; delivery and
-backup actions retain local-only scope. Quick-tunnel addresses are temporary and can change when
-recreated. The old Cloudflare address is retired.
-
-Design system: [rules and component ownership](docs/DESIGN-SYSTEM.md), with a synthetic interactive catalog at `/design-system`. All UI changes must actively use it.
-
-## Pokergosu monitoring
-
-An independent local public-board collector reads this workspace's include
-keywords (exclusion keywords are ignored for this source) and checks new posts and recent comments on a randomized30–60 minute
-cycle (up to five list pages), with daily02:00–08:00 KST quiet hours. The private Chrome extension performs
-the authorized site reads; it does not modify or reconnect Kakao. The **포커고수
-여론** menu at `/pokergosu` now displays retained posts/comments, keyword matches,
-collection counts and gaps with search and cursor pagination. Sentiment remains
-unclassified. See [scope, commands and verification limits](docs/POKERGOSU.md) for
-the current extension workflow and earlier implementation history.
-
-## Continuous sentiment review
-
-A separate bounded AI review queue classifies pending target context and future
-arrivals using retained monitoring evidence. It preserves human decisions, publishes
-AI attribution and concrete reasons, and rechecks changed AI context. Procedural
-questions and promotional notices are judgment-excluded rather than neutral.
-See [classifier operation and rubric](docs/SENTIMENT-CLASSIFIER.md). Runtime
-snapshots, queue state and model outputs remain private under ignored runtime/.
-
-The manual Chrome extension trial is ready via
-`./scripts/pokergosu.sh extension-prepare` and `extension-start`. Load
-`runtime/pokergosu/extension` in Chrome developer mode, open a free-board post
-normally, and press **Mention · 포커고수 읽기**. The extension reads only on click;
-there is no automatic site navigation. See the manual trial section in
-[Pokergosu monitoring](docs/POKERGOSU.md).
-
-## Processing service boundary (2026-11-11)
-
-The existing private collector.sock now routes dialogue operations to a dedicated
-open-chat processing server and public collection/analysis to a separate worker.
-Both share the same live Kakao connection owner and retain the existing monitoring
-SQLite and request contracts. This web app's source URL/socket, settings and
-classification workers are unchanged. The operator verified that guide service
-remains available during analytics replacement; processing changes need no Kakao
-login. Physical monitoring DB failure/lock contention remains shared.
-
-Version0.3 adds **자동 수집 시작 (이 탭)**: after one update/start on a dedicated
-free-board tab, the extension automatically opens queued posts, captures their
-visible comments, returns to the list and waits15–30minutes. Page visits are paced
-and bounded; access/coverage errors pause collection. The old15-check trial remains
-separate. See [automatic collection and its limits](docs/POKERGOSU.md).
-
-## Verification and release preparation
-
-Run `pnpm verify:full` for type/lint/unit/build checks, isolated synthetic browser
-checks and release-definition validation. `pnpm test:e2e:live` retains the operator
-suite against an explicitly running source; it is separate from hermetic CI.
-See [guide disposition](docs/TEMPLATE-MATRIX.md) and [release/rollback instructions](docs/RELEASE.md).
-The current Mac web deployment remains active; prepared Docker/CI definitions do
-not imply a container production cutover or a change to the single Kakao owner.
+- [서비스 구조](docs/ARCHITECTURE.md) · [개발 기준](DEVELOPMENT.md)
+- [디자인 시스템](docs/DESIGN-SYSTEM.md) · [설계 결정](DECISIONS.md)
+- [종합 여론·출처별 키워드](docs/COMBINED-OPINIONS.md)
+- [포커고수 수집](docs/POKERGOSU.md) · [여론 분류 기준](docs/SENTIMENT-CLASSIFIER.md)
+- [이전 범위](docs/MIGRATION.md) · [기능 대응 현황](docs/FEATURE-PARITY.md)
+- [배포·롤백](docs/RELEASE.md) · [검증 범위](docs/VERIFICATION.md)
