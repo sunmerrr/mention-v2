@@ -52,6 +52,27 @@ Compose checks. The final label correction also passed the complete normal verif
 and repeat browser checks. Preview processes were stopped after QA; production
 web, owner authentication, dialogue, schedules and send receipts were untouched.
 
+## Native intake evidence format2
+
+The owner cache contains recent logs followed by event wire snapshots. Choosing
+the first matching native ID could bind a later cached revision to an earlier
+event. Node intake now preserves all distinct related wire candidates in a
+deduplicated PostgreSQL table, atomically with the event and owner cursor. Event
+rows contain hashes rather than duplicating large attachments. Unknown or
+ambiguous wire attribution is explicit; no candidate is silently selected.
+
+Raw event identity depends on the native event, not mutable cache enrichment.
+Changing wire cache data alone therefore does not create another received message.
+Only event-related room/log evidence is retained; global room/name/private caches
+are excluded. Own-message status uses verified account/author identity or a native
+sent-log match; missing identity remains null rather than becoming false.
+
+Synthetic PostgreSQL checks cover unchanged event replay plus new wire evidence,
+atomic cursor advancement and preserved consumer fencing. A100-event regression
+keeps a large repeated attachment in one wire row. Current `verify:full` passed
+44 unit and46 integration tests plus the common image and Compose checks. Live
+Kakao intake remains disabled pending the coordinated operational handoff.
+
 The new preparation and remaining gates are documented in SERVER-CONSOLIDATION.md
 and USEFUL-CONTEXT.md. Node owner intake, durable PostgreSQL raw inbox/cursors,
 independent Node forum intake and a common role image have been implemented for

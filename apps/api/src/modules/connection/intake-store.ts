@@ -1,12 +1,11 @@
-import { createHash } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import type { PoolClient } from 'pg';
 import { createDatabase } from '../../db/client.js';
-import { intakeEvents, intakeGaps, intakeOffsets } from '../../db/schema.js';
+import { intakeEvents, intakeGaps, intakeOffsets, intakeWireSnapshots } from '../../db/schema.js';
 import { config } from '../../shared/config/index.js';
 import type { OwnerReply } from './owner-client.js';
-import { stableJson } from './stable-json.js';
+import { retainEvents } from './retained-event.js';
 
 function cursorSequence(cursor: string, instance: string) {
   const prefix = `${instance}:owner:`;
@@ -78,30 +77,7 @@ export class IntakeStore {
       next = result.next_cursor;
     if (cursorSequence(next, instance) < cursorSequence(expected, instance))
       throw new Error('OWNER_CURSOR_REGRESSION');
-    const records = result.events.map((event: unknown) => {
-      if (!event || typeof event !== 'object' || Array.isArray(event))
-        throw new Error('INVALID_OWNER_EVENT');
-      const payload = event as Record<string, unknown>;
-      // Retain only this event's native wire log; never persist the global cache.
-      const cache = reply.cache as { logs?: unknown };
-      const wire = Array.isArray(cache?.logs)
-        ? cache.logs.find(
-            (v) =>
-              Array.isArray(v) &&
-              String(v[0]) === String(payload.chat_id) &&
-              String(v[1]) === String(payload.log_id),
-          )
-        : undefined;
-      const retained = { event: payload, wireLog: wire ?? null };
-      return {
-        source: 'kakao',
-        ownerInstance: instance,
-        identity: createHash('sha256').update(stableJson(retained)).digest('hex'),
-        roomId: payload.chat_id === undefined ? null : String(payload.chat_id),
-        logId: payload.log_id === undefined ? null : String(payload.log_id),
-        payload: retained,
-      };
-    });
+    const { records, snapshots } = retainEvents(result.events, reply.cache, instance);
     await this.database.transaction(async (tx) => {
       const [current] = await tx
         .select()
@@ -111,6 +87,8 @@ export class IntakeStore {
       if (!current || current.ownerInstance !== instance || current.cursor !== expected)
         throw new Error('INTAKE_CHECKPOINT_CONFLICT');
       if (records.length) await tx.insert(intakeEvents).values(records).onConflictDoNothing();
+      if (snapshots.length)
+        await tx.insert(intakeWireSnapshots).values(snapshots).onConflictDoNothing();
       if (result.gap === true || result.history_sync_required === true)
         await tx
           .insert(intakeGaps)

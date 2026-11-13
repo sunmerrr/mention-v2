@@ -100,4 +100,24 @@ describe('native intake on disposable PostgreSQL', () => {
       await second.close();
     }
   });
+  it('keeps new wire evidence atomic without treating cache changes as another received message', async () => {
+    const batch = reply('synthetic:owner:6');
+    const cache = batch.cache as { logs: unknown[] };
+    cache.logs.push([
+      '18497500347065223',
+      '3970073012646000642',
+      { logId: '3970073012646000642', message: '새 캐시 원문' },
+    ]);
+    await store.accept('synthetic:owner:4', batch);
+    const c = createDatabase(config.DATABASE_URL ?? '');
+    try {
+      expect((await c.pool.query('select count(*) n from intake_events')).rows[0].n).toBe('1');
+      expect((await c.pool.query('select count(*) n from intake_wire_snapshots')).rows[0].n).toBe(
+        '2',
+      );
+      expect((await store.cursor())?.cursor).toBe('synthetic:owner:6');
+    } finally {
+      await c.pool.end();
+    }
+  });
 });

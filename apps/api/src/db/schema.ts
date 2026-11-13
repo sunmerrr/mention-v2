@@ -156,6 +156,22 @@ export const intakeGaps = pgTable(
     ),
   ],
 );
+export const intakeWireSnapshots = pgTable(
+  'intake_wire_snapshots',
+  {
+    pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+    ownerInstance: varchar('owner_instance', { length: 100 }).notNull(),
+    identity: char('identity', { length: 64 }).notNull(),
+    roomId: varchar('room_id', { length: 30 }).notNull(),
+    logId: varchar('log_id', { length: 30 }).notNull(),
+    wire: jsonb('wire').$type<unknown>().notNull(),
+    receivedAt: timestamp('received_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('uniq_intake_wire_snapshot').on(t.ownerInstance, t.identity),
+    index('idx_intake_wire_native_id').on(t.roomId, t.logId),
+  ],
+);
 
 export const collectorPrincipals = pgTable('collector_principals', {
   pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
