@@ -12,7 +12,6 @@ import {
   Flex,
   Heading,
   PageHeader,
-  ResponsiveTable,
   Select,
   Table,
   Text,
@@ -73,80 +72,82 @@ export default function Reviews() {
           <Failure error={query.error} retry={query.refetch} />
         ) : (
           <>
-            <ResponsiveTable>
-              <Table.Header>
-                <Table.Row>
-                  <Table.ColumnHeaderCell>대상 / 평가</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>판단 근거</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>출처 / 관리</Table.ColumnHeaderCell>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
-                {items.map((item) => (
-                  <Table.Row
-                    key={item.id}
-                    className="review-row"
-                    onClick={(event) => {
-                      if (
-                        event.defaultPrevented ||
-                        !(event.target instanceof Element) ||
-                        !event.currentTarget.contains(event.target) ||
-                        event.target.closest(
-                          'a,button,input,textarea,select,summary,details,[role=dialog],[role=combobox]',
-                        )
-                      )
-                        return;
-                      navigate(relatedHref(`/conversations/${item.conversationId}`, menu));
-                    }}
-                  >
-                    <Table.Cell>
-                      <Text as="p" size="2" weight="medium" mb="2">
-                        {item.target}
-                      </Text>
-                      <EvaluationStatus evaluation={item} />
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Link
-                        className="review-context-link"
-                        aria-label={`${item.target} 대화 맥락 보기`}
-                        to={relatedHref(`/conversations/${item.conversationId}`, menu)}
-                      >
-                        <Text as="p" size="2">
-                          {item.summary || '별도 메모 없음'}
-                        </Text>
-                      </Link>
-                      {item.history.length > 0 && (
-                        <details className="review-history">
-                          <summary>분류·수정 이력 {item.history.length}건</summary>
-                          {item.history.map((event) => (
-                            <Box key={`${event.at}-${event.before}-${event.after}`} py="2">
-                              <Text size="1" color="gray">
-                                {time(Date.parse(event.at))} ·{' '}
-                                {event.before === 'unreviewed'
-                                  ? '미분류'
-                                  : labels[event.before as Stance]}{' '}
-                                → {labels[event.after as Stance]}
-                              </Text>
-                              <Text as="p" size="2">
-                                {event.note || '메모 없음'}
-                              </Text>
-                            </Box>
-                          ))}
-                        </details>
-                      )}
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text as="p" size="1" mb="3">
-                        {item.room} · {time(item.at)}
-                      </Text>
-                      <Flex gap="3" align="center">
-                        <ClassificationControl item={item} />
-                      </Flex>
-                    </Table.Cell>
+            <Box className="table-scroll mention-responsive-scroll">
+              <Table.Root className="mention-responsive-table">
+                <Table.Header>
+                  <Table.Row>
+                    <Table.ColumnHeaderCell>대상 / 평가</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>판단 근거</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>출처 / 관리</Table.ColumnHeaderCell>
                   </Table.Row>
-                ))}
-              </Table.Body>
-            </ResponsiveTable>
+                </Table.Header>
+                <Table.Body>
+                  {items.map((item) => (
+                    <Table.Row
+                      key={item.id}
+                      className="review-row"
+                      onClick={(event) => {
+                        if (
+                          event.defaultPrevented ||
+                          !(event.target instanceof Element) ||
+                          !event.currentTarget.contains(event.target) ||
+                          event.target.closest(
+                            'a,button,input,textarea,select,summary,details,[role=dialog],[role=combobox]',
+                          )
+                        )
+                          return;
+                        navigate(relatedHref(`/conversations/${item.conversationId}`, menu));
+                      }}
+                    >
+                      <Table.Cell>
+                        <Text as="p" size="2" weight="medium" mb="2">
+                          {item.target}
+                        </Text>
+                        <EvaluationStatus evaluation={item} />
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Link
+                          className="review-context-link"
+                          aria-label={`${item.target} 대화 맥락 보기`}
+                          to={relatedHref(`/conversations/${item.conversationId}`, menu)}
+                        >
+                          <Text as="p" size="2">
+                            {item.summary || '별도 메모 없음'}
+                          </Text>
+                        </Link>
+                        {item.history.length > 0 && (
+                          <details className="review-history">
+                            <summary>분류·수정 이력 {item.history.length}건</summary>
+                            {item.history.map((event) => (
+                              <Box key={`${event.at}-${event.before}-${event.after}`} py="2">
+                                <Text size="1" color="gray">
+                                  {time(Date.parse(event.at))} ·{' '}
+                                  {event.before === 'unreviewed'
+                                    ? '미분류'
+                                    : labels[event.before as Stance]}{' '}
+                                  → {labels[event.after as Stance]}
+                                </Text>
+                                <Text as="p" size="2">
+                                  {event.note || '메모 없음'}
+                                </Text>
+                              </Box>
+                            ))}
+                          </details>
+                        )}
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Text as="p" size="1" mb="3">
+                          {item.room} · {time(item.at)}
+                        </Text>
+                        <Flex gap="3" align="center">
+                          <ClassificationControl item={item} />
+                        </Flex>
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Root>
+            </Box>
             {!items.length && <Empty>이 조건에 맞는 확정 분류가 없습니다.</Empty>}
             {query.hasNextPage && (
               <Flex justify="center" mt="4">

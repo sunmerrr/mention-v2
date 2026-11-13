@@ -3,11 +3,14 @@ import {
   bigint,
   boolean,
   char,
+  customType,
   date,
   index,
   integer,
   jsonb,
+  numeric,
   pgTable,
+  text,
   timestamp,
   uniqueIndex,
   uuid,
@@ -102,6 +105,8 @@ export const systemErrorLogs = pgTable('system_error_logs', {
   pk: bigint('pk', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
   source: varchar('source', { length: 80 }).notNull(),
   kind: varchar('kind', { length: 100 }).notNull(),
+  payload: jsonb('payload').$type<Record<string, unknown>>(),
+  errorCode: varchar('error_code', { length: 80 }),
   metadata: jsonb('metadata').$type<Record<string, unknown>>().notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -324,3 +329,88 @@ export const evidenceLegacyAudit = pgTable(
   },
   (t) => [index('idx_evidence_legacy_request').on(t.requestId)],
 );
+
+export const monitoringSettings = pgTable('monitoring_settings', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  key: varchar('key', { length: 100 }).notNull().unique(),
+  value: jsonb('value').$type<Record<string, unknown>>().notNull(),
+  revision: integer('revision').notNull().default(0),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+export const monitoringJobs = pgTable(
+  'monitoring_jobs',
+  {
+    pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+    kind: varchar('kind', { length: 100 }).notNull(),
+    payload: jsonb('payload').$type<Record<string, unknown>>(),
+    errorCode: varchar('error_code', { length: 80 }),
+    revision: integer('revision').notNull(),
+    state: varchar('state', { length: 30 }).notNull().default('queued'),
+    updated: integer('updated').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex('uniq_monitoring_job_revision').on(t.kind, t.revision),
+    index('idx_monitoring_jobs_pending').on(t.kind, t.state, t.pk),
+  ],
+);
+
+export const forumPosts = pgTable(
+  'forum_posts',
+  {
+    pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+    sourceId: varchar('source_id', { length: 19 }).notNull().unique(),
+    orderId: numeric('order_id', { precision: 19, scale: 0 }).notNull(),
+    detail: jsonb('detail')
+      .$type<import('@app/shared/monitoring/contracts/pokergosu').PokergosuDetail>()
+      .notNull(),
+    keywords: jsonb('keywords').$type<string[]>().notNull(),
+    matched: boolean('matched').notNull(),
+    searchText: text('search_text').notNull(),
+    checkedDay: date('checked_day', { mode: 'string' }).notNull(),
+    revision: integer('revision').notNull().default(0),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('idx_forum_posts_order').on(t.orderId),
+    index('idx_forum_posts_day').on(t.checkedDay, t.orderId),
+    index('idx_forum_posts_matched').on(t.matched, t.orderId),
+  ],
+);
+export const forumReadModels = pgTable('forum_read_models', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  key: varchar('key', { length: 200 }).notNull().unique(),
+  body: jsonb('body').$type<Record<string, unknown>>().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+export const forumReviewReceipts = pgTable('forum_review_receipts', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  requestId: uuid('request_id').notNull().unique(),
+  payloadHash: char('payload_hash', { length: 64 }).notNull(),
+  result: jsonb('result').$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+export const forumReviewHistory = pgTable('forum_review_history', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  sourceId: varchar('source_id', { length: 19 }).notNull(),
+  targetId: varchar('target_id', { length: 64 }).notNull(),
+  requestId: uuid('request_id').notNull().unique(),
+  previous: jsonb('previous')
+    .$type<import('@app/shared/monitoring/contracts/forum-opinions').ForumEvaluation>()
+    .notNull(),
+  next: jsonb('next')
+    .$type<import('@app/shared/monitoring/contracts/forum-opinions').ForumEvaluation>()
+    .notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+const binaryColumn = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => 'bytea' });
+export const monitoringAssets = pgTable('monitoring_assets', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  path: varchar('path', { length: 500 }).notNull().unique(),
+  mime: varchar('mime', { length: 100 }).notNull(),
+  bytes: binaryColumn('bytes').notNull(),
+  digest: char('digest', { length: 64 }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});

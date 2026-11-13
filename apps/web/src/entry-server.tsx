@@ -1,10 +1,23 @@
+import type { CombinedQueries } from '@app/shared/monitoring/application/combined';
+import {
+  PokergosuPostNotFound,
+  type PokergosuQueries,
+} from '@app/shared/monitoring/application/pokergosu';
 import type { MonitoringQueries } from '@app/shared/monitoring/application/queries';
 import type { WorkspaceQueries } from '@app/shared/monitoring/application/workspace';
 import { listSchema } from '@app/shared/monitoring/contracts/api';
+import { pokergosuListSchema } from '@app/shared/monitoring/contracts/pokergosu';
 import { dehydrate, HydrationBoundary, QueryClientProvider } from '@tanstack/react-query';
 import { renderToReadableStream } from 'react-dom/server.browser';
 import { StaticRouter } from 'react-router-dom';
 import { App, preloadRoute } from './App';
+import { combinedQuery } from './combined-query';
+import {
+  pokergosuDetailQuery,
+  pokergosuFilters,
+  pokergosuQuery,
+  pokergosuSummaryQuery,
+} from './pokergosu-query';
 import {
   classificationQuery,
   conversationsQuery,
@@ -17,10 +30,12 @@ import { RuntimeContext } from './runtime';
 import { routeFeature, workspaceQuery } from './workspace-query';
 export async function render(
   url: string,
-  queries: Pick<MonitoringQueries, 'overview' | 'conversations' | 'detail' | 'classifications'>,
+  queries: MonitoringQueries,
   writesEnabled: boolean,
-  workspace?: Pick<WorkspaceQueries, 'read'>,
+  workspace?: WorkspaceQueries,
   local = false,
+  pokergosu?: PokergosuQueries,
+  combined?: CombinedQueries,
 ) {
   const requestUrl = new URL(url, 'http://localhost'),
     scope = scopeFrom(requestUrl.search),
@@ -37,7 +52,32 @@ export async function render(
   });
   const detail = /^\/conversations\/([^/]+)$/.exec(requestUrl.pathname);
   const feature = routeFeature(requestUrl.pathname);
-  if (feature && workspace) {
+  const pokergosuId = /^\/(?:pokergosu|posts)\/([1-9][0-9]{0,18})$/.exec(requestUrl.pathname)?.[1];
+  if (requestUrl.pathname === '/combined' && combined) {
+    await client.fetchQuery({
+      ...combinedQuery(scope),
+      queryFn: () => combined.read(scope),
+    });
+  } else if (pokergosuId && pokergosu) {
+    await client.fetchQuery({
+      ...pokergosuDetailQuery(pokergosuId),
+      queryFn: async () => {
+        const result = await pokergosu.detail(pokergosuId);
+        if (!result) throw new PokergosuPostNotFound('Post not found');
+        return result;
+      },
+    });
+  } else if (requestUrl.pathname === '/pokergosu' && pokergosu) {
+    await client.fetchQuery({
+      ...pokergosuSummaryQuery(),
+      queryFn: () => pokergosu.summary(),
+    });
+  } else if (requestUrl.pathname === '/posts' && pokergosu) {
+    await client.fetchInfiniteQuery({
+      ...pokergosuQuery(requestUrl.search),
+      queryFn: () => pokergosu.list(pokergosuListSchema.parse(pokergosuFilters(requestUrl.search))),
+    });
+  } else if (feature && workspace) {
     await client.fetchQuery({
       ...workspaceQuery(feature, requestUrl.search),
       queryFn: () => workspace.read(feature, requestUrl.search, local),

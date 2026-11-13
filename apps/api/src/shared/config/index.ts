@@ -11,6 +11,7 @@ import { z } from 'zod';
  * 그 블록의 키를 여기 스키마에 추가한다.
  */
 const envSchema = z.object({
+  WORKSPACE_IMPORT_FILE: z.string().min(1).optional(),
   EVIDENCE_IMPORT_FILE: z.string().min(1).optional(),
   COLLECTOR_ID: z.string().max(128).optional(),
   COLLECTOR_EXTENSION_ID: z

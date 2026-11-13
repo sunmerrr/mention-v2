@@ -4,12 +4,16 @@ import { pathToFileURL } from 'node:url';
 import { Controller, Get, NotFoundException, Req, Res } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { config } from '../../shared/config/index.js';
+import { ForumService } from '../forum/forum.service.js';
 import { MonitoringService } from '../monitoring/monitoring.service.js';
 import { serializeBootstrap } from './web-state.js';
 
 const pages = new Set([
   '/',
   '/design-system',
+  '/combined',
+  '/pokergosu',
+  '/posts',
   '/conversations',
   '/reviews',
   '/keywords',
@@ -27,7 +31,10 @@ const pages = new Set([
 ]);
 @Controller()
 export class WebController {
-  constructor(private readonly monitoring: MonitoringService) {}
+  constructor(
+    private readonly monitoring: MonitoringService,
+    private readonly forum: ForumService,
+  ) {}
 
   @Get(['/', '*'])
   async page(@Req() request: FastifyRequest, @Res() reply: FastifyReply) {
@@ -61,7 +68,10 @@ export class WebController {
         return reply.code(404).send('Not found');
       }
     }
-    if (!pages.has(url.pathname) && !/^\/conversations\/[a-zA-Z0-9_-]+$/.test(url.pathname))
+    if (
+      !pages.has(url.pathname) &&
+      !/^\/(?:conversations|posts|pokergosu)\/[a-zA-Z0-9_-]+$/.test(url.pathname)
+    )
       throw new NotFoundException();
     const entry = await import(
       pathToFileURL(path.join(webRoot, 'dist-server/entry-server.mjs')).href
@@ -91,6 +101,12 @@ export class WebController {
       config.MENTION_WRITES_ENABLED,
       workspace,
       local,
+      {
+        summary: () => this.forum.summary(),
+        list: (query: Parameters<ForumService['list']>[0]) => this.forum.list(query),
+        detail: (id: string) => this.forum.detail(id),
+      },
+      { read: (scope: Parameters<ForumService['combined']>[0]) => this.forum.combined(scope) },
     );
     const state = serializeBootstrap(page.state);
     const template = await readFile(path.join(webRoot, 'dist/index.html'), 'utf8');

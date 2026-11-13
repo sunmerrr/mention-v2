@@ -197,4 +197,19 @@ describe('read-only monitoring migration contracts', () => {
     expect(calls[0]?.method).toBe('POST');
     config.MENTION_WRITES_ENABLED = false;
   });
+  it('refreshes completed views without source calls or collection work while writes are disabled', async () => {
+    config.MENTION_WRITES_ENABLED = false;
+    await request(app.getHttpServer())
+      .post('/api/v1/monitoring/refresh')
+      .set('Origin', 'https://untrusted.invalid')
+      .send({})
+      .expect(403);
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/monitoring/refresh')
+      .set('Origin', 'http://127.0.0.1:4200')
+      .send({})
+      .expect(201);
+    expect(response.body.data).toEqual({ ok: true });
+    expect(calls).toHaveLength(0);
+  });
 });

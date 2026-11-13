@@ -14,7 +14,6 @@ import {
   Flex,
   Heading,
   PageHeader,
-  ResponsiveTable,
   Select,
   Table,
   Text,
@@ -141,101 +140,105 @@ export default function Conversations({ embedded = false }: { embedded?: boolean
           <Failure error={query.error} retry={query.refetch} />
         ) : (
           <>
-            <ResponsiveTable className="conversation-table">
-              <Table.Header>
-                <Table.Row>
-                  <Table.ColumnHeaderCell>대상 / 분류</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>요약·대표 발언</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>출처</Table.ColumnHeaderCell>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
-                {items.map((item) => {
-                  const evaluation = selectedEvaluation(
-                    item,
-                    scope.target,
-                    label === 'unreviewed' ? '' : label,
-                    status,
-                  );
-                  return (
-                    <Table.Row key={item.id}>
-                      <Table.Cell>
-                        <Flex direction="column" gap="3">
-                          {item.targets
-                            .filter((target) => !scope.target || target === scope.target)
-                            .map((target) => {
-                              const evaluation = item.evaluations[target];
-                              const previous = evaluation?.previous;
-                              return (
-                                <Box key={target}>
-                                  <Text as="p" size="1" weight="medium" mb="1">
-                                    {target}
-                                  </Text>
-                                  {evaluation?.expected ? (
-                                    <ClassificationControl
-                                      item={{
-                                        id: `${item.id}:${target}`,
-                                        conversationId: item.id,
-                                        target,
-                                        label: previous?.label || evaluation.label,
-                                        summary: evaluation.summary,
-                                        origin: previous?.origin || evaluation.origin,
-                                        stale: evaluation.stale,
-                                        expected: evaluation.expected,
-                                        room: item.room,
-                                        at: item.at,
-                                        history: [],
-                                      }}
-                                    />
-                                  ) : (
-                                    <Text size="1" color="gray">
-                                      분류 정보 로드 중
+            <Box className="table-scroll mention-responsive-scroll">
+              <Table.Root className="mention-responsive-table conversation-table">
+                <Table.Header>
+                  <Table.Row>
+                    <Table.ColumnHeaderCell>대상 / 분류</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>요약·대표 발언</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>출처</Table.ColumnHeaderCell>
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
+                  {items.map((item) => {
+                    const evaluation = selectedEvaluation(
+                      item,
+                      scope.target,
+                      label === 'unreviewed' ? '' : label,
+                      status,
+                    );
+                    return (
+                      <Table.Row key={item.id}>
+                        <Table.Cell>
+                          <Flex direction="column" gap="3">
+                            {item.targets
+                              .filter((target) => !scope.target || target === scope.target)
+                              .map((target) => {
+                                const evaluation = item.evaluations[target];
+                                const previous = evaluation?.previous;
+                                return (
+                                  <Box key={target}>
+                                    <Text as="p" size="1" weight="medium" mb="1">
+                                      {target}
                                     </Text>
-                                  )}
-                                  {evaluation?.stale && (
-                                    <Text as="p" size="1" color="amber" mt="1">
-                                      {previous ? `기존 ${labels[previous.label]} · ` : ''}
-                                      재검토 필요
-                                    </Text>
-                                  )}
-                                </Box>
-                              );
-                            })}
-                        </Flex>
-                      </Table.Cell>
-                      <Table.Cell>
-                        <Link
-                          to={relatedHref(`/conversations/${item.id}${search}`, menu)}
-                          className="conversation-link"
-                        >
-                          <Text as="p" size="1" color="gray" mb="1">
-                            {evaluation?.[1].summary ? `${evaluation[0]} · 분류 요약` : '실제 발언'}
-                          </Text>
-                          <Text as="p" className="preview-copy" size="2" weight="medium">
-                            {evaluation?.[1].summary || item.title}
-                          </Text>
-                          <Flex gap="2" mt="2" align="center">
-                            <MessageSquareText size={12} />
-                            <Text size="1" color="gray">
-                              맥락 {item.messageCount}개
-                            </Text>
-                            <ArrowUpRight size={12} />
+                                    {evaluation?.expected ? (
+                                      <ClassificationControl
+                                        item={{
+                                          id: `${item.id}:${target}`,
+                                          conversationId: item.id,
+                                          target,
+                                          label: previous?.label || evaluation.label,
+                                          summary: evaluation.summary,
+                                          origin: previous?.origin || evaluation.origin,
+                                          stale: evaluation.stale,
+                                          expected: evaluation.expected,
+                                          room: item.room,
+                                          at: item.at,
+                                          history: [],
+                                        }}
+                                      />
+                                    ) : (
+                                      <Text size="1" color="gray">
+                                        분류 정보 로드 중
+                                      </Text>
+                                    )}
+                                    {evaluation?.stale && (
+                                      <Text as="p" size="1" color="amber" mt="1">
+                                        {previous ? `기존 ${labels[previous.label]} · ` : ''}
+                                        재검토 필요
+                                      </Text>
+                                    )}
+                                  </Box>
+                                );
+                              })}
                           </Flex>
-                        </Link>
-                      </Table.Cell>
-                      <Table.Cell>
-                        <Text as="p" size="1" className="room-name">
-                          {item.room}
-                        </Text>
-                        <Text size="1" color="gray">
-                          {time(item.at)}
-                        </Text>
-                      </Table.Cell>
-                    </Table.Row>
-                  );
-                })}
-              </Table.Body>
-            </ResponsiveTable>
+                        </Table.Cell>
+                        <Table.Cell>
+                          <Link
+                            to={relatedHref(`/conversations/${item.id}${search}`, menu)}
+                            className="conversation-link"
+                          >
+                            <Text as="p" size="1" color="gray" mb="1">
+                              {evaluation?.[1].summary
+                                ? `${evaluation[0]} · 분류 요약`
+                                : '실제 발언'}
+                            </Text>
+                            <Text as="p" className="preview-copy" size="2" weight="medium">
+                              {evaluation?.[1].summary || item.title}
+                            </Text>
+                            <Flex gap="2" mt="2" align="center">
+                              <MessageSquareText size={12} />
+                              <Text size="1" color="gray">
+                                맥락 {item.messageCount}개
+                              </Text>
+                              <ArrowUpRight size={12} />
+                            </Flex>
+                          </Link>
+                        </Table.Cell>
+                        <Table.Cell>
+                          <Text as="p" size="1" className="room-name">
+                            {item.room}
+                          </Text>
+                          <Text size="1" color="gray">
+                            {time(item.at)}
+                          </Text>
+                        </Table.Cell>
+                      </Table.Row>
+                    );
+                  })}
+                </Table.Body>
+              </Table.Root>
+            </Box>
             {!items.length && <Empty>이 조건에 맞는 대화가 없습니다.</Empty>}
             {query.hasNextPage && (
               <Flex justify="center" mt="4">

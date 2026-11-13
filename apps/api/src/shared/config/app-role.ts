@@ -13,6 +13,7 @@ export type AppRole =
   | 'worker'
   | 'ingest'
   | 'migrate'
+  | 'import-workspace'
   | 'import-evidence'
   | 'register-collector'
   | 'all';
@@ -24,6 +25,7 @@ const KNOWN_ROLES: readonly string[] = [
   'migrate',
   'register-collector',
   'import-evidence',
+  'import-workspace',
   'all',
 ];
 

@@ -50,6 +50,27 @@
       "when": 1794559397528,
       "tag": "0006_violet_lethal_legion",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794560521582,
+      "tag": "0007_chunky_dreaming_celestial",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794560881341,
+      "tag": "0008_happy_doctor_octopus",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794561655514,
+      "tag": "0009_slimy_hex",
+      "breakpoints": true
     }
   ]
 }

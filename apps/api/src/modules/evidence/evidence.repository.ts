@@ -47,6 +47,9 @@ export class EvidenceRepository {
     if (
       ![
         'classification-history',
+        'forum-reviews',
+        'forum-receipts',
+        'forum-history',
         'judgment-exclusions',
         'judgment-decisions',
         'judgment-events',

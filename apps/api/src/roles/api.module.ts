@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ExampleController } from '../modules/example/example.controller.js';
 import { ExampleModule } from '../modules/example/example.module.js';
+import { ForumReadController } from '../modules/forum/forum.controller.js';
+import { ForumModule } from '../modules/forum/forum.module.js';
 import { MonitoringController } from '../modules/monitoring/monitoring.controller.js';
 import { MonitoringModule } from '../modules/monitoring/monitoring.module.js';
 import { WebController } from '../modules/web/web.controller.js';
@@ -11,7 +13,7 @@ import { WebController } from '../modules/web/web.controller.js';
  * 비즈니스 서비스는 modules/ 에서 제공되고, 이 모듈은 컨트롤러만 얹는다.
  */
 @Module({
-  imports: [ExampleModule, MonitoringModule],
-  controllers: [ExampleController, MonitoringController, WebController],
+  imports: [ExampleModule, MonitoringModule, ForumModule],
+  controllers: [ForumReadController, ExampleController, MonitoringController, WebController],
 })
 export class ApiModule {}

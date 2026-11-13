@@ -21,6 +21,34 @@ async function bootstrap() {
     await import('./db/migrate.js');
     return;
   }
+  if (config.APP_ROLE === 'import-workspace') {
+    if (!config.WORKSPACE_IMPORT_FILE) throw Error('WORKSPACE_IMPORT_FILE_REQUIRED');
+    const { KeywordSettingsRepository } = await import(
+      './modules/settings/keyword-settings.repository.js'
+    );
+    const { ForumRepository } = await import('./modules/forum/forum.repository.js');
+    const { EvidenceRepository } = await import('./modules/evidence/evidence.repository.js');
+    const { importWorkspace } = await import('./modules/forum/import-workspace.js');
+    const { AssetRepository } = await import('./modules/assets/asset.repository.js');
+    const settings = new KeywordSettingsRepository(),
+      forum = new ForumRepository(),
+      audit = new EvidenceRepository(),
+      assets = new AssetRepository();
+    try {
+      const result = await importWorkspace(
+        config.WORKSPACE_IMPORT_FILE,
+        settings,
+        forum,
+        audit,
+        assets,
+      );
+      const { default: pino } = await import('pino');
+      pino().info({ event: 'workspace_import_complete', ...result });
+    } finally {
+      await Promise.all([settings.close(), forum.close(), audit.close(), assets.close()]);
+    }
+    return;
+  }
   if (config.APP_ROLE === 'import-evidence') {
     const { MonitoringRepository } = await import('./modules/monitoring/monitoring.repository.js');
     const { EvidenceRepository } = await import('./modules/evidence/evidence.repository.js');

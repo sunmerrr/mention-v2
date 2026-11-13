@@ -10,7 +10,7 @@ import { AppError } from '../../shared/errors/app-error.js';
 import { CorrectionDto } from './dto/correction.dto.js';
 import { MonitoringListDto, MonitoringScopeDto } from './dto/monitoring-query.dto.js';
 import { MonitoringService } from './monitoring.service.js';
-import { mutationScope } from './mutation-scope.js';
+import { mutationScope, requestOriginScope } from './mutation-scope.js';
 
 @Controller('api/v1/monitoring')
 export class MonitoringController {
@@ -21,6 +21,11 @@ export class MonitoringController {
   ) {
     mutationScope(request, true);
     return this.monitoring.requestState(z.string().uuid().parse(requestId));
+  }
+  @Post('refresh') refresh(@Req() request: FastifyRequest) {
+    requestOriginScope(request);
+    // Refresh reads completed DB projections; it never schedules collection.
+    return { ok: true };
   }
   @Post('classifications/correct') correct(
     @Body() input: CorrectionDto,
@@ -37,6 +42,9 @@ export class MonitoringController {
       throw new AppError('NOT_FOUND', '없는 작업입니다.', 404);
     const scope = mutationScope(request, localActions.has(action as WorkspaceAction));
     return this.monitoring.action(action, z.record(z.string(), z.unknown()).parse(input), scope);
+  }
+  @Get('source-keywords/status') sourceKeywordStatus() {
+    return this.monitoring.sourceKeywordStatus();
   }
   @Get('workspace/:feature') workspace(
     @Param('feature') feature: string,

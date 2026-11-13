@@ -68,3 +68,10 @@ The native analytics source owns metadata-only ad watches and actual reaction
 capture; this remains an explicit source dependency, not a claim that the Nest
 worker owns Kakao. Desktop/mobile synthetic browser checks and native boundary
 regressions passed; first natural-event verification is reported independently.
+
+## Forum and source-policy checkpoint — 2026-11-13
+
+See FORUM-MIGRATION.md for completed Node/PostgreSQL forum reads/reviews,
+source-policy storage, preserved latest UI, populated source-reference comparisons
+and fourteen desktop/mobile page checks. Native collection/dialogue and remaining
+workspace parity are still pending; no public routing cutover has occurred.

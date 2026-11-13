@@ -16,6 +16,7 @@ export {
   Separator,
   Spinner,
   Table,
+  Tabs,
   Text,
   TextArea,
   TextField,

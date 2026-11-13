@@ -17,11 +17,14 @@ import {
   Text,
 } from './design-system';
 import { useMenuOrigin } from './navigation';
+import { api } from './queries';
 import { useRuntime } from './runtime';
 import { routeFeature } from './workspace-query';
 
 const imports = {
   designSystem: () => import('./design-system/Catalog'),
+  pokergosu: () => import('./pages/Pokergosu'),
+  combined: () => import('./pages/Combined'),
   overview: () => import('./pages/Overview'),
   conversations: () => import('./pages/Conversations'),
   reviews: () => import('./pages/Reviews'),
@@ -29,13 +32,23 @@ const imports = {
   workspace: () => import('./pages/Workspace'),
 };
 const DesignSystemCatalog = lazy(imports.designSystem),
+  Combined = lazy(imports.combined),
   Overview = lazy(imports.overview),
+  Pokergosu = lazy(imports.pokergosu),
   Conversations = lazy(imports.conversations),
   Reviews = lazy(imports.reviews),
   Detail = lazy(imports.detail),
   Workspace = lazy(imports.workspace);
 export async function preloadRoute(path: string) {
-  if (path === '/design-system') await imports.designSystem();
+  if (path === '/combined') await imports.combined();
+  else if (path === '/design-system') await imports.designSystem();
+  else if (
+    path === '/pokergosu' ||
+    path.startsWith('/pokergosu/') ||
+    path === '/posts' ||
+    path.startsWith('/posts/')
+  )
+    await imports.pokergosu();
   else if (routeFeature(path)) await imports.workspace();
   else if (path.startsWith('/conversations/')) await imports.detail();
   else if (path === '/reviews') await imports.reviews();
@@ -47,7 +60,9 @@ const navGroups: { label: string; Icon: typeof BarChart3; links: [string, string
     label: '분석·브리핑',
     Icon: BarChart3,
     links: [
+      ['/combined', '종합 여론'],
       ['/', '카톡 여론'],
+      ['/pokergosu', '포커고수 여론'],
       ['/trends', '동향 분석'],
       ['/briefing', '일일 브리핑'],
     ],
@@ -57,6 +72,7 @@ const navGroups: { label: string; Icon: typeof BarChart3; links: [string, string
     Icon: MessagesSquare,
     links: [
       ['/conversations', '대화 목록'],
+      ['/posts', '게시글 목록'],
       ['/reviews', '분류 검토'],
       ['/campaigns', '반응 관찰'],
       ['/responses', '반응 비교'],
@@ -124,12 +140,27 @@ function PreviousConversation() {
 }
 function Refresh() {
   const client = useQueryClient();
+  const { pathname } = useLocation();
   return (
     <Button
       size="1"
       color="gray"
       variant="ghost"
       onClick={async () => {
+        if (
+          pathname === '/pokergosu' ||
+          pathname.startsWith('/pokergosu/') ||
+          pathname === '/posts' ||
+          pathname.startsWith('/posts/')
+        ) {
+          await Promise.all([
+            client.invalidateQueries({ queryKey: ['pokergosu'] }),
+            client.invalidateQueries({ queryKey: ['pokergosu-summary'] }),
+            client.invalidateQueries({ queryKey: ['pokergosu-post'] }),
+          ]);
+          return;
+        }
+        await api('/api/refresh', {});
         await client.invalidateQueries();
       }}
     >
@@ -202,7 +233,7 @@ function WorkspaceApp() {
               맥락을 읽고, 반응을 이해하세요.
             </Text>
             <Text as="p" size="1" color="gray" mt="4">
-              기존 수집기 연결 유지
+              수집 상태는 수집·백업에서 확인하세요.
             </Text>
           </Box>
         </aside>
@@ -223,8 +254,13 @@ function WorkspaceApp() {
               <Routes>
                 <Route path="/design-system" element={<DesignSystemCatalog />} />
                 <Route path="/" element={<Overview />} />
+                <Route path="/combined" element={<Combined />} />
                 <Route path="/conversations" element={<Conversations />} />
                 <Route path="/conversations/:id" element={<Detail />} />
+                <Route path="/pokergosu" element={<Pokergosu />} />
+                <Route path="/posts" element={<Pokergosu />} />
+                <Route path="/posts/:id" element={<Pokergosu />} />
+                <Route path="/pokergosu/:id" element={<Pokergosu />} />
                 <Route path="/reviews" element={<Reviews />} />
                 <Route path="/conversation" element={<PreviousConversation />} />
                 {Object.keys({

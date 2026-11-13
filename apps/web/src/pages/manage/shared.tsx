@@ -100,12 +100,14 @@ export function Multiline({
   value = '',
   rows: count = 5,
   maxLength,
+  onChange,
 }: {
   label: string;
   name: string;
   value?: string;
   rows?: number;
   maxLength?: number;
+  onChange?: (value: string) => void;
 }) {
   const controlId = useId();
   return (
@@ -118,7 +120,13 @@ export function Multiline({
           id={controlId}
           aria-label={label}
           name={name}
-          defaultValue={value}
+          {...(onChange
+            ? {
+                value,
+                onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  onChange(event.target.value),
+              }
+            : { defaultValue: value })}
           rows={count}
           maxLength={maxLength}
         />

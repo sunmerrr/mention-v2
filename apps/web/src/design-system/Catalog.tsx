@@ -7,7 +7,7 @@ import {
   MetricCard,
   PageHeader,
   PreviewDisclosure,
-  ResponsiveTable,
+  ReadingTable,
   Section,
   SelectionPanel,
 } from './patterns';
@@ -22,6 +22,7 @@ import {
   RadioCards,
   Select,
   Table,
+  Tabs,
   Text,
   TextArea,
   TextField,
@@ -48,6 +49,27 @@ export default function Catalog() {
         title="디자인 시스템"
         description="Mention의 공통 토큰·컴포넌트·화면 구성 기준입니다. 이 페이지의 예제는 운영 데이터를 변경하지 않습니다."
       />
+      <Section
+        title="출처 탭"
+        description="키보드 방향키로 출처를 전환하고 현재 범위의 내용을 확인합니다."
+      >
+        <Tabs.Root defaultValue="kakao">
+          <Tabs.List aria-label="예시 출처">
+            <Tabs.Trigger value="all">전체</Tabs.Trigger>
+            <Tabs.Trigger value="kakao">카톡</Tabs.Trigger>
+            <Tabs.Trigger value="forum">포커고수</Tabs.Trigger>
+          </Tabs.List>
+          <Tabs.Content value="all">
+            <Text size="2">공통 대상과 출처 표시</Text>
+          </Tabs.Content>
+          <Tabs.Content value="kakao">
+            <Text size="2">카톡에서 수집 중인 키워드</Text>
+          </Tabs.Content>
+          <Tabs.Content value="forum">
+            <Text size="2">포커고수에서 수집 중인 키워드</Text>
+          </Tabs.Content>
+        </Tabs.Root>
+      </Section>
       <Section
         title="색상 토큰"
         description="용도에 따라 이름을 정하고, 실제 색상은 한곳에서 관리합니다."
@@ -279,25 +301,61 @@ export default function Catalog() {
           </Field>
         </PreviewDisclosure>
       </Section>
-      <Section title="반응형 목록">
-        <ResponsiveTable>
+      <Section
+        title="긴 글을 읽는 표"
+        description="읽기 열과 메타데이터 너비 · 키보드·모바일 가로 스크롤"
+      >
+        <ReadingTable label="합성 원문 표">
           <Table.Header>
             <Table.Row>
-              <Table.ColumnHeaderCell>대상 / 분류</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell>합성 대화 요약</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell>출처</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>원문</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>키워드</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>댓글</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>확인</Table.ColumnHeaderCell>
             </Table.Row>
           </Table.Header>
           <Table.Body>
             <Table.Row>
               <Table.Cell>
-                <Badge>예제 대상</Badge>
+                합성 게시글 · 긴 본문과
+                https://example.invalid/abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz 같은
+                주소도 메타데이터 열을 밀어내지 않습니다.
               </Table.Cell>
-              <Table.Cell>작은 화면에서는 내용을 잘라내지 않고 세로로 읽습니다.</Table.Cell>
-              <Table.Cell>합성 예제 방</Table.Cell>
+              <Table.Cell>
+                <Badge>합성 대상</Badge>
+              </Table.Cell>
+              <Table.Cell>저장 12개</Table.Cell>
+              <Table.Cell>11. 12. 12:00</Table.Cell>
             </Table.Row>
           </Table.Body>
-        </ResponsiveTable>
+        </ReadingTable>
+      </Section>
+      <Section
+        title="원문 이미지 보관 상태"
+        description="주소 수집과 파일 보관을 구분하는 합성 예시 · 외부 요청 없음"
+      >
+        <Flex gap="4" direction={{ initial: 'column', sm: 'row' }}>
+          <div>
+            <Text as="p" size="2" mb="2">
+              주소만 수집됨 · 파일 미보관
+            </Text>
+            <Button intent="secondary" disabled>
+              이미지 불러오기
+            </Button>
+            <Text as="p" size="1" color="gray" mt="2">
+              처음 볼 때만 외부 다운로드 · 이후 로컬 보관
+            </Text>
+          </div>
+          <figure className="ds-source-image">
+            <img
+              src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAACACAIAAABr1yBdAAABe0lEQVR4nO3TsQ2AMADAsB7MzKl8wcDC3CdAVRVLPiBLxv28kDWWF8BCBiDNAKQZgDQDkGYA0gxAmgFIMwBpBiDNAKQZgDQDkGYA0gxAmgFIMwBpBiDNAKQZgDQDkGYA0gxAmgFIMwBpBiDNAKQZgLS/BjiPC75lANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCk7TQAbMEApBmANAOQZgDSDECaAUgzAGkGIM0ApBmANAOQZgDSDECaAUgzAGkGIM0ApBmANAOQZgDSDECaAUgzAGkGIM0ApBmANAOQNgHsR9c5jf951AAAAABJRU5ErkJggg=="
+              alt="합성 보관 이미지"
+            />
+            <Text as="p" size="1" color="gray">
+              로컬 보관 이미지 (합성)
+            </Text>
+          </figure>
+        </Flex>
       </Section>
     </>
   );
