@@ -365,6 +365,11 @@ export const forumPosts = pgTable(
     detail: jsonb('detail')
       .$type<import('@app/shared/monitoring/contracts/pokergosu').PokergosuDetail>()
       .notNull(),
+    card: jsonb('card').$type<import('@app/shared/monitoring/contracts/pokergosu').PokergosuPost>(),
+    evaluations:
+      jsonb('evaluations').$type<
+        import('@app/shared/monitoring/contracts/forum-opinions').ForumEvaluation[]
+      >(),
     keywords: jsonb('keywords').$type<string[]>().notNull(),
     matched: boolean('matched').notNull(),
     searchText: text('search_text').notNull(),

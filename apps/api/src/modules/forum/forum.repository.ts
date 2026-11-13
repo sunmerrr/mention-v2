@@ -4,6 +4,7 @@ import {
   type PokergosuCursor,
   pokergosuScope,
 } from '@app/shared/monitoring/application/pokergosu';
+import type { ForumEvaluation } from '@app/shared/monitoring/contracts/forum-opinions';
 import {
   type ForumCorrection,
   forumCorrectionSchema,
@@ -100,11 +101,17 @@ export class ForumRepository {
         return receipt.result;
       }
       const [row] = await tx
-        .select()
+        .select({
+          pk: forumPosts.pk,
+          revision: forumPosts.revision,
+          evaluations: sql<
+            ForumEvaluation[]
+          >`coalesce(${forumPosts.evaluations},${forumPosts.detail}->'evaluations','[]'::jsonb)`,
+        })
         .from(forumPosts)
         .where(eq(forumPosts.sourceId, input.id))
         .for('update');
-      const current = row?.detail.evaluations?.find((e) => e.target === input.service);
+      const current = row?.evaluations?.find((e) => e.target === input.service);
       if (!row || !current || current.expected !== input.expected)
         throw new AppError(
           'REVIEW_CONFLICT',
@@ -143,13 +150,10 @@ export class ForumRepository {
           ...current.history,
         ].slice(0, 10),
       };
-      const detail = structuredClone(row.detail);
-      detail.evaluations = detail.evaluations?.map((e) =>
-        e.targetId === current.targetId ? next : e,
-      );
+      const evaluations = row.evaluations?.map((e) => (e.targetId === current.targetId ? next : e));
       await tx
         .update(forumPosts)
-        .set({ detail, revision, updatedAt: at })
+        .set({ evaluations, revision, updatedAt: at })
         .where(eq(forumPosts.pk, row.pk));
       await tx.insert(forumReviewHistory).values({
         sourceId: input.id,
@@ -181,7 +185,9 @@ export class ForumRepository {
         409,
       );
     const fields = {
-      detail,
+      detail: { ...detail, evaluations: undefined },
+      card: detail.post,
+      evaluations: detail.evaluations ?? [],
       keywords: detail.post.keywords,
       matched: detail.post.matched,
       searchText: [detail.post.title, detail.body, ...detail.comments.map((c) => c.text)].join(
@@ -227,10 +233,19 @@ export class ForumRepository {
   }
   async detail(id: string): Promise<PokergosuDetail | null> {
     const [row] = await this.db
-      .select({ detail: forumPosts.detail })
+      .select({
+        detail: forumPosts.detail,
+        card: forumPosts.card,
+        evaluations: forumPosts.evaluations,
+      })
       .from(forumPosts)
       .where(eq(forumPosts.sourceId, id));
-    return row?.detail ?? null;
+    if (!row) return null;
+    return {
+      ...row.detail,
+      ...(row.card ? { post: row.card } : {}),
+      ...(row.evaluations ? { evaluations: row.evaluations } : {}),
+    };
   }
   async list(input: PokergosuListInput, cursor?: PokergosuCursor): Promise<PokergosuPage> {
     return this.db.transaction(
@@ -257,7 +272,11 @@ export class ForumRepository {
         if (cursor) conditions.push(lt(forumPosts.orderId, cursor.last));
         // The page reads only precomputed post cards, not the full comment bodies.
         const rows = await tx
-          .select({ post: sql<PokergosuDetail['post']>`${forumPosts.detail}->'post'` })
+          .select({
+            post: sql<
+              PokergosuDetail['post']
+            >`coalesce(${forumPosts.card},${forumPosts.detail}->'post')`,
+          })
           .from(forumPosts)
           .where(and(...conditions))
           .orderBy(desc(forumPosts.orderId))
@@ -313,7 +332,14 @@ export class ForumRepository {
     const summary = await this.summary();
     let undated = 0;
     const rows = await this.db
-      .select({ detail: forumPosts.detail })
+      .select({
+        post: sql<
+          PokergosuDetail['post']
+        >`coalesce(${forumPosts.card},${forumPosts.detail}->'post')`,
+        evaluations: sql<
+          ForumEvaluation[]
+        >`coalesce(${forumPosts.evaluations},${forumPosts.detail}->'evaluations','[]'::jsonb)`,
+      })
       .from(forumPosts)
       .where(eq(forumPosts.matched, true));
     const models = new Map<string, SourceOpinion>();
@@ -336,7 +362,7 @@ export class ForumRepository {
     };
     build('', '');
     for (const group of groups) build('', group.name);
-    for (const { detail } of rows) {
+    for (const detail of rows) {
       const stamp = detail.post.publishedAt
         ? Date.parse(
             /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(detail.post.publishedAt)

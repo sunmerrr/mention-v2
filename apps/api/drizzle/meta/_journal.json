@@ -71,6 +71,13 @@
       "when": 1794561655514,
       "tag": "0009_slimy_hex",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794564259613,
+      "tag": "0010_colossal_rumiko_fujikawa",
+      "breakpoints": true
     }
   ]
 }
