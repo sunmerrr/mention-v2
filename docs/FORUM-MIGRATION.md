@@ -16,9 +16,10 @@ page sequence. Literal search characters remain SQL parameters.
 
 Keyword configuration has a PostgreSQL version/token guard and independent source
 scopes. A save atomically writes the revision plus a durable keyword-reindex job;
-it does not propagate settings to the host owner or Chrome. The actual reindex
-consumer and complete Kakao raw-to-analysis pipeline are still pending. Do not
-claim queued keyword saves are end-to-end complete before that consumer is wired.
+it does not propagate settings to the host owner or Chrome. The Node forum reindex
+consumer is implemented; the Kakao phase and complete raw-to-analysis pipeline
+are still pending. A completed forum phase does not mark the shared keyword job
+complete or misrepresent the unfinished Kakao phase.
 
 Node forum aggregation runs only in the worker role under its own PostgreSQL
 producer lease. Requests read prepared opinions; SSR never iterates the forum
@@ -48,7 +49,7 @@ from the external website again during migration.
 
 ## Still required before public cutover
 
-Complete keyword-job consumption, raw legacy forum-history import, context quotas and
+Complete Kakao keyword-job consumption, context quotas and
 DB-only expansion, remaining workspace/exports/briefings, native dialogue/schedule
 migration, preserved historical state/cursor delta and complete page/action QA.
 The seven-page read-only check is not a claim that every original feature has
@@ -89,3 +90,26 @@ against PostgreSQL found zero missing rows. This later snapshot includes189
 collected payloads; it does not claim the earlier177-card public snapshot is live
 current. Final canonical catch-up and current command ownership reconciliation
 remain cutover gates. Files, hashes and detailed parity reports stay private.
+
+## Resumable Node reindex and populated catch-up
+
+The archive importer strictly validates original collected thread payloads into a
+dedicated PostgreSQL source table. All189 collected payloads in the frozen snapshot
+validated. Raw comments remain available beyond the100-comment presentation bound.
+Import cannot replace newer live inbox-owned source records.
+
+The worker processes keyword revisions in bounded transactions and stores its
+cursor and forum phase in PostgreSQL. A fresh worker resumes that cursor; older
+revisions become superseded. Missing source evidence blocks completion rather than
+claiming a successful reindex. The forum status endpoint reports its own phase;
+the shared job stays pending until the separate Kakao processor completes.
+Completed opinion materialization is retained while a forum reindex is unfinished.
+Forum summaries are also rebuilt by the worker from canonical cards and retained
+discovery identities, never by SSR requests.
+
+Actual isolated catch-up processed189 raw payloads with the legacy API deliberately
+unreachable. Comparison against the original Python keyword rules found zero
+differences across matched state, aliases, comment counts and observation time.
+Full validation passed:39 unit tests,43 PostgreSQL/API integration tests, Docker
+build and Compose checks. No host settings, Chrome profile, Kakao authentication,
+production collection cursor, dialogue task or outgoing receipt was changed.

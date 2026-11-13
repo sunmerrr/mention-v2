@@ -26,12 +26,25 @@ async function bootstrap() {
     const { EvidenceRepository } = await import('./modules/evidence/evidence.repository.js');
     const { importForumArchive } = await import('./modules/forum/import-forum-archive.js');
     const archive = new EvidenceRepository();
+    const { ForumRepository } = await import('./modules/forum/forum.repository.js');
+    const { ForumProcessor } = await import('./modules/forum/forum-processor.js');
+    const { legacyForumSource } = await import('./modules/forum/legacy-forum-source.js');
+    const forum = new ForumRepository(),
+      processor = new ForumProcessor(forum);
     try {
-      const result = await importForumArchive(config.FORUM_ARCHIVE_IMPORT_FILE, archive);
+      const result = await importForumArchive(
+        config.FORUM_ARCHIVE_IMPORT_FILE,
+        archive,
+        async (row) => {
+          const source = legacyForumSource(row);
+          if (source) await processor.importSource(source.raw, source.checkedAt);
+        },
+      );
+      await processor.queueImportReindex();
       const { default: pino } = await import('pino');
       pino().info({ event: 'forum_archive_import_complete', ...result });
     } finally {
-      await archive.close();
+      await Promise.all([archive.close(), forum.close()]);
     }
     return;
   }

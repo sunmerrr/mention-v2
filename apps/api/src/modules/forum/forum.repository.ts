@@ -231,6 +231,61 @@ export class ForumRepository {
       throw new AppError('FORUM_NOT_READY', '포커고수 데이터 이전이 완료되지 않았습니다.', 503);
     return pokergosuSummarySchema.parse(row.body);
   }
+  async rebuildSummary() {
+    const [saved] = await this.db
+      .select()
+      .from(forumReadModels)
+      .where(eq(forumReadModels.key, 'summary'));
+    const previous = saved ? pokergosuSummarySchema.parse(saved.body) : null;
+    const cards = await this.db
+      .select({
+        card: sql<
+          PokergosuDetail['post']
+        >`coalesce(${forumPosts.card},${forumPosts.detail}->'post')`,
+      })
+      .from(forumPosts);
+    // Discovery is insert-only in the source. Union the retained native identities with new intake.
+    const discovery = await this.db.execute(sql`select count(*)::int n from (
+      select native_id id from forum_threads union
+      select body #>> '{row,id}' id from evidence_legacy_audit where source='forum-source' and body->>'table'='threads'
+      union select source_id id from forum_posts
+    ) ids`);
+    const errors = await this.db.execute(sql`select count(distinct id)::int n from (
+      select native_id id from forum_threads where read_error is not null union
+      select a.body #>> '{row,id}' id from evidence_legacy_audit a where a.source='forum-source'
+        and a.body->>'table'='thread_read_errors' and not exists (
+          select 1 from forum_source_evidence e where e.source_id=a.body #>> '{row,id}'
+            and e.checked_at >= (a.body #>> '{row,at}')::double precision*1000
+        )
+    ) errors`);
+    const monitor = await this.db.execute(
+      sql`select value from collector_state where key='extension_monitor' order by updated_at desc limit 1`,
+    );
+    const current = monitor.rows[0]?.value as Record<string, unknown> | undefined;
+    const posts = cards.map((r) => r.card),
+      discovered = Number(discovery.rows[0]?.n ?? posts.length);
+    const summary: PokergosuSummary = {
+      available: true,
+      discovered,
+      collected: posts.length,
+      matched: posts.filter((p) => p.matched).length,
+      pending: Math.max(0, discovered - posts.length),
+      readErrors: Number(errors.rows[0]?.n ?? 0),
+      comments: posts.reduce((n, p) => n + p.commentCount, 0),
+      keywords: [...new Set(posts.flatMap((p) => p.keywords))].sort(),
+      lastCheckedAt: posts.length ? posts.reduce((n, p) => Math.max(n, p.checkedAt), 0) : null,
+      monitor: current
+        ? {
+            status: String(current.status),
+            phase: String(current.phase),
+            reason: typeof current.reason === 'string' ? current.reason : null,
+            nextAt: typeof current.nextAt === 'number' ? current.nextAt : null,
+            discoveryGaps: Number(current.discoveryGaps ?? 0),
+          }
+        : (previous?.monitor ?? null),
+    };
+    await this.importSummary(summary);
+  }
   async detail(id: string): Promise<PokergosuDetail | null> {
     const [row] = await this.db
       .select({

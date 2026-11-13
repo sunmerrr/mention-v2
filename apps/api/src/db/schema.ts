@@ -5,6 +5,7 @@ import {
   char,
   customType,
   date,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -384,6 +385,13 @@ export const forumPosts = pgTable(
     index('idx_forum_posts_matched').on(t.matched, t.orderId),
   ],
 );
+export const forumSourceEvidence = pgTable('forum_source_evidence', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  sourceId: varchar('source_id', { length: 19 }).notNull().unique(),
+  raw: jsonb('raw').$type<import('@app/shared').PokergosuRawThread>().notNull(),
+  checkedAt: doublePrecision('checked_at').notNull(),
+  inboxPk: integer('inbox_pk').references(() => collectorInbox.pk),
+});
 export const forumReadModels = pgTable('forum_read_models', {
   pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
   key: varchar('key', { length: 200 }).notNull().unique(),

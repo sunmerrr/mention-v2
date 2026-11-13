@@ -197,4 +197,48 @@ describe('durable raw forum processing', () => {
     await processor.processOne();
     expect((await forum.detail(id))?.body).toBe('APL 나중에 저장된 원문');
   });
+  it('resumes keyword reindex from PostgreSQL without losing removed human reviews', async () => {
+    const value = await settings.read();
+    await settings.save({
+      keyword_policy: {
+        ...policy,
+        sources: { kakao: { disabled: [] }, pokergosu: { disabled: ['APL'] } },
+      },
+      keyword_policy_token: value.keyword_policy_token,
+      exclude_keywords: [],
+    });
+    expect(await processor.hasPendingReindex()).toBe(true);
+    expect(await processor.reindexOne()).toBe(true);
+    // A fresh processor resumes the saved cursor rather than restarting or changing the host.
+    const resumed = new ForumProcessor(forum);
+    for (let i = 0; i < 20; i++) if (!(await resumed.reindexOne())) break;
+    expect(await resumed.hasPendingReindex()).toBe(false);
+    expect(await settings.forumProcessing()).toMatchObject({ state: 'completed' });
+    expect(await settings.processing()).toMatchObject({ state: 'queued' });
+    expect((await forum.detail('9999999999999999999'))?.post.matched).toBe(false);
+    expect((await forum.detail('9999999999999999999'))?.evaluations).toEqual([]);
+    await settings.save({
+      keyword_policy: policy,
+      keyword_policy_token: (await settings.read()).keyword_policy_token,
+      exclude_keywords: [],
+    });
+    for (let i = 0; i < 20; i++) if (!(await resumed.reindexOne())) break;
+    expect((await forum.detail('9999999999999999999'))?.evaluations?.[0]).toMatchObject({
+      origin: 'human',
+      summary: '사람이 확인한 평가',
+    });
+    expect(await resumed.hasPendingReindex()).toBe(false);
+  });
+  it('publishes finished summary counts from canonical cards after reindex', async () => {
+    await forum.rebuildSummary();
+    expect(await forum.summary()).toMatchObject({
+      available: true,
+      discovered: 3,
+      collected: 3,
+      matched: 3,
+      pending: 0,
+      comments: 101,
+      keywords: ['APL'],
+    });
+  });
 });

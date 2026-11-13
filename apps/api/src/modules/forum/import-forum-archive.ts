@@ -20,6 +20,7 @@ const counts = z.record(table, z.number().int().nonnegative());
 export async function importForumArchive(
   filename: string,
   target: Pick<EvidenceRepository, 'importAudit'>,
+  onThread?: (row: Record<string, unknown>) => Promise<void>,
 ) {
   const stream = createReadStream(filename, { encoding: 'utf8' }),
     lines = createInterface({ input: stream, crlfDelay: Infinity });
@@ -49,6 +50,7 @@ export async function importForumArchive(
       identities.add(identity);
       found[value.table] = (found[value.table] ?? 0) + 1;
       await target.importAudit('forum-source', value);
+      if (value.table === 'threads') await onThread?.(value.row);
     }
     if (!expected || Object.entries(expected).some(([t, n]) => (found[t] ?? 0) !== n))
       throw Error('FORUM_ARCHIVE_INCOMPLETE');

@@ -6,7 +6,7 @@ import {
 } from '@app/shared/monitoring/contracts/keyword-policy';
 import { keywordMatches } from '@app/shared/monitoring/domain/keyword-rules';
 import { Injectable } from '@nestjs/common';
-import { desc, eq, sql } from 'drizzle-orm';
+import { desc, eq, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { createDatabase } from '../../db/client.js';
 import { monitoringJobs, monitoringSettings } from '../../db/schema.js';
@@ -102,6 +102,27 @@ export class KeywordSettingsRepository {
     return {
       supported: true,
       state: row?.state ?? 'idle',
+      updated: row?.updated ?? 0,
+      revision: row?.revision ?? 0,
+    };
+  }
+  async forumProcessing() {
+    const [row] = await this.db
+      .select()
+      .from(monitoringJobs)
+      .where(inArray(monitoringJobs.kind, ['keyword-reindex', 'forum-reindex']))
+      .orderBy(desc(monitoringJobs.pk))
+      .limit(1);
+    const stage = row?.payload?.forum_state;
+    return {
+      state:
+        stage === 'completed'
+          ? 'completed'
+          : stage === 'failed'
+            ? 'failed'
+            : stage === 'running'
+              ? 'running'
+              : (row?.state ?? 'idle'),
       updated: row?.updated ?? 0,
       revision: row?.revision ?? 0,
     };

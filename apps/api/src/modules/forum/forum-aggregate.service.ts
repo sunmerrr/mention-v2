@@ -29,8 +29,10 @@ export class ForumAggregate implements OnModuleInit, OnModuleDestroy {
       process.kill(process.pid, 'SIGTERM');
     });
     await session.query('LISTEN mention_forum_refresh');
+    await session.query('LISTEN mention_keyword_reindex');
     session.on('notification', (event) => {
-      if (event.channel === 'mention_forum_refresh') void this.refresh();
+      if (['mention_forum_refresh', 'mention_keyword_reindex'].includes(event.channel))
+        void this.refresh();
     });
     await this.media.resume();
     await this.refresh();
@@ -51,11 +53,17 @@ export class ForumAggregate implements OnModuleInit, OnModuleDestroy {
       for (let i = 0; i < 50 && !this.stopped; i++) {
         if (!(await this.processor.processOne())) break;
       }
+      for (let i = 0; i < 50 && !this.stopped; i++) {
+        if (!(await this.processor.reindexOne())) break;
+      }
       for (let i = 0; i < 5 && !this.stopped; i++) {
         if (!(await this.media.processOne())) break;
       }
       const { policy } = await this.settings.policy();
-      await this.forum.rebuildOpinions(policy.keyword_groups);
+      if (!(await this.processor.hasPendingReindex())) {
+        await this.forum.rebuildSummary();
+        await this.forum.rebuildOpinions(policy.keyword_groups);
+      }
     } catch (error) {
       this.logger.warn(
         { event: 'forum_materialization_failed' },

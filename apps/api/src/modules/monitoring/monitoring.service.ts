@@ -55,7 +55,7 @@ export class MonitoringService {
   }
   sourceKeywordStatus() {
     return config.MONITORING_EVIDENCE_BACKEND === 'postgres'
-      ? this.settings.processing()
+      ? this.settings.forumProcessing()
       : this.repository.read('/api/source-keywords/status');
   }
   workspace(feature: string, params: Record<string, string>) {
