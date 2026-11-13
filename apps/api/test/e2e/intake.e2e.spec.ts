@@ -8,6 +8,8 @@ import { IntakeStore } from '../../src/modules/connection/intake-store.js';
 import type { OwnerReply } from '../../src/modules/connection/owner-client.js';
 import { importNativeMessages } from '../../src/modules/context/import-native-messages.js';
 import { NativeNormalizer } from '../../src/modules/context/native-normalizer.service.js';
+import { StoredContextSource } from '../../src/modules/context/stored-context-source.js';
+import { collectUsefulContext } from '../../src/modules/context/useful-context.js';
 import { EvidenceRepository } from '../../src/modules/evidence/evidence.repository.js';
 import { config } from '../../src/shared/config/index.js';
 
@@ -238,6 +240,110 @@ describe('native intake on disposable PostgreSQL', () => {
           evidence,
         ),
       ).rejects.toThrow('MESSAGE_CONFLICT');
+    } finally {
+      await evidence.close();
+    }
+  });
+  it('fills each15-message quota after noise filtering and resumes from the consumed native ID', async () => {
+    const evidence = new EvidenceRepository(),
+      roomId = '5550001',
+      at = 1794556800000;
+    try {
+      const frame = (room: string, logId: string, text: string) => ({
+        room_id: room,
+        log_id: logId,
+        author_id: '42',
+        author_name: '합성',
+        text,
+        type: 1,
+        own: 0,
+        observed_at: '2026-11-13T08:00:00Z',
+        sent_at: 'None',
+      });
+      const messages = Array.from({ length: 200 }, (_, i) => i + 1).flatMap((i) => [
+        frame(roomId, String(1000 - i), i % 5 ? '안녕하세요' : `합성 의견 ${1000 - i}`),
+        frame(roomId, String(1000 + i), i % 5 ? 'ㅋㅋ' : `합성 의견 ${1000 + i}`),
+      ]);
+      await importNativeMessages(
+        {
+          groups: [
+            { room_id: roomId, messages },
+            { room_id: '5550002', messages: [frame('5550002', '995', '다른 방의 의견')] },
+          ],
+        },
+        evidence,
+      );
+      const build = (direction: 'before' | 'after', relations?: ReadonlyMap<string, 'unrelated'>) =>
+        new StoredContextSource(evidence.db, {
+          roomId,
+          anchorId: '1000',
+          direction,
+          from: at - 1000,
+          until: at + 1000,
+          relations,
+        });
+      const collect = (
+        direction: 'before' | 'after',
+        cursor: string | null = null,
+        accepted: Awaited<ReturnType<typeof collectUsefulContext>>['messages'] = [],
+      ) =>
+        collectUsefulContext({
+          source: build(direction),
+          roomId,
+          anchorId: '1000',
+          direction,
+          cursor,
+          accepted,
+          budget: { maxPages: 3, maxScanned: 200 },
+          additional: 15,
+        });
+      const first = await collect('before'),
+        second = await collect('before', first.cursor, first.messages),
+        after = await collect('after');
+      expect(first.messages.map((m) => m.logId)).toEqual(
+        Array.from({ length: 15 }, (_, i) => String(995 - i * 5)),
+      );
+      expect(second.messages.map((m) => m.logId)).toEqual(
+        Array.from({ length: 15 }, (_, i) => String(920 - i * 5)),
+      );
+      expect(after.messages.map((m) => m.logId)).toEqual(
+        Array.from({ length: 15 }, (_, i) => String(1005 + i * 5)),
+      );
+      expect(
+        new Set([...first.messages, ...second.messages, ...after.messages].map((m) => m.logId))
+          .size,
+      ).toBe(45);
+      const manual = await collectUsefulContext({
+        source: build('before', new Map([['995', 'unrelated']])),
+        roomId,
+        anchorId: '1000',
+        direction: 'before',
+        cursor: null,
+        budget: { maxPages: 3, maxScanned: 200 },
+      });
+      expect(manual.messages.map((m) => m.logId)).not.toContain('995');
+      expect(manual.messages).toHaveLength(15);
+      const shortage = await collectUsefulContext({
+        source: new StoredContextSource(evidence.db, {
+          roomId: '5550002',
+          anchorId: '1000',
+          direction: 'before',
+          from: at - 1000,
+          until: at + 1000,
+        }),
+        roomId: '5550002',
+        anchorId: '1000',
+        direction: 'before',
+        cursor: null,
+        budget: { maxPages: 3, maxScanned: 200 },
+      });
+      expect(shortage).toMatchObject({
+        shortage: 14,
+        exhausted: false,
+        reason: 'gap',
+        gap: 'stored_history_boundary',
+      });
+      await expect(build('before').read('2000', 15)).rejects.toThrow('CURSOR');
     } finally {
       await evidence.close();
     }

@@ -6,6 +6,9 @@ export interface ContextMessage {
   authorName?: string;
   text: string;
   type: number;
+  own?: boolean | null;
+  sortAt?: number;
+  replyTo?: string | null;
   relation?: 'related' | 'unrelated' | 'ignored_noise';
 }
 export type Exclusion =

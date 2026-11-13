@@ -1,0 +1,1 @@
+CREATE INDEX "idx_kakao_message_room_time" ON "kakao_messages" USING btree ("room_id",(("body"->>'sortAt')::bigint));

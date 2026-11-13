@@ -42,6 +42,16 @@ no older/newer conversation. Future live arrivals can extend an after boundary.
 
 ## Pending integration
 
+The PostgreSQL StoredContextSource is now implemented and indexed by native
+identity and room/time. It honors explicit time bounds, nearest-first direction,
+exclusive consumed-message cursors and per-conversation manual unrelated/noise
+decisions. Source messages retain own/time/reply provenance. Integration tests
+verify15 useful messages independently in each direction and the next15 without
+skipping the unread remainder of a page. Noise and another room do not consume
+the quota. A stored-data boundary reports a gap and shortage, never a verified
+native-history end. These checks passed in the actual full verify with51 unit
+and51 integration tests, including the common image/Compose checks.
+
 Persist normalized source evidence and per-anchor coverage/cursors in PostgreSQL,
 wire worker scans to the Node policy, and replace the transitional native web
 expansion adapter with DB-only pagination. Preserve human relation/review edits

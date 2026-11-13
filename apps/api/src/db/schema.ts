@@ -1,4 +1,5 @@
 import type { Conversation, Dataset, Overview } from '@app/shared/monitoring/domain/model';
+import { sql } from 'drizzle-orm';
 import {
   bigint,
   boolean,
@@ -187,6 +188,7 @@ export const kakaoMessages = pgTable(
   (t) => [
     uniqueIndex('uniq_kakao_message_native').on(t.roomId, t.logId),
     index('idx_kakao_message_history').on(t.roomId, t.orderId),
+    index('idx_kakao_message_room_time').on(t.roomId, sql`((${t.body}->>'sortAt')::bigint)`),
   ],
 );
 export const nativeWorkerOffsets = pgTable('native_worker_offsets', {
