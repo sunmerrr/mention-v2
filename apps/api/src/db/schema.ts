@@ -255,6 +255,36 @@ export const monitoringRoomGaps = pgTable('monitoring_room_gaps', {
   resolved: boolean('resolved').notNull().default(false),
 });
 
+export const dialogueGuideRooms = pgTable('dialogue_guide_rooms', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  roomId: varchar('room_id', { length: 19 }).notNull().unique(),
+  config: jsonb('config').$type<Record<string, unknown>>().notNull(),
+  messageCount: integer('message_count').notNull().default(0),
+  snapshotId: uuid('snapshot_id').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
+});
+export const dialogueGuideMessages = pgTable(
+  'dialogue_guide_messages',
+  {
+    pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+    roomId: varchar('room_id', { length: 19 }).notNull(),
+    logId: varchar('log_id', { length: 19 }).notNull(),
+    observedAt: timestamp('observed_at', { withTimezone: true }).notNull(),
+    body: jsonb('body').$type<Record<string, unknown>>().notNull(),
+  },
+  (t) => [
+    uniqueIndex('uniq_dialogue_guide_message').on(t.roomId, t.logId),
+    index('idx_dialogue_guide_recent').on(t.roomId, t.observedAt, t.logId),
+  ],
+);
+export const dialogueGuideHistory = pgTable('dialogue_guide_history', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  roomId: varchar('room_id', { length: 19 }).notNull(),
+  previous: jsonb('previous').$type<Record<string, unknown> | null>(),
+  config: jsonb('config').$type<Record<string, unknown>>().notNull(),
+  at: timestamp('at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const collectorPrincipals = pgTable('collector_principals', {
   pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
   id: varchar('id', { length: 128 }).notNull().unique(),

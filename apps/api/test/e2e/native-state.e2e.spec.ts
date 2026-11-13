@@ -13,6 +13,7 @@ import {
   importNativeState,
   nativeStateTables,
 } from '../../src/modules/evidence/import-native-state.js';
+import { GuideRepository } from '../../src/modules/monitoring/guide.repository.js';
 import { RoomsRepository } from '../../src/modules/monitoring/rooms.repository.js';
 
 let container: StartedPostgreSqlContainer,
@@ -169,4 +170,98 @@ it('materializes room policy and completed counts without replaying guide or sen
   newer.counts.campaign_sends = 0;
   await importNativeState(await file(newer, []), client);
   await expect(rooms.importSnapshot(newer.id)).rejects.toThrow('ROOM_SOURCE_HANDOFF_REQUIRED');
+});
+
+it('keeps guide switches and references separate from analysis exclusions', async () => {
+  const guide = new GuideRepository(client),
+    cid = '18497500347065223';
+  const references = [
+    { kind: 'document', label: '문서', value: '/Users/we/work/apl-guide/ANSWERING.md' },
+  ];
+  const h = header();
+  h.counts.campaign_sends = 0;
+  h.counts.guide_rooms = 1;
+  h.counts.guide_messages = 1;
+  h.counts.guide_message_details = 1;
+  h.counts.guide_followup_links = 1;
+  const log = '3970073012646000642',
+    stamp = new Date().toISOString();
+  await importNativeState(
+    await file(h, [
+      {
+        table: 'guide_rooms',
+        ordinal: 0,
+        body: {
+          room_id: cid,
+          updated_at: stamp,
+          config: JSON.stringify({
+            enabled: true,
+            respond: false,
+            keywords: ['APL'],
+            names: [],
+            references,
+          }),
+        },
+      },
+      {
+        table: 'guide_messages',
+        ordinal: 0,
+        body: {
+          room_id: cid,
+          log_id: log,
+          observed_at: stamp,
+          text: 'APL 티켓 질문',
+          source: 'live',
+          own: 0,
+        },
+      },
+      {
+        table: 'guide_message_details',
+        ordinal: 0,
+        body: {
+          room_id: cid,
+          log_id: log,
+          reply_to: '3970073012646000600',
+          quote: '{"text":"질문"}',
+        },
+      },
+      {
+        table: 'guide_followup_links',
+        ordinal: 0,
+        body: { room_id: cid, log_id: log, context: '{"kind":"verified"}' },
+      },
+    ]),
+    client,
+  );
+  expect((await guide.importSnapshot(h.id)).messages).toBe(1);
+  expect((await guide.importSnapshot(h.id)).replayed).toBe(true);
+  expect((await guide.list({ room: cid })).messages[0]?.reply_to).toBe('3970073012646000600');
+  await new RoomsRepository(client).save({ room_ids: [cid], excluded: true });
+  await guide.save({
+    room_id: cid,
+    enabled: true,
+    respond: false,
+    keywords: [' APL ', 'APL'],
+    names: ['땅콩'],
+    references,
+  });
+  expect(await guide.captureEnabled(cid)).toBe(true);
+  expect((await guide.list({ room: cid })).config.respond).toBe(false);
+  await guide.save({ room_id: cid, enabled: false, respond: true, keywords: ['APL'], names: [] });
+  expect(await guide.captureEnabled(cid)).toBe(false);
+  expect((await guide.list({ room: cid })).config.references).toEqual(references);
+  await expect(
+    guide.save({ room_id: '9', enabled: true, respond: true, keywords: [], names: [] }),
+  ).rejects.toThrow('참여 중인 방');
+  await expect(
+    guide.save({
+      room_id: cid,
+      enabled: true,
+      respond: true,
+      keywords: [],
+      names: [],
+      references: [{ kind: 'website', value: 'https://user:password@example.test' }],
+    }),
+  ).rejects.toThrow();
+  expect((await guide.list({ room: cid })).config.enabled).toBe(false);
 });

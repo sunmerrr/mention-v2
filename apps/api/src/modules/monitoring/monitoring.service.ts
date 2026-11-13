@@ -8,6 +8,7 @@ import { EvidenceRepository } from '../evidence/evidence.repository.js';
 import { ProjectionRepository } from '../projection/projection.repository.js';
 import { KeywordSettingsRepository } from '../settings/keyword-settings.repository.js';
 import { BookmarksRepository } from './bookmarks.repository.js';
+import { GuideRepository } from './guide.repository.js';
 import { MonitoringRepository } from './monitoring.repository.js';
 import { RoomsRepository } from './rooms.repository.js';
 
@@ -20,6 +21,7 @@ export class MonitoringService {
     private readonly settings: KeywordSettingsRepository,
     private readonly bookmarks: BookmarksRepository,
     private readonly rooms: RoomsRepository,
+    private readonly guide: GuideRepository,
   ) {}
   requestState(id: string) {
     if (config.MONITORING_EVIDENCE_BACKEND === 'postgres') return this.evidence.requestState(id);
@@ -35,6 +37,7 @@ export class MonitoringService {
   }
   async action(action: string, input: Record<string, unknown>, scope: { local: boolean }) {
     if (config.MONITORING_EVIDENCE_BACKEND === 'postgres') {
+      if (action === 'guide-settings') return this.guide.save(input);
       if (action === 'room-settings') return this.rooms.save(input);
       if (action === 'keyword-settings') return this.settings.save(input);
       if (action === 'keyword-check') return this.settings.check(input);
@@ -69,6 +72,7 @@ export class MonitoringService {
     if (!Object.hasOwn(workspaceReads, feature))
       throw new AppError('NOT_FOUND', '없는 기능입니다.', 404);
     if (config.MONITORING_EVIDENCE_BACKEND === 'postgres') {
+      if (feature === 'guide') return this.guide.list(params);
       if (feature === 'rooms') return this.rooms.list(params);
       if (feature === 'keywords') return this.settings.read();
       if (feature === 'keywordProcessing') return this.settings.processing();

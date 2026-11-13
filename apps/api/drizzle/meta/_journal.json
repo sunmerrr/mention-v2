@@ -148,6 +148,13 @@
       "when": 1794571773826,
       "tag": "0020_gorgeous_magik",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794572022950,
+      "tag": "0021_known_norrin_radd",
+      "breakpoints": true
     }
   ]
 }

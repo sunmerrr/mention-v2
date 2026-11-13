@@ -4,6 +4,7 @@ import { EvidenceRepository } from '../evidence/evidence.repository.js';
 import { ProjectionRepository } from '../projection/projection.repository.js';
 import { SettingsModule } from '../settings/settings.module.js';
 import { BookmarksRepository } from './bookmarks.repository.js';
+import { GuideRepository } from './guide.repository.js';
 import { MONITORING_SOURCE, MonitoringRepository } from './monitoring.repository.js';
 import { MonitoringService } from './monitoring.service.js';
 import { RoomsRepository } from './rooms.repository.js';
@@ -21,6 +22,7 @@ import { RoomsRepository } from './rooms.repository.js';
     MonitoringService,
     BookmarksRepository,
     RoomsRepository,
+    GuideRepository,
   ],
   exports: [EvidenceRepository, MonitoringService, ProjectionRepository, MonitoringRepository],
 })
