@@ -16,6 +16,7 @@ export function registerWorkspace(
   queries: WorkspaceQueries,
   options: { origin: string; publicOrigin?: string; writesEnabled: boolean },
   invalidate: () => Promise<unknown>,
+  refreshForum?: () => Promise<{ state: string; updated: number }>,
 ) {
   app.get<{ Params: { feature: string } }>(
     "/api/workspace/:feature",
@@ -72,9 +73,22 @@ export function registerWorkspace(
         input,
         isLocalRequest(request),
       );
+      const forum =
+        action === "keyword-settings" && refreshForum
+          ? await refreshForum()
+          : undefined;
       // Upstream writes are already committed. A failed read must not report a failed save.
       void invalidate().catch(() => {});
-      return { success: true, data: result, error: null };
+      return {
+        success: true,
+        data: forum
+          ? {
+              ...(typeof result === "object" && result !== null ? result : {}),
+              forum_processing: forum,
+            }
+          : result,
+        error: null,
+      };
     },
   );
   for (const prefix of ["/download/*", "/photo/*", "/results.json"])

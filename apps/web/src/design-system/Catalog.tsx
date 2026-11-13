@@ -22,6 +22,7 @@ import {
   RadioCards,
   Select,
   Table,
+  Tabs,
   Text,
   TextArea,
   TextField,
@@ -48,6 +49,27 @@ export default function Catalog() {
         title="디자인 시스템"
         description="Mention의 공통 토큰·컴포넌트·화면 구성 기준입니다. 이 페이지의 예제는 운영 데이터를 변경하지 않습니다."
       />
+      <Section
+        title="출처 탭"
+        description="키보드 방향키로 출처를 전환하고 현재 범위의 내용을 확인합니다."
+      >
+        <Tabs.Root defaultValue="kakao">
+          <Tabs.List aria-label="예시 출처">
+            <Tabs.Trigger value="all">전체</Tabs.Trigger>
+            <Tabs.Trigger value="kakao">카톡</Tabs.Trigger>
+            <Tabs.Trigger value="forum">포커고수</Tabs.Trigger>
+          </Tabs.List>
+          <Tabs.Content value="all">
+            <Text size="2">공통 대상과 출처 표시</Text>
+          </Tabs.Content>
+          <Tabs.Content value="kakao">
+            <Text size="2">카톡에서 수집 중인 키워드</Text>
+          </Tabs.Content>
+          <Tabs.Content value="forum">
+            <Text size="2">포커고수에서 수집 중인 키워드</Text>
+          </Tabs.Content>
+        </Tabs.Root>
+      </Section>
       <Section
         title="색상 토큰"
         description="용도에 따라 이름을 정하고, 실제 색상은 한곳에서 관리합니다."

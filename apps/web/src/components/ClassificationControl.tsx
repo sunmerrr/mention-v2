@@ -24,7 +24,13 @@ import { api } from "../queries";
 import { useRuntime } from "../runtime";
 import { Failure, labels } from "./ui";
 
-export function ClassificationControl({ item }: { item: Classification }) {
+export function ClassificationControl({
+  item,
+  endpoint = "/api/classifications/correct",
+}: {
+  item: Classification;
+  endpoint?: string;
+}) {
   const [open, setOpen] = useState(false),
     [note, setNote] = useState(item.summary),
     [noteLabel, setNoteLabel] = useState<Decision | "">(""),
@@ -34,12 +40,15 @@ export function ClassificationControl({ item }: { item: Classification }) {
   const client = useQueryClient(),
     { writesEnabled } = useRuntime();
   const save = useMutation({
-    mutationFn: (input: Correction) =>
-      api("/api/classifications/correct", input),
+    mutationFn: (input: Correction) => api(endpoint, input),
     onSuccess: async () => {
       await Promise.all([
         client.invalidateQueries({ queryKey: ["classifications"] }),
         client.invalidateQueries({ queryKey: ["overview"] }),
+        client.invalidateQueries({ queryKey: ["combined"] }),
+        client.invalidateQueries({
+          queryKey: ["pokergosu-post", item.conversationId],
+        }),
         client.invalidateQueries({ queryKey: ["conversations"] }),
         client.invalidateQueries({
           queryKey: ["conversation", item.conversationId],

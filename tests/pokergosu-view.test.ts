@@ -150,7 +150,7 @@ it("SSR contains populated source data with only the active page query and escap
     .prepare("UPDATE threads SET payload=? WHERE id='25'")
     .run(JSON.stringify(payload));
   const result = await render(
-    `/pokergosu?keyword=${encodeURIComponent("룰루")}`,
+    `/posts?keyword=${encodeURIComponent("룰루")}`,
     monitoring,
     false,
     undefined,
@@ -166,7 +166,7 @@ it("SSR contains populated source data with only the active page query and escap
   ]);
   expect(result.queryBytes).toBeLessThan(15000);
   const detail = await render(
-    "/pokergosu/25",
+    "/posts/25",
     monitoring,
     false,
     undefined,
@@ -178,4 +178,26 @@ it("SSR contains populated source data with only the active page query and escap
   expect(detail.state.queryState.queries.map((q) => q.queryKey[0])).toEqual([
     "pokergosu-post",
   ]);
+});
+
+it("renders opinion summary without loading or exposing post rows", async () => {
+  const f = fixture();
+  const result = await render(
+    "/pokergosu",
+    new MonitoringQueries(new FakeReader()),
+    false,
+    undefined,
+    false,
+    f.queries,
+  );
+  expect(result.html).toContain("포커고수 여론");
+  expect(result.html).toContain("발견된 관심 키워드");
+  expect(result.html).not.toContain("합성 포커고수 게시글 25");
+  expect(result.state.queryState.queries.map((q) => q.queryKey[0])).toEqual([
+    "pokergosu-summary",
+  ]);
+  expect(result.state.queryState.queries[0].state.data).not.toHaveProperty(
+    "items",
+  );
+  expect(result.queryBytes).toBeLessThan(3000);
 });

@@ -1,8 +1,10 @@
+import type { ForumEvaluation } from "../../contracts/src/forum-opinions";
 import type {
   PokergosuDetail,
   PokergosuImage,
   PokergosuListInput,
   PokergosuPage,
+  PokergosuSummary,
 } from "../../contracts/src/pokergosu";
 import { InvalidCursor } from "./queries";
 
@@ -15,6 +17,7 @@ export interface PokergosuCursor {
   scope: string;
 }
 export interface PokergosuReader {
+  summary(): Promise<PokergosuSummary>;
   list(
     input: PokergosuListInput,
     cursor?: PokergosuCursor,
@@ -36,7 +39,13 @@ export class PokergosuQueries {
   constructor(
     private readonly reader: PokergosuReader,
     private readonly media?: PokergosuMedia,
+    private readonly opinions?: {
+      options(detail: PokergosuDetail): Promise<ForumEvaluation[]>;
+    },
   ) {}
+  summary() {
+    return this.reader.summary();
+  }
   async list(input: PokergosuListInput) {
     let cursor: PokergosuCursor | undefined;
     if (input.cursor) {
@@ -67,6 +76,8 @@ export class PokergosuQueries {
       for (const comment of value.comments)
         comment.images = comment.images.map((i) => media.describe(i));
     }
+    if (value && this.opinions)
+      value.evaluations = await this.opinions.options(value);
     return value;
   }
   async loadMedia(id: string, key: string) {

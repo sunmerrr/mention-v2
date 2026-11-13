@@ -67,9 +67,9 @@ test("Pokergosu SSR, scoped filters, pagination and text/media evidence work wit
 }) => {
   const nojs = await browser.newContext({ javaScriptEnabled: false, baseURL });
   const ssr = await nojs.newPage();
-  await ssr.goto("/pokergosu");
+  await ssr.goto("/posts");
   await expect(
-    ssr.getByRole("heading", { name: "포커고수 여론", exact: true }),
+    ssr.getByRole("heading", { name: "게시글 목록", exact: true }),
   ).toBeVisible();
   await expect(
     ssr.getByRole("link", { name: "합성 포커고수 게시글 25", exact: true }),
@@ -83,7 +83,7 @@ test("Pokergosu SSR, scoped filters, pagination and text/media evidence work wit
     if (request.isNavigationRequest()) documents++;
     if (request.url().includes("/api/pokergosu")) reads.push(request.url());
   });
-  await page.goto("/pokergosu");
+  await page.goto("/posts");
   await page.waitForFunction(
     () => document.documentElement.dataset.hydrated === "true",
   );
@@ -113,7 +113,10 @@ test("Pokergosu SSR, scoped filters, pagination and text/media evidence work wit
     page.getByRole("link", { name: /포커고수에서 원문 보기/ }),
   ).toHaveAttribute("href", "https://www.pokergosu.com/free/25");
   await page.screenshot({ path: "test-results/pokergosu-detail.png" });
-  await page.getByRole("link", { name: "게시글 목록", exact: true }).click();
+  await page
+    .getByRole("main")
+    .getByRole("link", { name: "게시글 목록", exact: true })
+    .click();
   expect(reads).toHaveLength(2);
   await page.getByLabel("본문·댓글 검색", { exact: true }).fill("댓글만");
   await page.getByRole("button", { name: "조회", exact: true }).click();
@@ -142,12 +145,12 @@ test("Pokergosu remains usable on mobile and empty/error states are explicit", a
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/pokergosu");
+  await page.goto("/posts");
   await page.waitForFunction(
     () => document.documentElement.dataset.hydrated === "true",
   );
   await expect(page.getByLabel("페이지 이동", { exact: true })).toContainText(
-    "포커고수 여론",
+    "게시글 목록",
   );
   expect(
     await page.evaluate(
@@ -211,7 +214,7 @@ test("retained photos require an explicit load and then use local cached bytes",
     )
       loads.push(request.url());
   });
-  await page.goto("/pokergosu/25");
+  await page.goto("/posts/25");
   await page.waitForFunction(
     () => document.documentElement.dataset.hydrated === "true",
   );
@@ -237,4 +240,84 @@ test("retained photos require an explicit load and then use local cached bytes",
   await expect(photo).toBeVisible();
   expect(loads).toHaveLength(1);
   expect(external).toHaveLength(0);
+});
+
+test("opinion overview and post list have separate menus and data", async ({
+  page,
+}) => {
+  const requests: string[] = [];
+  page.on("request", (r) => {
+    if (r.url().includes("/api/pokergosu")) requests.push(r.url());
+  });
+  await page.goto("/pokergosu");
+  await page.waitForFunction(
+    () => document.documentElement.dataset.hydrated === "true",
+  );
+  await expect(
+    page.getByRole("heading", { name: "포커고수 여론", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "발견된 관심 키워드", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "합성 포커고수 게시글 25", exact: true }),
+  ).toHaveCount(0);
+  expect(requests).toHaveLength(0);
+  await page.screenshot({ path: "test-results/pokergosu-overview.png" });
+  await page
+    .getByRole("link", { name: "게시글 목록", exact: true })
+    .last()
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "게시글 목록", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "합성 포커고수 게시글 25", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator('nav a[aria-current="page"]')).toHaveText(
+    "게시글 목록",
+  );
+  expect(requests).toHaveLength(1);
+});
+
+test("combined opinions SSR keeps source units separate and forum reviews save in place", async ({
+  page,
+  browser,
+  baseURL,
+}) => {
+  const context = await browser.newContext({
+    javaScriptEnabled: false,
+    baseURL,
+  });
+  const ssr = await context.newPage();
+  await ssr.goto("/combined");
+  await expect(
+    ssr.getByRole("heading", { name: "종합 여론", exact: true }),
+  ).toBeVisible();
+  await expect(ssr.getByText("대상별 비교", { exact: true })).toBeVisible();
+  await context.close();
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/combined");
+  await page.waitForFunction(
+    () => document.documentElement.dataset.hydrated === "true",
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.goto("/posts/24?nav=%2Fcombined");
+  await page.waitForFunction(
+    () => document.documentElement.dataset.hydrated === "true",
+  );
+  await page.getByRole("combobox", { name: "APL 분류", exact: true }).click();
+  await page.getByRole("option", { name: "긍정", exact: true }).click();
+  await expect(page.getByText("저장됨", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("combobox", { name: "APL 분류", exact: true }),
+  ).toContainText("긍정");
+  expect(page.url()).toContain("/posts/24");
+  expect(errors).toEqual([]);
 });

@@ -1,7 +1,9 @@
 // Explicit page allowlist prevents scanner paths from starting analytics reads.
 const pages = new Set([
   "/",
+  "/combined",
   "/pokergosu",
+  "/posts",
   "/design-system",
   "/conversations",
   "/reviews",
@@ -22,7 +24,7 @@ const pages = new Set([
 export function isPagePath(pathname: string): boolean {
   return (
     pages.has(pathname) ||
-    /^\/pokergosu\/[1-9][0-9]{0,18}$/.test(pathname) ||
+    /^\/(?:pokergosu|posts)\/[1-9][0-9]{0,18}$/.test(pathname) ||
     /^\/conversations\/[a-zA-Z0-9_-]+$/.test(pathname)
   );
 }

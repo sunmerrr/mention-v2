@@ -16,3 +16,10 @@ it("keeps workflow origin across context/review links and reloads but direct men
     "/reviews",
   );
 });
+
+it("keeps opinion summaries separate from post-list and legacy detail navigation", () => {
+  expect(selectedMenu("/pokergosu", "")).toBe("/pokergosu");
+  expect(selectedMenu("/posts", "?q=sample")).toBe("/posts");
+  expect(selectedMenu("/posts/123", "?q=sample")).toBe("/posts");
+  expect(selectedMenu("/pokergosu/123", "")).toBe("/posts");
+});

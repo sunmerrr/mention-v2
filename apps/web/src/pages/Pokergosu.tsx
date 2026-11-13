@@ -24,6 +24,7 @@ import type {
   PokergosuImage,
   PokergosuSummary,
 } from "../../../../packages/contracts/src/pokergosu";
+import { ClassificationControl } from "../components/ClassificationControl";
 import { Empty, Failure, Pending, time } from "../components/ui";
 import {
   Badge,
@@ -47,6 +48,7 @@ import {
   pokergosuDetailQuery,
   pokergosuFilters,
   pokergosuQuery,
+  pokergosuSummaryQuery,
 } from "../pokergosu-query";
 import { api } from "../queries";
 
@@ -201,7 +203,9 @@ function Status({ summary: s }: { summary: PokergosuSummary }) {
       <Flex gap="3" align="center" wrap="wrap" mb="4">
         <Badge color={status === "running" ? "jade" : "gray"}>
           {status === "running"
-            ? "자동 수집 실행 기록"
+            ? s.monitor?.phase === "rest"
+              ? "다음 수집 대기 기록"
+              : "자동 수집 실행 기록"
             : status === "paused"
               ? "수집 일시 중지 기록"
               : status === "stopped"
@@ -213,7 +217,18 @@ function Status({ summary: s }: { summary: PokergosuSummary }) {
             ? `마지막 본문 확인 ${time(s.lastCheckedAt)} · 한국 시간`
             : "아직 본문 수집 기록이 없습니다."}
         </Text>
+        {s.monitor?.phase === "rest" && s.monitor.nextAt && (
+          <Text size="1" color="gray">
+            다음 목록 확인 예약 {time(s.monitor.nextAt)}
+          </Text>
+        )}
       </Flex>
+      {!!s.readErrors && (
+        <Text as="p" size="2" color="gray" mb="4">
+          본문 읽기 실패 {s.readErrors}개를 기록하고 자동 재시도 대상에서
+          제외했습니다.
+        </Text>
+      )}
       {!!s.monitor?.discoveryGaps && (
         <Callout.Root color="amber" mb="4">
           <Callout.Text>
@@ -321,8 +336,8 @@ function PostList() {
   return (
     <>
       <PageHeader
-        title="포커고수 여론"
-        description="자유게시판의 수집된 글과 댓글에서 관심 키워드와 실제 반응을 살펴봅니다."
+        title="게시글 목록"
+        description="포커고수 자유게시판에서 수집한 본문·댓글을 조회합니다."
         actions={
           <Button
             intent="secondary"
@@ -334,13 +349,6 @@ function PostList() {
           </Button>
         }
       />
-      <Callout.Root mb="5">
-        <Callout.Text>
-          관심 글은 포함 키워드가 일치한 글입니다. 긍정·부정은 아직 분류하지
-          않았으며, 키워드 일치 자체가 여론 판단을 뜻하지는 않습니다.
-        </Callout.Text>
-      </Callout.Root>
-      {first && <Status summary={first.summary} />}
       <Section
         title="수집한 게시글"
         description={
@@ -385,7 +393,7 @@ function PostList() {
                     <Table.Row key={post.id}>
                       <Table.Cell>
                         <Link
-                          to={`/pokergosu/${post.id}?${params.toString()}`}
+                          to={`/posts/${post.id}?${params.toString()}`}
                           className="conversation-link"
                         >
                           <Text as="p" weight="medium" size="2">
@@ -454,7 +462,7 @@ function PostDetail({ id }: { id: string }) {
     <>
       <Flex mb="4">
         <Button intent="quiet" asChild>
-          <Link to={`/pokergosu${search}`}>
+          <Link to={`/posts${search}`}>
             <ArrowLeft size={14} />
             게시글 목록
           </Link>
@@ -481,13 +489,42 @@ function PostDetail({ id }: { id: string }) {
       ) : (
         data && (
           <>
+            {data.evaluations && (
+              <Section
+                title="대상별 분류"
+                description="게시글과 저장된 댓글의 맥락을 함께 보고 분류합니다."
+              >
+                {data.evaluations.length ? (
+                  data.evaluations.map((item) => (
+                    <Flex
+                      key={item.id}
+                      justify="between"
+                      align="center"
+                      gap="3"
+                      wrap="wrap"
+                      mb="3"
+                    >
+                      <Text weight="medium">{item.target}</Text>
+                      <ClassificationControl
+                        item={item}
+                        endpoint={`/api/pokergosu/${id}/reviews`}
+                      />
+                    </Flex>
+                  ))
+                ) : (
+                  <Text size="2" color="gray">
+                    현재 포커고수 수집 키워드에 해당하는 대상이 없습니다.
+                  </Text>
+                )}
+              </Section>
+            )}
             <Section
               title={data.post.title}
               description={`${data.post.author || "작성자 미확인"} · ${data.post.publishedAt || "작성 시각 미확인"}`}
             >
               <Flex align="center" gap="3" wrap="wrap" mb="4">
                 <Keywords values={data.post.keywords} />
-                <Badge color="gray">미분류</Badge>
+
                 <Text size="1" color="gray">
                   마지막 확인 {time(data.post.checkedAt)}
                 </Text>
@@ -563,7 +600,95 @@ function PostDetail({ id }: { id: string }) {
     </>
   );
 }
+function OpinionOverview() {
+  const query = useQuery(pokergosuSummaryQuery()),
+    data = query.data;
+  return (
+    <>
+      <PageHeader
+        title="포커고수 여론"
+        description="관심 키워드와 수집 현황을 살펴보고, 원문은 게시글 목록에서 확인합니다."
+        actions={
+          <>
+            <Button
+              intent="secondary"
+              loading={query.isFetching}
+              onClick={() => query.refetch()}
+            >
+              <RefreshCw size={14} />
+              수집 데이터 새로고침
+            </Button>
+            <Button asChild>
+              <Link to="/posts">게시글 목록</Link>
+            </Button>
+          </>
+        }
+      />
+      {query.isPending ? (
+        <Pending />
+      ) : query.isError ? (
+        <Failure error={query.error} retry={query.refetch} />
+      ) : (
+        data && (
+          <>
+            <Status summary={data} />
+            {!data.available && (
+              <Callout.Root mb="4">
+                <Callout.Text>
+                  포커고수 수집 데이터가 아직 연결되지 않았습니다.
+                </Callout.Text>
+              </Callout.Root>
+            )}
+            <Section
+              title="발견된 관심 키워드"
+              description="본문·댓글에 일치한 포함 키워드입니다. 키워드를 누르면 해당 게시글을 볼 수 있습니다."
+              actions={
+                <Button intent="quiet" asChild>
+                  <Link to="/posts?match=matched">
+                    관심 글 {data.matched}개 보기
+                  </Link>
+                </Button>
+              }
+            >
+              {data.keywords.length ? (
+                <Flex gap="2" wrap="wrap">
+                  {data.keywords.map((keyword) => (
+                    <Button key={keyword} intent="secondary" asChild>
+                      <Link
+                        to={`/posts?keyword=${encodeURIComponent(keyword)}`}
+                      >
+                        {keyword}
+                      </Link>
+                    </Button>
+                  ))}
+                </Flex>
+              ) : (
+                <Empty>아직 발견된 관심 키워드가 없습니다.</Empty>
+              )}
+            </Section>
+            <Section title="여론 분석 상태">
+              <Callout.Root>
+                <Callout.Text>
+                  현재 관심 글 {data.matched}개는 미분류 상태입니다. 긍정·부정은
+                  아직 분류하지 않았으며, 키워드 일치 자체가 여론 판단을
+                  뜻하지는 않습니다.
+                </Callout.Text>
+              </Callout.Root>
+            </Section>
+          </>
+        )
+      )}
+    </>
+  );
+}
 export default function Pokergosu() {
   const { id } = useParams();
-  return id ? <PostDetail id={id} /> : <PostList />;
+  const { pathname } = useLocation();
+  return id ? (
+    <PostDetail id={id} />
+  ) : pathname === "/pokergosu" ? (
+    <OpinionOverview />
+  ) : (
+    <PostList />
+  );
 }

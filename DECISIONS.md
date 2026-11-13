@@ -345,3 +345,109 @@ This deliberately minimizes additional source traffic; it is not automatic photo
 archiving at capture time. Keep first-party host/MIME/size bounds, no credential
 forwarding, no automatic retries after failure, and an HTTP403/429 image-download
 hold. No OCR, sentiment worker, Kakao session or unrelated schedule is changed.
+
+## Seven-page Pokergosu limit (2026-11-13)
+
+The user's explicit request increases only discovery depth to at most seven pages,
+with early boundary exit and a14-navigation cap. Preserve the30–60 minute schedule,
+six-thread budget and quiet hours. The existing THREAD_MARKUP_UNKNOWN pause is
+independent and is retained during the update; no automatic retry/resume is added.
+
+## Combined source opinion and keyword policy (2026-11-13)
+
+The user approved a combined opinion page and one keyword manager with shared
+target/alias identity plus independently enabled Kakao/forum keywords. The native
+settings transaction stores the canonical policy and effective Kakao keywords
+atomically; existing Kakao capture reads its unchanged effective settings. Forum
+capture reads its own effective subset and continues to ignore Kakao exclusion
+rules. Legacy Kakao alias actions preserve the other source's configuration.
+Existing records are retained and reindexed locally without another crawl.
+
+Combined views retain source identity, units, classification coverage and evidence.
+Thread-plus-comments is a forum analysis unit; a grouped chat is a Kakao unit.
+There is no pooled sentiment rate or invented neutral label for unclassified data.
+Forum classifications use independent guarded storage and original text evidence;
+common-topic comparison is based on reviewed context summaries, not raw keyword
+cooccurrence. SSR, shared design-system controls and source detail links remain
+mandatory. No login, new native connection or outbound test messages are involved.
+
+## Collection continuity and separate forum post list (2026-11-13)
+
+The user prioritizes collection continuity: THREAD_MARKUP_UNKNOWN on a thread
+skips that thread, preserves diagnostics and continues the remaining queue.
+Durable read-error markers exclude repeated automatic attempts; a later successful
+read clears the marker. Security/access challenges and explicit manual stops retain
+their existing behavior. This supersedes the earlier decision to retain the body
+structure pause; the user authorized resuming collection.
+
+Keep the Pokergosu opinion overview at /pokergosu and place its full post list under
+the existing 대화·반응 group at /posts. Detail routes use /posts/:id; existing
+/pokergosu/:id links remain valid. The overview fetches a summary-only DTO and does
+not hydrate full post rows. Search, comments, images and pagination belong to the
+post list and detail pages. This navigation change does not introduce classification
+or modify the Kakao collector lifecycle.
+
+## Cross-source opinion comparison
+
+The combined page compares target identities across Kakao conversation groups and
+Pokergosu retained threads including comments. Counts and classifications remain
+source-specific; no pooled sentiment percentage is reported. Unclassified forum
+content is never neutral. Shared-topic evidence uses reviewed context summaries,
+not raw keyword frequency, and does not imply agreement between sources.
+
+Forum reviews retain source signatures, optimistic revision guards, immutable
+request receipts and human-over-AI priority in a separate local SQLite store.
+Changing retained source context makes the prior verdict stale. This is part of
+the current source bridge, not a claim of PostgreSQL review-history migration.
+Keyword changes return after canonical native settings commit; forum reindex runs
+locally in the background and reports its status without starting a crawl.
+
+## Source keyword browsing
+
+Keyword settings open directly on the Kakao source tab. All/Kakao/Pokergosu tabs
+share canonical target groups, search, and collection-state filtering. The all
+view shows source badges; checkboxes select aliases for explicit bulk changes to
+one source at a time. Changes remain staged until the page save action. Raw
+include/exclude editors are available in a disclosure below the primary list,
+preserving form values and Kakao-only exclusion semantics. Radix Tabs are exported
+through the required design-system boundary and demonstrated in its catalog.
+
+## Full retained-text review and today's keyword discovery (2026-11-13)
+
+The user corrected the classification scope from keyword-hit posts to all retained
+posts. A single delegated reviewer read136 titles/bodies and312 stored comments,
+including128 original keyword misses and six subsequent arrivals. It retained
+per-post evidence hashes/reasons privately, preserved the two existing AI exclusions
+and made no unsupported target attribution from other services or unseen media.
+This is a completed bounded review, not a new continuous classification schedule.
+
+The user then requested trying keyword-focused collection today. Replace normal
+discovery with one public search result page per scheduled cycle, rotating the
+initial five requested spellings (포커룰루, 룰루, 루루, APL, ㅈPL). Rotate title/body
+and comment search independently. Read at most six result threads; never mix in
+the unrelated general pending queue. Keep the30–60 minute interval, quiet hours,
+body-skip rule, security/manual stops and existing next alarm. The local policy
+expires at2026-11-14 00:00 KST; the next cycle after expiry uses normal discovery.
+No extra live search is issued just to verify the rollout.
+
+## Search structure failure must preserve collection (2026-11-13)
+
+The first live keyword search exposed a search-only markup mismatch, not access
+evidence. Normal collection was resumed while correcting it. An unreadable search
+result page now produces an audited skipped search and disables searches for that
+run, then continues regular discovery/body reads within the14-navigation budget.
+Only that fallback cycle reduces regular discovery to six pages; later regular
+cycles keep seven. Security/access challenges retain their stop behavior. This
+extends the user's collection-priority requirement to the new search integration
+and supersedes its former global BOARD_MARKUP_UNKNOWN pause behavior for searches.
+
+## Group-first source controls
+
+Source keyword management now defaults to target groups with an all/on/off/partial
+source selector per group. Group commands always cover every alias in that group,
+including while searching; partial status reports the actual collected count.
+Individual alias exceptions stay in a disclosure. Checkboxes appear only in an
+explicit multiple-item editing mode, never as ambiguous collection indicators.
+Unassigned aliases remain manageable in their own group. All edits use the same
+staged policy and final save contract; no collection defaults or backend ownership
+change merely by viewing the page.

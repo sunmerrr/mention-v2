@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ForumEvaluation } from "./forum-opinions";
 
 export const pokergosuId = z.string().regex(/^[1-9][0-9]{0,18}$/);
 export const pokergosuListSchema = z.object({
@@ -42,6 +43,7 @@ export interface PokergosuSummary {
   collected: number;
   matched: number;
   pending: number;
+  readErrors: number;
   comments: number;
   keywords: string[];
   lastCheckedAt: number | null;
@@ -70,6 +72,7 @@ export interface PokergosuComment {
   keywords: string[];
 }
 export interface PokergosuDetail {
+  evaluations?: ForumEvaluation[];
   post: PokergosuPost;
   body: string;
   images: PokergosuImage[];

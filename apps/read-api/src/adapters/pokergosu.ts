@@ -57,6 +57,7 @@ const blank = (): PokergosuSummary => ({
   collected: 0,
   matched: 0,
   pending: 0,
+  readErrors: 0,
   comments: 0,
   keywords: [],
   lastCheckedAt: null,
@@ -103,6 +104,59 @@ export class PokergosuSqliteReader implements PokergosuReader {
       db.close();
     }
   }
+  private summaryFrom(db: DatabaseSync): PokergosuSummary {
+    const counts = db
+      .prepare(
+        `SELECT count(*) discovered, count(payload) collected, coalesce(sum(CASE WHEN eligible=1 THEN 1 ELSE 0 END),0) matched, coalesce(sum(json_array_length(payload,'$.comments')),0) comments, max(checked_at) lastChecked FROM threads`,
+      )
+      .get();
+    if (!counts) throw new Error("Missing count result");
+    // Keyword metadata is derived with SQL; list requests never decode all bodies.
+    const terms = db
+      .prepare(
+        `SELECT DISTINCT value keyword FROM threads, json_each(payload,'$.match.included') WHERE payload IS NOT NULL UNION SELECT DISTINCT k.value keyword FROM threads t, json_each(t.payload,'$.comments') c, json_each(c.value,'$.match.included') k ORDER BY keyword`,
+      )
+      .all()
+      .map((r) => String(r.keyword));
+    const rawState = db
+      .prepare("SELECT value FROM state WHERE key='extension_monitor'")
+      .get();
+    const state = rawState ? JSON.parse(String(rawState.value)) : null;
+    const summary: PokergosuSummary = {
+      available: true,
+      discovered: Number(counts.discovered),
+      collected: Number(counts.collected),
+      matched: Number(counts.matched),
+      pending: Number(counts.discovered) - Number(counts.collected),
+      readErrors: db
+        .prepare(
+          "SELECT 1 FROM sqlite_master WHERE type='table' AND name='thread_read_errors'",
+        )
+        .get()
+        ? Number(
+            db.prepare("SELECT count(*) n FROM thread_read_errors").get()?.n ||
+              0,
+          )
+        : 0,
+      comments: Number(counts.comments),
+      keywords: terms,
+      lastCheckedAt:
+        counts.lastChecked == null ? null : Number(counts.lastChecked) * 1000,
+      monitor: state
+        ? {
+            status: state.status,
+            phase: state.phase,
+            reason: state.reason || null,
+            nextAt: state.nextAt,
+            discoveryGaps: state.discoveryGaps || 0,
+          }
+        : null,
+    };
+    return summary;
+  }
+  async summary(): Promise<PokergosuSummary> {
+    return this.read(blank(), (db) => this.summaryFrom(db));
+  }
   async list(
     input: PokergosuListInput,
     cursor?: PokergosuCursor,
@@ -110,45 +164,7 @@ export class PokergosuSqliteReader implements PokergosuReader {
     return this.read<PokergosuPage>(
       { items: [], nextCursor: null, total: 0, summary: blank() },
       (db) => {
-        const counts = db
-          .prepare(
-            `SELECT count(*) discovered, count(payload) collected, coalesce(sum(CASE WHEN eligible=1 THEN 1 ELSE 0 END),0) matched, coalesce(sum(json_array_length(payload,'$.comments')),0) comments, max(checked_at) lastChecked FROM threads`,
-          )
-          .get();
-        if (!counts) throw new Error("Missing count result");
-        // Keyword metadata is derived with SQL; list requests never decode all bodies.
-        const terms = db
-          .prepare(
-            `SELECT DISTINCT value keyword FROM threads, json_each(payload,'$.match.included') WHERE payload IS NOT NULL UNION SELECT DISTINCT k.value keyword FROM threads t, json_each(t.payload,'$.comments') c, json_each(c.value,'$.match.included') k ORDER BY keyword`,
-          )
-          .all()
-          .map((r) => String(r.keyword));
-        const rawState = db
-          .prepare("SELECT value FROM state WHERE key='extension_monitor'")
-          .get();
-        const state = rawState ? JSON.parse(String(rawState.value)) : null;
-        const summary: PokergosuSummary = {
-          available: true,
-          discovered: Number(counts.discovered),
-          collected: Number(counts.collected),
-          matched: Number(counts.matched),
-          pending: Number(counts.discovered) - Number(counts.collected),
-          comments: Number(counts.comments),
-          keywords: terms,
-          lastCheckedAt:
-            counts.lastChecked == null
-              ? null
-              : Number(counts.lastChecked) * 1000,
-          monitor: state
-            ? {
-                status: state.status,
-                phase: state.phase,
-                reason: state.reason || null,
-                nextAt: state.nextAt,
-                discoveryGaps: state.discoveryGaps || 0,
-              }
-            : null,
-        };
+        const summary = this.summaryFrom(db);
         const where = ["t.payload IS NOT NULL"],
           values: (string | number)[] = [];
         if (input.match === "matched") where.push("t.eligible=1");

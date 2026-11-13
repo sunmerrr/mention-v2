@@ -40,6 +40,7 @@ import { routeFeature } from "./workspace-query";
 const imports = {
   designSystem: () => import("./design-system/Catalog"),
   pokergosu: () => import("./pages/Pokergosu"),
+  combined: () => import("./pages/Combined"),
   overview: () => import("./pages/Overview"),
   conversations: () => import("./pages/Conversations"),
   reviews: () => import("./pages/Reviews"),
@@ -47,6 +48,7 @@ const imports = {
   workspace: () => import("./pages/Workspace"),
 };
 const DesignSystemCatalog = lazy(imports.designSystem),
+  Combined = lazy(imports.combined),
   Overview = lazy(imports.overview),
   Pokergosu = lazy(imports.pokergosu),
   Conversations = lazy(imports.conversations),
@@ -54,8 +56,14 @@ const DesignSystemCatalog = lazy(imports.designSystem),
   Detail = lazy(imports.detail),
   Workspace = lazy(imports.workspace);
 export async function preloadRoute(path: string) {
-  if (path === "/design-system") await imports.designSystem();
-  else if (path === "/pokergosu" || path.startsWith("/pokergosu/"))
+  if (path === "/combined") await imports.combined();
+  else if (path === "/design-system") await imports.designSystem();
+  else if (
+    path === "/pokergosu" ||
+    path.startsWith("/pokergosu/") ||
+    path === "/posts" ||
+    path.startsWith("/posts/")
+  )
     await imports.pokergosu();
   else if (routeFeature(path)) await imports.workspace();
   else if (path.startsWith("/conversations/")) await imports.detail();
@@ -68,6 +76,7 @@ const navGroups = [
     label: "분석·브리핑",
     Icon: BarChart3,
     links: [
+      ["/combined", "종합 여론"],
       ["/", "카톡 여론"],
       ["/pokergosu", "포커고수 여론"],
       ["/trends", "동향 분석"],
@@ -79,6 +88,7 @@ const navGroups = [
     Icon: MessagesSquare,
     links: [
       ["/conversations", "대화 목록"],
+      ["/posts", "게시글 목록"],
       ["/reviews", "분류 검토"],
       ["/campaigns", "반응 관찰"],
       ["/responses", "반응 비교"],
@@ -168,9 +178,15 @@ function Refresh() {
       color="gray"
       variant="ghost"
       onClick={async () => {
-        if (pathname === "/pokergosu" || pathname.startsWith("/pokergosu/")) {
+        if (
+          pathname === "/pokergosu" ||
+          pathname.startsWith("/pokergosu/") ||
+          pathname === "/posts" ||
+          pathname.startsWith("/posts/")
+        ) {
           await Promise.all([
             client.invalidateQueries({ queryKey: ["pokergosu"] }),
+            client.invalidateQueries({ queryKey: ["pokergosu-summary"] }),
             client.invalidateQueries({ queryKey: ["pokergosu-post"] }),
           ]);
           return;
@@ -289,9 +305,12 @@ function WorkspaceApp() {
                   element={<DesignSystemCatalog />}
                 />
                 <Route path="/" element={<Overview />} />
+                <Route path="/combined" element={<Combined />} />
                 <Route path="/conversations" element={<Conversations />} />
                 <Route path="/conversations/:id" element={<Detail />} />
                 <Route path="/pokergosu" element={<Pokergosu />} />
+                <Route path="/posts" element={<Pokergosu />} />
+                <Route path="/posts/:id" element={<Pokergosu />} />
                 <Route path="/pokergosu/:id" element={<Pokergosu />} />
                 <Route path="/reviews" element={<Reviews />} />
                 <Route

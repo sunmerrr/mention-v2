@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import type {
   PokergosuDetail,
   PokergosuPage,
+  PokergosuSummary,
 } from "../../../packages/contracts/src/pokergosu";
 import { api } from "./queries";
 
@@ -31,4 +32,10 @@ export const pokergosuDetailQuery = (id: string) =>
     queryKey: ["pokergosu-post", id],
     queryFn: () =>
       api<PokergosuDetail>(`/api/pokergosu/${encodeURIComponent(id)}`),
+  });
+
+export const pokergosuSummaryQuery = () =>
+  queryOptions({
+    queryKey: ["pokergosu-summary"],
+    queryFn: () => api<PokergosuSummary>("/api/pokergosu/summary"),
   });

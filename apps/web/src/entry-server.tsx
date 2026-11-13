@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 import { renderToReadableStream } from "react-dom/server.browser";
 import { StaticRouter } from "react-router-dom";
+import type { CombinedQueries } from "../../../packages/application/src/combined";
 import {
   PokergosuPostNotFound,
   type PokergosuQueries,
@@ -14,10 +15,12 @@ import type { WorkspaceQueries } from "../../../packages/application/src/workspa
 import { listSchema } from "../../../packages/contracts/src/api";
 import { pokergosuListSchema } from "../../../packages/contracts/src/pokergosu";
 import { App, preloadRoute } from "./App";
+import { combinedQuery } from "./combined-query";
 import {
   pokergosuDetailQuery,
   pokergosuFilters,
   pokergosuQuery,
+  pokergosuSummaryQuery,
 } from "./pokergosu-query";
 import {
   classificationQuery,
@@ -36,6 +39,7 @@ export async function render(
   workspace?: WorkspaceQueries,
   local = false,
   pokergosu?: PokergosuQueries,
+  combined?: CombinedQueries,
 ) {
   const requestUrl = new URL(url, "http://localhost"),
     scope = scopeFrom(requestUrl.search),
@@ -53,10 +57,15 @@ export async function render(
   });
   const detail = /^\/conversations\/([^/]+)$/.exec(requestUrl.pathname);
   const feature = routeFeature(requestUrl.pathname);
-  const pokergosuId = /^\/pokergosu\/([1-9][0-9]{0,18})$/.exec(
+  const pokergosuId = /^\/(?:pokergosu|posts)\/([1-9][0-9]{0,18})$/.exec(
     requestUrl.pathname,
   )?.[1];
-  if (pokergosuId && pokergosu) {
+  if (requestUrl.pathname === "/combined" && combined) {
+    await client.fetchQuery({
+      ...combinedQuery(scope),
+      queryFn: () => combined.read(scope),
+    });
+  } else if (pokergosuId && pokergosu) {
     await client.fetchQuery({
       ...pokergosuDetailQuery(pokergosuId),
       queryFn: async () => {
@@ -66,6 +75,11 @@ export async function render(
       },
     });
   } else if (requestUrl.pathname === "/pokergosu" && pokergosu) {
+    await client.fetchQuery({
+      ...pokergosuSummaryQuery(),
+      queryFn: () => pokergosu.summary(),
+    });
+  } else if (requestUrl.pathname === "/posts" && pokergosu) {
     await client.fetchInfiniteQuery({
       ...pokergosuQuery(requestUrl.search),
       queryFn: () =>

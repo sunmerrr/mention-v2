@@ -2,7 +2,9 @@ import { useLocation } from "react-router-dom";
 
 const menuPaths = new Set([
   "/",
+  "/combined",
   "/pokergosu",
+  "/posts",
   "/conversations",
   "/reviews",
   "/trends",
@@ -19,7 +21,10 @@ const menuPaths = new Set([
   "/design-system",
 ]);
 export function selectedMenu(pathname: string, search: string) {
-  if (pathname.startsWith("/pokergosu/")) return "/pokergosu";
+  if (pathname.startsWith("/pokergosu/") || pathname.startsWith("/posts/")) {
+    const origin = new URLSearchParams(search).get("nav");
+    return origin && menuPaths.has(origin) ? origin : "/posts";
+  }
   const workflow =
     pathname === "/reviews" ||
     pathname === "/episode" ||

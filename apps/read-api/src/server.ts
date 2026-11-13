@@ -5,12 +5,16 @@ import compress from "@fastify/compress";
 import middie from "@fastify/middie";
 import fastifyStatic from "@fastify/static";
 import Fastify from "fastify";
+import { CombinedQueries } from "../../../packages/application/src/combined";
 import { PokergosuQueries } from "../../../packages/application/src/pokergosu";
 import { WorkspaceQueries } from "../../../packages/application/src/workspace";
+import { scopeSchema } from "../../../packages/contracts/src/api";
 import { AliasSuggestions } from "./adapters/alias-suggestions";
 import { AnalyticsTransport } from "./adapters/analytics";
 import { CollectorTransport } from "./adapters/collector";
+import { ForumOpinions } from "./adapters/forum-opinions";
 import { JudgmentExclusions } from "./adapters/judgment-exclusions";
+import { KeywordPolicies } from "./adapters/keyword-policies";
 import { LegacyReader } from "./adapters/legacy";
 import { PokergosuSqliteReader } from "./adapters/pokergosu";
 import { PokergosuMediaCache } from "./adapters/pokergosu-media";
@@ -115,14 +119,61 @@ const queries = registerApi(
   },
   readModel,
 );
-const pokergosu = new PokergosuQueries(
-  new PokergosuSqliteReader(path.join(runtimeDir, "pokergosu/monitor.sqlite3")),
-  new PokergosuMediaCache(path.join(runtimeDir, "pokergosu/media")),
+const keywordPolicies =
+  workspace && deployment.legacyRoot
+    ? new KeywordPolicies(
+        workspace,
+        root,
+        deployment.legacyRoot,
+        path.join(runtimeDir, "pokergosu"),
+      )
+    : undefined;
+app.get("/api/source-keywords/status", async () => ({
+  success: true,
+  data: keywordPolicies?.status() || { state: "unavailable", updated: 0 },
+  error: null,
+}));
+const forumReader = new PokergosuSqliteReader(
+  path.join(runtimeDir, "pokergosu/monitor.sqlite3"),
 );
-registerPokergosu(app, pokergosu, [
-  origin,
-  ...(deployment.publicOrigin ? [deployment.publicOrigin] : []),
-]);
+const forumOpinions = keywordPolicies
+  ? new ForumOpinions(
+      path.join(runtimeDir, "pokergosu/opinions.sqlite3"),
+      forumReader,
+      keywordPolicies,
+    )
+  : undefined;
+const combined =
+  forumOpinions && keywordPolicies
+    ? new CombinedQueries({
+        kakao: (scope) => queries.overview(scope),
+        forum: (scope) => forumOpinions.summary(scope),
+        policy: () => keywordPolicies.read(),
+      })
+    : undefined;
+app.get("/api/combined", async (request) => {
+  if (!combined)
+    throw Object.assign(new Error("수집 연결을 확인해 주세요."), {
+      statusCode: 503,
+    });
+  return {
+    success: true,
+    data: await combined.read(scopeSchema.parse(request.query)),
+    error: null,
+  };
+});
+const pokergosu = new PokergosuQueries(
+  forumReader,
+  new PokergosuMediaCache(path.join(runtimeDir, "pokergosu/media")),
+  forumOpinions,
+);
+registerPokergosu(
+  app,
+  pokergosu,
+  [origin, ...(deployment.publicOrigin ? [deployment.publicOrigin] : [])],
+  forumOpinions,
+  writesEnabled,
+);
 const lifecycle = new Lifecycle();
 registerDrainHeaders(app, lifecycle);
 const refreshReadModel = () =>
@@ -162,6 +213,7 @@ if (workspace)
       reader.invalidate();
       return queries.refresh();
     },
+    keywordPolicies ? () => keywordPolicies.refreshForum() : undefined,
   );
 app.addHook("onRequest", async (request, reply) => {
   if (
@@ -245,6 +297,7 @@ app.get("/*", async (request, reply) => {
       workspace,
       isLocalRequest(request),
       pokergosu,
+      combined,
     );
     const state = JSON.stringify(page.state)
       .replace(/</g, "\\u003c")
@@ -301,7 +354,11 @@ async function shutdown() {
     const clean = await lifecycle.stop({
       stopAccepting: () => app.close(),
       drainAdapters: async () => {
-        await Promise.all([readModel.drain(), aliases?.drain()]);
+        await Promise.all([
+          readModel.drain(),
+          aliases?.drain(),
+          keywordPolicies?.drain(),
+        ]);
         await analytics?.drain();
       },
       cleanup: async () => {
@@ -310,6 +367,7 @@ async function shutdown() {
         readModel.close();
         reader.close();
         systemErrors.close();
+        forumOpinions?.close();
       },
       timeoutMs: 25000,
       onTimeout: () =>

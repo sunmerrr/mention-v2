@@ -10,6 +10,10 @@ import {
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
+  type KeywordSource,
+  sharedPolicy,
+} from "../../../../../packages/contracts/src/keyword-policy";
+import {
   Badge,
   Box,
   Button,
@@ -25,6 +29,7 @@ import {
 } from "../../design-system";
 import { api } from "../../queries";
 import { useRuntime } from "../../runtime";
+import { KeywordSources } from "./KeywordSources";
 import {
   ActionForm,
   Choice,
@@ -44,6 +49,29 @@ import {
   useAction,
 } from "./shared";
 
+function ForumProcessingStatus() {
+  const query = useQuery({
+    queryKey: ["source-keyword-processing"],
+    queryFn: () => api<{ state: string }>("/api/source-keywords/status"),
+    refetchInterval: 2000,
+  });
+  const status = query.data?.state;
+  if (!status || ["idle", "unavailable"].includes(status)) return null;
+  return (
+    <Text
+      as="p"
+      size="2"
+      color={status === "failed" ? "red" : "gray"}
+      role="status"
+    >
+      {status === "queued" || status === "running"
+        ? "포커고수 기존 글의 키워드 갱신 중"
+        : status === "failed"
+          ? "설정은 저장됐지만 포커고수 기존 글 갱신에 실패했습니다. 다시 저장하면 재시도합니다."
+          : "포커고수 키워드 갱신 완료"}
+    </Text>
+  );
+}
 function KeywordProcessingStatus() {
   const query = useQuery({
     queryKey: ["keyword-processing"],
@@ -75,50 +103,123 @@ function KeywordProcessingStatus() {
   );
 }
 export function Keywords({ data }: { data: Row }) {
-  const [groups, setGroups] = useState(rows(data.keyword_groups)),
+  const initial = sharedPolicy(data);
+  const [wordText, setWordText] = useState(initial.keywords.join("\n")),
+    [sources, setSources] = useState(initial.sources);
+  const [groups, setGroups] = useState(rows(initial.keyword_groups)),
     [suggestions, setSuggestions] = useState<Row[]>([]),
     [sample, setSample] = useState(""),
     [check, setCheck] = useState<Row>();
+  const words = split(wordText);
   const state = useAction();
   const [expandedGroup, setExpandedGroup] = useState<string>();
+  const [editRules, setEditRules] = useState(false);
   return (
     <>
-      <Panel title="수집 키워드와 제외 키워드">
+      <Panel title="공통 대상·별칭과 출처별 수집 설정">
         <KeywordProcessingStatus />
+        <ForumProcessingStatus />
         <ActionForm
           action="keyword-settings"
           build={(f) => {
-            const keywords = split(f.get("keywords"));
+            const keywords = words;
+            const keyword_groups = groups.map((g) => ({
+              ...g,
+              kind: text(g.kind) || "other",
+              keywords: strings(g.keywords)
+                .map((k) => k.trim())
+                .filter((k) => keywords.includes(k)),
+            }));
             return {
               keywords,
               exclude_keywords: split(f.get("exclude_keywords")),
-              keyword_groups: groups.map((g, i) => ({
-                ...g,
-                kind: f.get(`kind-${i}`),
-                keywords: strings(g.keywords)
-                  .map((k) => k.trim())
-                  .filter((k) => keywords.includes(k)),
-              })),
+              keyword_groups,
+              ...(data.keyword_policy_supported
+                ? {
+                    keyword_policy: {
+                      version: 1,
+                      keywords,
+                      keyword_groups,
+                      sources: {
+                        kakao: {
+                          disabled: sources.kakao.disabled.filter((w) =>
+                            keywords.includes(w),
+                          ),
+                        },
+                        pokergosu: {
+                          disabled: sources.pokergosu.disabled.filter((w) =>
+                            keywords.includes(w),
+                          ),
+                        },
+                      },
+                    },
+                    keyword_policy_token: data.keyword_policy_token,
+                  }
+                : {}),
             };
           }}
         >
-          <Grid columns={{ initial: "1", md: "2" }} gap="5">
-            <Multiline
-              name="keywords"
-              label="포함 키워드 · 한 줄에 하나"
-              value={strings(data.keywords).join("\n")}
-              rows={12}
-            />
-            <Multiline
-              name="exclude_keywords"
-              label="제외 키워드 · 한 줄에 하나"
-              value={strings(data.exclude_keywords).join("\n")}
-              rows={12}
-            />
-          </Grid>
+          <KeywordSources
+            words={words}
+            groups={groups}
+            sources={sources}
+            supported={data.keyword_policy_supported === true}
+            onChange={setSources}
+            onAdd={(word, target, source: KeywordSource | "both") => {
+              setWordText((prev) => [...split(prev), word].join("\n"));
+              setGroups((prev) =>
+                prev.map((g) =>
+                  text(g.id) === target
+                    ? { ...g, keywords: [...strings(g.keywords), word] }
+                    : g,
+                ),
+              );
+              setSources((prev) => ({
+                kakao: {
+                  disabled:
+                    source === "pokergosu"
+                      ? [...prev.kakao.disabled, word]
+                      : prev.kakao.disabled,
+                },
+                pokergosu: {
+                  disabled:
+                    source === "kakao"
+                      ? [...prev.pokergosu.disabled, word]
+                      : prev.pokergosu.disabled,
+                },
+              }));
+            }}
+          />
+          <PreviewDisclosure
+            title="포함·제외 문구 직접 편집"
+            open={editRules}
+            onOpenChange={setEditRules}
+            preview={
+              <Text size="1" color="gray">
+                포함 키워드와 카톡 제외 문구
+              </Text>
+            }
+          >
+            <Grid columns={{ initial: "1", md: "2" }} gap="5">
+              <Multiline
+                name="keywords"
+                label="포함 키워드 · 한 줄에 하나"
+                value={wordText}
+                onChange={setWordText}
+                rows={12}
+              />
+              <Multiline
+                name="exclude_keywords"
+                label="제외 키워드 · 한 줄에 하나"
+                value={strings(data.exclude_keywords).join("\n")}
+                rows={12}
+              />
+            </Grid>
+          </PreviewDisclosure>
           <Text as="p" size="1" color="gray">
-            제외 키워드의 회차 숫자는 자동으로 일반화합니다. 예: ‘오버레이 헌터
-            25회차 정모’는 다른 회차도 제외합니다.
+            제외 문구는 카톡에만 적용합니다. 제외 키워드의 회차 숫자는 자동으로
+            일반화합니다. 예: ‘오버레이 헌터 25회차 정모’는 다른 회차도
+            제외합니다.
           </Text>
           <Flex justify="between" align="center" gap="3" wrap="wrap">
             <Text size="2" weight="medium">

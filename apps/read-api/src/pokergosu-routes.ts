@@ -1,19 +1,29 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { PokergosuQueries } from "../../../packages/application/src/pokergosu";
+import { forumCorrectionSchema } from "../../../packages/contracts/src/forum-opinions";
 import {
   pokergosuId,
   pokergosuListSchema,
 } from "../../../packages/contracts/src/pokergosu";
+import type { ForumOpinions } from "./adapters/forum-opinions";
+import { isLocalRequest } from "./workspace-routes";
 
 export function registerPokergosu(
   app: FastifyInstance,
   queries: PokergosuQueries,
   origins: string[] = [],
+  opinions?: ForumOpinions,
+  writesEnabled = false,
 ) {
   app.get("/api/pokergosu", async (request) => ({
     success: true,
     data: await queries.list(pokergosuListSchema.parse(request.query)),
+    error: null,
+  }));
+  app.get("/api/pokergosu/summary", async () => ({
+    success: true,
+    data: await queries.summary(),
     error: null,
   }));
   app.get<{ Params: { id: string } }>(
@@ -32,6 +42,31 @@ export function registerPokergosu(
           });
     },
   );
+
+  app.post("/api/pokergosu/:id/reviews", async (request, reply) => {
+    if (
+      !writesEnabled ||
+      !opinions ||
+      !request.headers.origin ||
+      !origins.includes(request.headers.origin)
+    )
+      return reply.code(403).send({
+        success: false,
+        data: null,
+        error: { message: "분류를 저장할 수 없습니다." },
+      });
+    const input = forumCorrectionSchema.parse(request.body);
+    if (
+      (request.params as { id: string }).id !== input.id ||
+      (input.origin === "ai" && !isLocalRequest(request))
+    )
+      return reply.code(403).send({
+        success: false,
+        data: null,
+        error: { message: "허용되지 않은 분류 요청입니다." },
+      });
+    return { success: true, data: await opinions.save(input), error: null };
+  });
   const keySchema = z.string().regex(/^[a-f0-9]{64}$/);
   app.get<{ Params: { key: string } }>(
     "/api/pokergosu/media/:key",
