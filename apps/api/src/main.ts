@@ -69,6 +69,20 @@ async function bootstrap() {
     }
     return;
   }
+  if (config.APP_ROLE === 'import-native-state') {
+    if (!config.NATIVE_STATE_IMPORT_FILE) throw Error('NATIVE_STATE_IMPORT_FILE_REQUIRED');
+    const { EvidenceRepository } = await import('./modules/evidence/evidence.repository.js');
+    const { importNativeState } = await import('./modules/evidence/import-native-state.js');
+    const target = new EvidenceRepository();
+    try {
+      const result = await importNativeState(config.NATIVE_STATE_IMPORT_FILE, target);
+      const { default: pino } = await import('pino');
+      pino().info({ event: 'native_state_import_complete', ...result });
+    } finally {
+      await target.close();
+    }
+    return;
+  }
   if (config.APP_ROLE === 'import-workspace') {
     if (!config.WORKSPACE_IMPORT_FILE) throw Error('WORKSPACE_IMPORT_FILE_REQUIRED');
     const { KeywordSettingsRepository } = await import(

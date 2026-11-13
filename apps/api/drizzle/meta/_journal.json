@@ -134,6 +134,13 @@
       "when": 1794569753164,
       "tag": "0018_keen_frightful_four",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794571463668,
+      "tag": "0019_panoramic_paibok",
+      "breakpoints": true
     }
   ]
 }

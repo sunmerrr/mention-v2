@@ -200,3 +200,25 @@ See FORUM-MIGRATION.md for completed Node/PostgreSQL forum reads/reviews,
 source-policy storage, preserved latest UI, populated source-reference comparisons
 and fourteen desktop/mobile page checks. Native collection/dialogue and remaining
 workspace parity are still pending; no public routing cutover has occurred.
+
+## Complete native operating-state archive
+
+An isolated read-only SQLite backup captured all41 existing monitor tables,
+including excluded/hidden messages, guide state, entrances, followups, schedules,
+uncertain send receipts and historical reviews. The new import-native-state role
+stores this as immutable PostgreSQL migration evidence, not executable jobs.
+Only complete manifests publish; interrupted imports resume with exact hashes,
+changed records and unknown settings keys are rejected. Unsafe numeric native
+identifiers are represented losslessly as decimal strings. Binary SQLite values
+use an explicit base64 wrapper in the private export.
+
+The populated snapshot contained83394 rows (28.7MB); full row/body/hash comparison
+found zero differences after import. The live intake table remained empty. This
+archive does not claim those records have all been converted to active Node
+features. Per-feature materialization and preserved delivery ownership remain
+migration gates. Snapshot files are private, ignored and mode0600; the original
+DB and all running production processes were untouched.
+
+Actual verify:full passed51 unit and54 integration tests, common image, reverse
+SSH and Compose checks. No AWS destination, remote tunnel, public routing change,
+owner restart, authentication action, live send or historical replay occurred.

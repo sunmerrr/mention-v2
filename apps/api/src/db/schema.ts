@@ -196,6 +196,31 @@ export const nativeWorkerOffsets = pgTable('native_worker_offsets', {
   consumer: varchar('consumer', { length: 80 }).notNull().unique(),
   lastPk: integer('last_pk').notNull().default(0),
 });
+export const nativeStateSnapshots = pgTable('migration_native_snapshots', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  id: uuid('id').notNull().unique(),
+  capturedAt: timestamp('captured_at', { withTimezone: true }).notNull(),
+  counts: jsonb('counts').$type<Record<string, number>>().notNull(),
+  complete: boolean('complete').notNull().default(false),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+});
+export const nativeStateRecords = pgTable(
+  'migration_native_records',
+  {
+    pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+    snapshotPk: integer('snapshot_pk')
+      .notNull()
+      .references(() => nativeStateSnapshots.pk),
+    key: varchar('key', { length: 150 }).notNull(),
+    tableName: varchar('table_name', { length: 100 }).notNull(),
+    digest: char('digest', { length: 64 }).notNull(),
+    body: jsonb('body').$type<Record<string, unknown>>().notNull(),
+  },
+  (t) => [
+    uniqueIndex('uniq_migration_native_record').on(t.snapshotPk, t.key),
+    index('idx_migration_native_table').on(t.snapshotPk, t.tableName),
+  ],
+);
 export const nativeRoomDirty = pgTable('native_room_dirty', {
   pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
   roomId: varchar('room_id', { length: 19 }).notNull().unique(),
