@@ -3,8 +3,11 @@ import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testconta
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDatabase } from '../../src/db/client.js';
+import { intakeEvents } from '../../src/db/schema.js';
 import { IntakeStore } from '../../src/modules/connection/intake-store.js';
 import type { OwnerReply } from '../../src/modules/connection/owner-client.js';
+import { NativeNormalizer } from '../../src/modules/context/native-normalizer.service.js';
+import { EvidenceRepository } from '../../src/modules/evidence/evidence.repository.js';
 import { config } from '../../src/shared/config/index.js';
 
 describe('native intake on disposable PostgreSQL', () => {
@@ -21,7 +24,15 @@ describe('native intake on disposable PostgreSQL', () => {
       stream_error: null,
     },
     result: {
-      events: [{ chat_id: '18497500347065223', log_id: '3970073012646000642', text: '합성 원문' }],
+      events: [
+        {
+          chat_id: '18497500347065223',
+          log_id: '3970073012646000642',
+          author_id: '7175652408034127965',
+          type: 1,
+          text: '합성 원문',
+        },
+      ],
       next_cursor: cursor,
       gap: false,
     },
@@ -30,7 +41,7 @@ describe('native intake on disposable PostgreSQL', () => {
         [
           '18497500347065223',
           '3970073012646000642',
-          { logId: '3970073012646000642', message: '합성 원문' },
+          { logId: '3970073012646000642', message: '합성 원문', type: 1, sendAt: 1794556800 },
         ],
       ],
     },
@@ -118,6 +129,70 @@ describe('native intake on disposable PostgreSQL', () => {
       expect((await store.cursor())?.cursor).toBe('synthetic:owner:6');
     } finally {
       await c.pool.end();
+    }
+  });
+  it('normalizes durable input independently and resumes its checkpoint without duplicate room work', async () => {
+    const evidence = new EvidenceRepository(),
+      processor = new NativeNormalizer(evidence);
+    try {
+      expect(await processor.processBatch()).toEqual({ scanned: 1, normalized: 1 });
+      const saved = await evidence.db.execute('select body from kakao_messages');
+      expect(saved.rows[0]?.body).toMatchObject({
+        logId: '3970073012646000642',
+        type: 1,
+        text: '합성 원문',
+        own: null,
+        sentAt: '2026-11-13T08:00:00.000Z',
+        timeSource: 'native',
+      });
+      expect(await new NativeNormalizer(evidence).processBatch()).toEqual({
+        scanned: 0,
+        normalized: 0,
+      });
+      expect(
+        (await evidence.db.execute('select revision from native_room_dirty')).rows[0]?.revision,
+      ).toBe(1);
+    } finally {
+      await evidence.close();
+    }
+  });
+  it('rolls back a partial normalization batch on native identity mismatch while retaining the raw data', async () => {
+    const evidence = new EvidenceRepository(),
+      processor = new NativeNormalizer(evidence);
+    try {
+      const before = (await evidence.db.execute('select last_pk from native_worker_offsets'))
+        .rows[0]?.last_pk;
+      await evidence.db.insert(intakeEvents).values(
+        ['3970073012646000643', '3970073012646000644'].map((logId, i) => ({
+          source: 'kakao',
+          ownerInstance: 'synthetic',
+          identity: (i ? 'b' : 'a').repeat(64),
+          roomId: '18497500347065223',
+          logId,
+          payload: {
+            event: {
+              chat_id: i ? '999' : '18497500347065223',
+              log_id: logId,
+              type: 1,
+              text: '합성 후속',
+            },
+            own: null,
+            wireSelection: 'missing',
+          },
+        })),
+      );
+      await expect(processor.processBatch()).rejects.toThrow('IDENTITY_MISMATCH');
+      expect(
+        (await evidence.db.execute('select last_pk from native_worker_offsets')).rows[0]?.last_pk,
+      ).toBe(before);
+      expect(
+        (await evidence.db.execute('select count(*)::int n from kakao_messages')).rows[0]?.n,
+      ).toBe(1);
+      expect(
+        (await evidence.db.execute('select count(*)::int n from intake_events')).rows[0]?.n,
+      ).toBe(3);
+    } finally {
+      await evidence.close();
     }
   });
 });

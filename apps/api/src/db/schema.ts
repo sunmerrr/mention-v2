@@ -172,6 +172,35 @@ export const intakeWireSnapshots = pgTable(
     index('idx_intake_wire_native_id').on(t.roomId, t.logId),
   ],
 );
+export const kakaoMessages = pgTable(
+  'kakao_messages',
+  {
+    pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+    roomId: varchar('room_id', { length: 19 }).notNull(),
+    logId: varchar('log_id', { length: 19 }).notNull(),
+    orderId: numeric('order_id', { precision: 19, scale: 0 }).notNull(),
+    body: jsonb('body')
+      .$type<import('../modules/context/native-message.js').NativeMessage>()
+      .notNull(),
+    intakePk: integer('intake_pk').references(() => intakeEvents.pk),
+  },
+  (t) => [
+    uniqueIndex('uniq_kakao_message_native').on(t.roomId, t.logId),
+    index('idx_kakao_message_history').on(t.roomId, t.orderId),
+  ],
+);
+export const nativeWorkerOffsets = pgTable('native_worker_offsets', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  consumer: varchar('consumer', { length: 80 }).notNull().unique(),
+  lastPk: integer('last_pk').notNull().default(0),
+});
+export const nativeRoomDirty = pgTable('native_room_dirty', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  roomId: varchar('room_id', { length: 19 }).notNull().unique(),
+  lastIntakePk: integer('last_intake_pk').notNull().default(0),
+  revision: integer('revision').notNull().default(0),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const collectorPrincipals = pgTable('collector_principals', {
   pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),

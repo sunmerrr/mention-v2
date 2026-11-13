@@ -120,6 +120,13 @@
       "when": 1794567001070,
       "tag": "0016_flimsy_lifeguard",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794567799172,
+      "tag": "0017_friendly_manta",
+      "breakpoints": true
     }
   ]
 }

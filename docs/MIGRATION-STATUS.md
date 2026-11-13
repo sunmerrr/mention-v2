@@ -73,6 +73,27 @@ keeps a large repeated attachment in one wire row. Current `verify:full` passed
 44 unit and46 integration tests plus the common image and Compose checks. Live
 Kakao intake remains disabled pending the coordinated operational handoff.
 
+## PostgreSQL native normalization worker
+
+The common worker role now consumes durable native events without any owner RPC,
+authentication or send dependency. Native room/message IDs remain exact decimal
+strings, normalized messages use indexed native ordering, and the normalization
+checkpoint commits with message changes and room revision markers. A new worker
+resumes that checkpoint; identity inconsistency rolls back the entire batch while
+the original raw records remain available.
+
+Native send time and server observation time are separate fields. Missing or
+ambiguous wire evidence leaves native send time unknown; presentation fallback is
+explicitly tagged as observed time. Wire identity/type/author mismatch cannot
+supply verified metadata. Native reply attachments use lossless JSON parsing;
+history-end zero and19-digit reply IDs survive conversion. Own status remains
+nullable when identity cannot be verified. Photo captions are retained as text.
+
+This is the raw-to-message stage, not completed context/guide/dialogue migration.
+Existing canonical public detail remains unchanged. Latest `verify:full` passed
+48 unit and48 integration tests, Docker image and Compose checks, including a
+mid-batch identity failure that preserves both raw input and the prior checkpoint.
+
 The new preparation and remaining gates are documented in SERVER-CONSOLIDATION.md
 and USEFUL-CONTEXT.md. Node owner intake, durable PostgreSQL raw inbox/cursors,
 independent Node forum intake and a common role image have been implemented for
