@@ -362,6 +362,7 @@ export const forumPosts = pgTable(
     pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
     sourceId: varchar('source_id', { length: 19 }).notNull().unique(),
     orderId: numeric('order_id', { precision: 19, scale: 0 }).notNull(),
+    inboxPk: integer('inbox_pk').references(() => collectorInbox.pk),
     detail: jsonb('detail')
       .$type<import('@app/shared/monitoring/contracts/pokergosu').PokergosuDetail>()
       .notNull(),
@@ -389,6 +390,19 @@ export const forumReadModels = pgTable('forum_read_models', {
   body: jsonb('body').$type<Record<string, unknown>>().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+export const forumRetainedReviews = pgTable(
+  'forum_retained_reviews',
+  {
+    pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+    sourceId: varchar('source_id', { length: 19 }).notNull(),
+    targetId: varchar('target_id', { length: 64 }).notNull(),
+    signature: char('signature', { length: 64 }).notNull(),
+    evaluation: jsonb('evaluation')
+      .$type<import('@app/shared/monitoring/contracts/forum-opinions').ForumEvaluation>()
+      .notNull(),
+  },
+  (t) => [uniqueIndex('uniq_forum_retained_review').on(t.sourceId, t.targetId)],
+);
 export const forumReviewReceipts = pgTable('forum_review_receipts', {
   pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
   requestId: uuid('request_id').notNull().unique(),

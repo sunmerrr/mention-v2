@@ -48,9 +48,28 @@ from the external website again during migration.
 
 ## Still required before public cutover
 
-Complete keyword-job consumption, raw forum intake processing, context quotas and
+Complete keyword-job consumption, raw legacy forum-history import, context quotas and
 DB-only expansion, remaining workspace/exports/briefings, native dialogue/schedule
 migration, preserved historical state/cursor delta and complete page/action QA.
 The seven-page read-only check is not a claim that every original feature has
 already moved. The production shared link still uses /Users/we/mention. The
 existing Chrome receiver/profile and native Kakao connection remain unchanged.
+
+## Durable raw-processing checkpoint
+
+The Node worker now consumes accepted forum inbox records transactionally. Raw
+acceptance, canonical article/card updates, matched status and processing checkpoints
+remain separate. Superseded captures stay retained without replacing newer cards.
+Durable inbox sequence orders multiple collectors; client timestamps do not decide
+which evidence wins. The public DTO keeps its100-comment bound while the raw inbox
+retains all captured comments and full-text matching includes them.
+
+Human classifications and notes survive changed or temporarily removed targets.
+Changed evidence marks those reviews stale and invalidates the guarded edit token.
+Removed target reviews remain in a dedicated retained table rather than being lost.
+The common worker role processes bounded batches before publishing forum opinions.
+No new Chrome profile/receiver or production worker has been activated by this code.
+
+Forum list, opinion aggregation and review writes now use compact card/evaluation
+columns instead of reading or rewriting article/comment JSON. After the populated
+backfill,177 saved DTOs and9 opinion scopes still matched the original reference.

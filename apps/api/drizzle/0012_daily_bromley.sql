@@ -1,0 +1,2 @@
+ALTER TABLE "forum_posts" ADD COLUMN "inbox_pk" integer;--> statement-breakpoint
+ALTER TABLE "forum_posts" ADD CONSTRAINT "forum_posts_inbox_pk_collector_inbox_pk_fk" FOREIGN KEY ("inbox_pk") REFERENCES "public"."collector_inbox"("pk") ON DELETE no action ON UPDATE no action;

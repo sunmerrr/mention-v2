@@ -5,6 +5,7 @@ import { config } from '../../shared/config/index.js';
 import { KeywordSettingsRepository } from '../settings/keyword-settings.repository.js';
 import { ForumRepository } from './forum.repository.js';
 import { ForumMedia } from './forum-media.service.js';
+import { ForumProcessor } from './forum-processor.js';
 /** Finished forum opinions are published by this role, never built in an SSR read. */
 @Injectable()
 export class ForumAggregate implements OnModuleInit, OnModuleDestroy {
@@ -16,6 +17,7 @@ export class ForumAggregate implements OnModuleInit, OnModuleDestroy {
     private readonly forum: ForumRepository,
     private readonly settings: KeywordSettingsRepository,
     private readonly media: ForumMedia,
+    private readonly processor: ForumProcessor,
   ) {}
   async onModuleInit() {
     if (config.MONITORING_EVIDENCE_BACKEND !== 'postgres') return;
@@ -46,6 +48,9 @@ export class ForumAggregate implements OnModuleInit, OnModuleDestroy {
   }
   private async run() {
     try {
+      for (let i = 0; i < 50 && !this.stopped; i++) {
+        if (!(await this.processor.processOne())) break;
+      }
       for (let i = 0; i < 5 && !this.stopped; i++) {
         if (!(await this.media.processOne())) break;
       }

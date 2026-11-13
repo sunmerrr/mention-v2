@@ -78,6 +78,20 @@
       "when": 1794564259613,
       "tag": "0010_colossal_rumiko_fujikawa",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794564979313,
+      "tag": "0011_heavy_clint_barton",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794565061903,
+      "tag": "0012_daily_bromley",
+      "breakpoints": true
     }
   ]
 }
