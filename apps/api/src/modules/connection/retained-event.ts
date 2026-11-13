@@ -2,6 +2,11 @@ import { createHash } from 'node:crypto';
 import { stableJson } from './stable-json.js';
 
 const digest = (value: unknown) => createHash('sha256').update(stableJson(value)).digest('hex');
+export class OwnerRoomClassificationError extends Error {
+  constructor(readonly roomId: string) {
+    super('OWNER_ROOM_CLASSIFICATION_UNVERIFIED');
+  }
+}
 const nativeId = (value: unknown) =>
   typeof value === 'string' && /^[1-9][0-9]{0,18}$/.test(value)
     ? value
@@ -14,15 +19,30 @@ export function retainEvents(events: unknown[], cacheValue: unknown, ownerInstan
     logs?: unknown;
     user_id?: unknown;
     sent?: unknown;
+    rooms?: unknown;
   };
   if (events.length > 100) throw Error('INVALID_OWNER_EVENT_BATCH');
-  const validated = events.map((raw) => {
+  const knownRooms = new Map<string, string>();
+  for (const raw of Array.isArray(cache.rooms) ? cache.rooms : []) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
+    const room = raw as Record<string, unknown>,
+      id = nativeId(room.chat_id);
+    if (!id || typeof room.kind !== 'string') continue;
+    const previous = knownRooms.get(id);
+    knownRooms.set(id, previous && previous !== room.kind ? 'unknown' : room.kind);
+  }
+  const publicKinds = new Set(['OD', 'OM', 'OPEN']),
+    privateKinds = new Set(['DirectChat', 'MultiChat', 'PlusChat', 'MemoChat', 'PartnerChat']);
+  const validated = events.flatMap((raw) => {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw Error('INVALID_OWNER_EVENT');
     const event = raw as Record<string, unknown>,
       roomId = nativeId(event.chat_id),
       logId = nativeId(event.log_id);
     if (!roomId) throw Error('INVALID_OWNER_ROOM_ID');
-    return { event, roomId, logId };
+    const kind = knownRooms.get(roomId);
+    if (kind && privateKinds.has(kind)) return [];
+    if (!kind || !publicKinds.has(kind)) throw new OwnerRoomClassificationError(roomId);
+    return [{ event, roomId, logId }];
   });
   const needed = new Set(validated.filter((e) => e.logId).map((e) => `${e.roomId}:${e.logId}`));
   const account = nativeId(cache.user_id),

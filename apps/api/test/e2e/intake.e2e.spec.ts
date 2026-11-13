@@ -38,6 +38,7 @@ describe('native intake on disposable PostgreSQL', () => {
       gap: false,
     },
     cache: {
+      rooms: [{ chat_id: '18497500347065223', kind: 'OM' }],
       logs: [
         [
           '18497500347065223',
@@ -128,6 +129,45 @@ describe('native intake on disposable PostgreSQL', () => {
         '2',
       );
       expect((await store.cursor())?.cursor).toBe('synthetic:owner:6');
+    } finally {
+      await c.pool.end();
+    }
+  });
+  it('keeps private content out of both raw tables and pauses on unknown room classification', async () => {
+    const batch = reply('synthetic:owner:8');
+    batch.result = {
+      events: [{ chat_id: '123', log_id: '3970073012646000666', text: 'PRIVATE_EVENT' }],
+      next_cursor: 'synthetic:owner:8',
+      gap: false,
+    };
+    batch.cache = {
+      rooms: [{ chat_id: 123, kind: 'DirectChat' }],
+      logs: [[123, '3970073012646000666', { message: 'PRIVATE_WIRE' }]],
+    };
+    await store.accept('synthetic:owner:6', batch);
+    expect((await store.cursor())?.cursor).toBe('synthetic:owner:8');
+    const unknown = reply('synthetic:owner:9');
+    unknown.cache = { rooms: [] };
+    await expect(store.accept('synthetic:owner:8', unknown)).rejects.toThrow(
+      'CLASSIFICATION_UNVERIFIED',
+    );
+    expect((await store.cursor())?.cursor).toBe('synthetic:owner:8');
+    const c = createDatabase(config.DATABASE_URL ?? '');
+    try {
+      expect(
+        (
+          await c.pool.query(
+            "select count(*)::int n from intake_events where payload::text like '%PRIVATE_EVENT%'",
+          )
+        ).rows[0].n,
+      ).toBe(0);
+      expect(
+        (
+          await c.pool.query(
+            "select count(*)::int n from intake_wire_snapshots where wire::text like '%PRIVATE_WIRE%'",
+          )
+        ).rows[0].n,
+      ).toBe(0);
     } finally {
       await c.pool.end();
     }

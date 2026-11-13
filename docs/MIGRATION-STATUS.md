@@ -111,6 +111,20 @@ canonical public details and953 classifications also remained identical. Real
 live intake count remained zero. Latest `verify:full` passed50 unit and49
 integration tests plus the common image/Compose checks.
 
+## Open-room intake boundary
+
+Public intake additionally checks the owner's native room-kind cache using the
+same OD/OM/OPEN kinds as the existing SDK. Verified private/service-room content
+is excluded from both event and wire storage. Missing or conflicting room
+classification retains the previous cursor and waits for verified metadata;
+it does not authorize login, reconnect or a private-history probe.
+
+Diagnostics distinguish checkpoint reads, owner reads and PostgreSQL commits.
+They retain the error category and unverified room ID without logging chat bodies
+or database query parameters. Synthetic PostgreSQL checks verify that private
+event/wire contents never enter raw tables and unknown classification never
+advances the cursor. Latest normal verify passed51 unit and50 integration tests.
+
 The new preparation and remaining gates are documented in SERVER-CONSOLIDATION.md
 and USEFUL-CONTEXT.md. Node owner intake, durable PostgreSQL raw inbox/cursors,
 independent Node forum intake and a common role image have been implemented for

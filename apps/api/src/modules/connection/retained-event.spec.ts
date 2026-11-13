@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { retainEvents } from './retained-event.js';
+import { retainEvents as nativeRetainEvents } from './retained-event.js';
 
 const event = {
   chat_id: '18497500347065223',
@@ -8,6 +8,18 @@ const event = {
   text: '합성 원문',
 };
 const wire = [event.chat_id, event.log_id, { message: event.text, sendAt: 1794538800 }];
+const retainEvents = (events: unknown[], cache: Record<string, unknown>, owner: string) =>
+  nativeRetainEvents(
+    events,
+    {
+      rooms: [
+        { chat_id: event.chat_id, kind: 'OM' },
+        { chat_id: 123, kind: 'OM' },
+      ],
+      ...cache,
+    },
+    owner,
+  );
 describe('event evidence retention', () => {
   it('deduplicates repeated cache copies and derives own without retaining global private cache', () => {
     const result = retainEvents(
@@ -86,5 +98,33 @@ describe('event evidence retention', () => {
         'owner',
       ),
     ).toThrow('BATCH');
+  });
+  it('suppresses verified private-room events and refuses unclassified rooms without retaining content', () => {
+    const privateEvent = { ...event, chat_id: '123', text: 'PRIVATE_EVENT' };
+    const result = nativeRetainEvents(
+      [privateEvent],
+      {
+        rooms: [{ chat_id: 123, kind: 'DirectChat' }],
+        logs: [[123, event.log_id, { message: 'PRIVATE_WIRE' }]],
+      },
+      'owner',
+    );
+    expect(result.records).toEqual([]);
+    expect(result.snapshots).toEqual([]);
+    expect(() => nativeRetainEvents([privateEvent], { rooms: [] }, 'owner')).toThrow(
+      'CLASSIFICATION_UNVERIFIED',
+    );
+    expect(() =>
+      nativeRetainEvents(
+        [privateEvent],
+        {
+          rooms: [
+            { chat_id: 123, kind: 'OM' },
+            { chat_id: 123, kind: 'DirectChat' },
+          ],
+        },
+        'owner',
+      ),
+    ).toThrow('CLASSIFICATION_UNVERIFIED');
   });
 });

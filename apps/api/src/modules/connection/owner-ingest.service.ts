@@ -4,6 +4,7 @@ import { config } from '../../shared/config/index.js';
 import { LifecycleState } from '../health/lifecycle-state.js';
 import { IntakeStore } from './intake-store.js';
 import { OwnerClient } from './owner-client.js';
+import { OwnerRoomClassificationError } from './retained-event.js';
 
 @Injectable()
 export class OwnerIngest implements OnModuleInit, OnModuleDestroy {
@@ -40,16 +41,34 @@ export class OwnerIngest implements OnModuleInit, OnModuleDestroy {
   }
   private async poll(owner: OwnerClient) {
     while (!this.stop.signal.aborted) {
+      let phase = 'checkpoint_read';
+      let ownerConnected: boolean | null = null;
       try {
         const current = await this.store.cursor();
         if (!current) throw new Error('INTAKE_CHECKPOINT_MISSING');
+        phase = 'owner_read';
         const reply = await owner.events(current.cursor, this.stop.signal);
+        ownerConnected = reply.state.connected;
+        phase = 'postgres_commit';
         await this.store.accept(current.cursor, reply);
       } catch (error) {
         if (this.stop.signal.aborted) return;
-        const reason = error instanceof Error ? error.message : 'OWNER_READ_FAILED';
+        const message = error instanceof Error ? error.message : '';
+        const reason = /^[A-Z][A-Z0-9_]{0,79}$/.test(message)
+          ? message
+          : phase === 'owner_read'
+            ? 'OWNER_READ_FAILED'
+            : phase === 'checkpoint_read'
+              ? 'POSTGRES_CHECKPOINT_READ_FAILED'
+              : 'POSTGRES_COMMIT_FAILED';
         this.logger.error(
-          { event: 'kakao_intake_unavailable', reason },
+          {
+            event: 'kakao_intake_unavailable',
+            reason,
+            phase,
+            ownerConnected,
+            roomId: error instanceof OwnerRoomClassificationError ? error.roomId : undefined,
+          },
           'Intake paused; owner authentication is unchanged',
         );
         if (
