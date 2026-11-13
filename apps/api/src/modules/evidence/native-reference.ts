@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   evidenceAliases,
   evidenceConversations,
+  nativeEpisodeReferences,
   nativeEvidenceReferences,
 } from '../../db/schema.js';
 import type { EvidenceRepository } from './evidence.repository.js';
@@ -22,7 +23,25 @@ export async function importNativeReference(
   value: unknown,
   target: Pick<EvidenceRepository, 'db'>,
 ) {
-  const { groups } = z.object({ groups: z.array(group).max(100000) }).parse(value);
+  const { groups, episodeRecords } = z
+    .object({
+      groups: z.array(group).max(100000),
+      episodeRecords: z
+        .array(
+          z
+            .object({
+              id,
+              room_id: native,
+              anchor_ms: z.number().int().nonnegative(),
+              title: z.string(),
+              services: z.string(),
+            })
+            .passthrough(),
+        )
+        .max(100000)
+        .optional(),
+    })
+    .parse(value);
   const ids = new Set<string>(),
     aliases = new Map<string, string>();
   for (const g of groups) {
@@ -38,6 +57,15 @@ export async function importNativeReference(
   }
   for (const [alias, canonical] of aliases)
     if (ids.has(alias) && alias !== canonical) throw Error('NATIVE_REFERENCE_CANONICAL_COLLISION');
+  if (episodeRecords) {
+    const episodeIds = new Set(episodeRecords.map((e) => e.id));
+    if (
+      episodeIds.size !== episodeRecords.length ||
+      episodeIds.size !== aliases.size ||
+      [...aliases.keys()].some((key) => !episodeIds.has(key))
+    )
+      throw Error('NATIVE_EPISODE_MEMBERSHIP_MISMATCH');
+  }
   await target.db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(271821,1)`);
     const rows = await tx
@@ -63,6 +91,20 @@ export async function importNativeReference(
         .onConflictDoUpdate({
           target: nativeEvidenceReferences.conversationPk,
           set: { roomId: g.room_id, body: g },
+        });
+    }
+    for (const episode of episodeRecords ?? []) {
+      const canonical = aliases.get(episode.id),
+        pk = canonical ? existing.get(canonical) : undefined;
+      if (!pk || groups.find((g) => g.id === canonical)?.room_id !== episode.room_id)
+        throw Error('NATIVE_EPISODE_MEMBERSHIP_MISMATCH');
+      z.array(z.string()).parse(JSON.parse(episode.services));
+      await tx
+        .insert(nativeEpisodeReferences)
+        .values({ sourceId: episode.id, conversationPk: pk, body: episode })
+        .onConflictDoUpdate({
+          target: nativeEpisodeReferences.sourceId,
+          set: { conversationPk: pk, body: episode },
         });
     }
     const values = [...aliases].map(([alias, canonical]) => {

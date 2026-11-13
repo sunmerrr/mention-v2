@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDatabase } from '../../src/db/client.js';
 import { EvidenceRepository } from '../../src/modules/evidence/evidence.repository.js';
 import { importNativeReference } from '../../src/modules/evidence/native-reference.js';
+import { BookmarksRepository } from '../../src/modules/monitoring/bookmarks.repository.js';
 import { config } from '../../src/shared/config/index.js';
 
 const bundle = (id = 'synthetic-first') => ({
@@ -103,7 +104,12 @@ describe('authoritative PostgreSQL evidence and classifications', () => {
     const nativeGroup = {
       id: 'synthetic-first',
       room_id: '18497500347065223',
-      members: [{ id: 'synthetic-first' }, { id: 'legacy-episode' }],
+      anchor_ms: 1794538800000,
+      services: ['APL'],
+      members: [
+        { id: 'synthetic-first', title: '합성 첫 대화' },
+        { id: 'legacy-episode', title: '합성 두번째 대화' },
+      ],
       messages: [
         {
           room_id: '18497500347065223',
@@ -112,7 +118,14 @@ describe('authoritative PostgreSQL evidence and classifications', () => {
         },
       ],
     };
-    expect(await importNativeReference({ groups: [nativeGroup] }, store)).toEqual({
+    const episodeRecords = nativeGroup.members.map((m, i) => ({
+      id: m.id,
+      room_id: nativeGroup.room_id,
+      title: m.title,
+      services: '["APL"]',
+      anchor_ms: 1794538800000 + i * 1000,
+    }));
+    expect(await importNativeReference({ groups: [nativeGroup], episodeRecords }, store)).toEqual({
       groups: 1,
       aliases: 2,
       messages: 1,
@@ -129,6 +142,46 @@ describe('authoritative PostgreSQL evidence and classifications', () => {
       importNativeReference({ groups: [{ ...nativeGroup, room_id: '1' }] }, store),
     ).rejects.toThrow('WRONG_ROOM');
     expect((await store.options('legacy-episode'))[0]?.expected).toBe('baseline-token');
+  });
+  it('stores bookmarks and archive history locally, resolving conversation aliases but retaining episode identity', async () => {
+    const bookmarks = new BookmarksRepository(store);
+    expect((await bookmarks.list({})).total).toBe(0);
+    const input = {
+      kind: 'conversation',
+      source_id: 'legacy-episode',
+      category: 'question',
+      status: 'todo',
+      owner: ' 담당자 ',
+      note: "100% O'Reilly 확인",
+    };
+    const first = await bookmarks.save(input),
+      second = await bookmarks.save({ ...input, status: 'in_progress' });
+    expect(first.id).toBe(second.id);
+    expect(second).toMatchObject({
+      source_id: 'synthetic-first',
+      room_id: '18497500347065223',
+      title: '합성 첫 대화',
+      owner: '담당자',
+      event_ms: 1794538800000,
+    });
+    expect((await bookmarks.list({ q: '100%', status: 'all', category: 'all' })).total).toBe(1);
+    expect((await bookmarks.list({ q: "%' OR true --" })).total).toBe(0);
+    expect(
+      (await bookmarks.list({ kind: 'conversation', source_id: 'legacy-episode' })).items[0]?.id,
+    ).toBe(first.id);
+    await bookmarks.archive({ id: first.id });
+    expect((await bookmarks.list({})).total).toBe(0);
+    expect((await bookmarks.list({ archived: '1' })).total).toBe(1);
+    await bookmarks.archive({ id: first.id, archive: false });
+    expect((await bookmarks.list({ archived: 'false' })).total).toBe(1);
+    const episode = await bookmarks.save({ ...input, kind: 'episode' });
+    expect(episode).toMatchObject({
+      source_id: 'legacy-episode',
+      title: '합성 두번째 대화',
+      event_ms: 1794538801000,
+    });
+    expect((await bookmarks.list({})).total).toBe(2);
+    await expect(bookmarks.archive({ id: first.id, archive: 'false' })).rejects.toThrow();
   });
   it('atomically commits label, memo, evidence revision, append-only audit and request receipt', async () => {
     const request = {

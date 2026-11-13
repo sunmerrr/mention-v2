@@ -199,11 +199,12 @@ function WorkspaceApp() {
           <Box className="mobile-navigation">
             <Select.Root value={menu} onValueChange={navigate}>
               <Select.Trigger aria-label="페이지 이동" style={{ width: '100%' }}>
-                {
-                  visibleNavGroups
-                    .flatMap((group) => group.links)
-                    .find(([path]) => path === menu)?.[1]
-                }
+                {navGroups.flatMap((group) => group.links).find(([path]) => path === menu)?.[1] ??
+                  (menu === '/bookmarks'
+                    ? '중요 대화'
+                    : menu === '/design-system'
+                      ? '디자인 시스템'
+                      : '현재 페이지')}
               </Select.Trigger>
               <Select.Content>
                 {visibleNavGroups.map((group) => (

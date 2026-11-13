@@ -304,6 +304,39 @@ export const nativeEvidenceReferences = pgTable('native_evidence_references', {
   roomId: varchar('room_id', { length: 19 }).notNull(),
   body: jsonb('body').$type<Record<string, unknown>>().notNull(),
 });
+export const nativeEpisodeReferences = pgTable('native_episode_references', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  sourceId: varchar('source_id', { length: 100 }).notNull().unique(),
+  conversationPk: integer('conversation_pk')
+    .notNull()
+    .references(() => evidenceConversations.pk),
+  body: jsonb('body').$type<Record<string, unknown>>().notNull(),
+});
+export const monitoringBookmarks = pgTable(
+  'monitoring_bookmarks',
+  {
+    pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+    sourceId: varchar('source_id', { length: 100 }).notNull(),
+    kind: varchar('kind', { length: 20 }).notNull(),
+    id: varchar('id', { length: 100 }).notNull().unique(),
+    archived: boolean('archived').notNull().default(false),
+    body: jsonb('body').$type<Record<string, unknown>>().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('uniq_monitoring_bookmark_source').on(t.kind, t.sourceId),
+    index('idx_monitoring_bookmark_page').on(t.archived, t.updatedAt, t.id),
+  ],
+);
+export const monitoringBookmarkHistory = pgTable('monitoring_bookmark_history', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  bookmarkPk: integer('bookmark_pk')
+    .notNull()
+    .references(() => monitoringBookmarks.pk),
+  previous: jsonb('previous').$type<Record<string, unknown> | null>(),
+  next: jsonb('next').$type<Record<string, unknown>>().notNull(),
+  at: timestamp('at', { withTimezone: true }).notNull().defaultNow(),
+});
 export const evidenceReceipts = pgTable('evidence_receipts', {
   pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
   requestId: uuid('request_id').notNull().unique(),

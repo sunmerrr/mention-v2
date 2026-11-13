@@ -7,6 +7,7 @@ import { AppError } from '../../shared/errors/app-error.js';
 import { EvidenceRepository } from '../evidence/evidence.repository.js';
 import { ProjectionRepository } from '../projection/projection.repository.js';
 import { KeywordSettingsRepository } from '../settings/keyword-settings.repository.js';
+import { BookmarksRepository } from './bookmarks.repository.js';
 import { MonitoringRepository } from './monitoring.repository.js';
 
 @Injectable()
@@ -16,6 +17,7 @@ export class MonitoringService {
     private readonly projection: ProjectionRepository,
     private readonly evidence: EvidenceRepository,
     private readonly settings: KeywordSettingsRepository,
+    private readonly bookmarks: BookmarksRepository,
   ) {}
   requestState(id: string) {
     if (config.MONITORING_EVIDENCE_BACKEND === 'postgres') return this.evidence.requestState(id);
@@ -33,6 +35,8 @@ export class MonitoringService {
     if (config.MONITORING_EVIDENCE_BACKEND === 'postgres') {
       if (action === 'keyword-settings') return this.settings.save(input);
       if (action === 'keyword-check') return this.settings.check(input);
+      if (action === 'bookmark-save') return this.bookmarks.save(input);
+      if (action === 'bookmark-archive') return this.bookmarks.archive(input);
     }
     const result = await this.repository.write(`/api/actions/${action}`, input, scope);
     void this.projection.requestRefresh().catch(() => {});
@@ -64,6 +68,7 @@ export class MonitoringService {
     if (config.MONITORING_EVIDENCE_BACKEND === 'postgres') {
       if (feature === 'keywords') return this.settings.read();
       if (feature === 'keywordProcessing') return this.settings.processing();
+      if (feature === 'bookmarks') return this.bookmarks.list(params);
     }
     return this.repository.read(`/api/workspace/${feature}`, params);
   }

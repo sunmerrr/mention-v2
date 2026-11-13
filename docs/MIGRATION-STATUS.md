@@ -26,6 +26,32 @@ and cutover verification. AWS SSH destination has not been supplied; there is no
 real remote tunnel or public routing cutover. Prepared code and passing staging
 checks are not reported as operational migration completion.
 
+## Native episode identity and bookmarks
+
+The active source snapshot's1661 original episodes now retain their own native
+metadata alongside the741 grouped references. The optional episode import requires
+complete alias membership and matching room identity; services and anchor times
+are validated. This lets episode bookmarks use their actual title/time rather than
+borrowing the parent conversation's anchor.
+
+Bookmark listing, save, archive and restore now use PostgreSQL, with append-only
+history, exact source identity and per-source write serialization. Original source
+inspection in this pass found zero bookmarks and zero bookmark-history rows; a
+final source delta check is still required before operational cutover. No existing
+bookmark history is claimed imported merely from an empty snapshot.
+
+The conversation-detail SSR bookmark prefetch no longer requires the legacy API.
+With that API deliberately unreachable and writes disabled, canonical detail,
+historical-alias detail and bookmarks passed desktop/mobile browser inspection
+(six checks, no JavaScript failures or overflow). Inspection found an empty mobile
+navigation label on hidden routes; the existing design-system Select now displays
+the current route label while those menu entries remain hidden.
+
+Backend/schema `verify:full` passed39 unit and45 integration tests plus Docker and
+Compose checks. The final label correction also passed the complete normal verify
+and repeat browser checks. Preview processes were stopped after QA; production
+web, owner authentication, dialogue, schedules and send receipts were untouched.
+
 The new preparation and remaining gates are documented in SERVER-CONSOLIDATION.md
 and USEFUL-CONTEXT.md. Node owner intake, durable PostgreSQL raw inbox/cursors,
 independent Node forum intake and a common role image have been implemented for
