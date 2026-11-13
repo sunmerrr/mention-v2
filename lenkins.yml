@@ -1,0 +1,14 @@
+version: 1
+defaults:
+  nodeVersion: 24
+  platform: linux/arm64
+packages:
+  - id: mention-server
+    contextPath: .
+    preset: custom
+    dockerfilePath: apps/deploy/Dockerfile
+    target: api
+    branches:
+      main:
+        displayName: Mention server
+        tagPrefix: mention-server

@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-# 단일 멀티스테이지 Dockerfile — `--target` 으로 api / web / web-dist 선택.
+# One application image: SSR, API, workers and migration select APP_ROLE.
 # → deployment/dockerfile-multistage.md, deployment/single-image-roles.md
 # 원칙: 변경 드문 단계를 앞으로(캐시). 환경 값은 이미지에 박지 않는다(build-arg 금지).
 
@@ -100,15 +100,3 @@ COPY --from=build-web /app/apps/web/dist-server /app/web/dist-server
 USER node
 EXPOSE 4200
 CMD ["node", "dist/src/main.js"]
-
-# ---------- web 런타임 (nginx + 실행 시 placeholder 치환) ----------
-FROM nginx:1.27-alpine AS web
-COPY --from=build-web /app/apps/web/dist /usr/share/nginx/html
-COPY apps/deploy/web/nginx.conf /etc/nginx/conf.d/default.conf
-# nginx 공식 이미지는 /docker-entrypoint.d/*.sh 를 기동 시 실행한다.
-COPY apps/deploy/web/40-runtime-config.sh /docker-entrypoint.d/40-runtime-config.sh
-RUN chmod +x /docker-entrypoint.d/40-runtime-config.sh
-
-# ---------- (선택) web dist 만 — S3 정적 배포용 추출 ----------
-FROM scratch AS web-dist
-COPY --from=build-web /app/apps/web/dist /

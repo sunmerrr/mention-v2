@@ -1,0 +1,74 @@
+name: mention
+x-app: &app
+  image: ${ECR_REPOSITORY}:${IMAGE_TAG_MENTION_SERVER}
+  env_file: .env
+  user: "${APP_UID}:${APP_GID}"
+  networks: [mention]
+  stop_grace_period: 35s
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options: {max-size: "10m", max-file: "3"}
+services:
+  postgres:
+    image: postgres:16-alpine
+    env_file: .env
+    volumes: [mention-postgres:/var/lib/postgresql/data]
+    networks: [mention]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  migrate:
+    <<: *app
+    restart: "no"
+    environment: {APP_ROLE: migrate}
+    depends_on:
+      postgres: {condition: service_healthy}
+  api:
+    <<: *app
+    environment: {APP_ROLE: api, PORT: "4200"}
+    ports: ["4200:4200"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4200/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 3s
+      retries: 4
+    labels:
+      lenkins.listener.rules: |
+        - listener: default
+          host: ${MENTION_PUBLIC_HOST}
+          port: 4200
+          healthCheckPath: /health
+  ingest:
+    <<: *app
+    environment: {APP_ROLE: ingest, PORT: "4202"}
+    ports: ["4202:4202"]
+    labels:
+      lenkins.listener.rules: |
+        - listener: default
+          host: ${MENTION_COLLECTOR_HOST}
+          port: 4202
+          path: /collector/pokergosu/v1/*
+          healthCheckPath: /health
+    volumes:
+      - type: bind
+        source: ${CONNECTION_SOCKET_DIRECTORY}
+        target: /run/mention/connection
+        read_only: true
+        bind: {create_host_path: false}
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  worker:
+    <<: *app
+    environment: {APP_ROLE: worker, PORT: "4201"}
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+networks:
+  mention:
+volumes:
+  mention-postgres:

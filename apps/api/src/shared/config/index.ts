@@ -11,6 +11,22 @@ import { z } from 'zod';
  * 그 블록의 키를 여기 스키마에 추가한다.
  */
 const envSchema = z.object({
+  COLLECTOR_ID: z.string().max(128).optional(),
+  COLLECTOR_EXTENSION_ID: z
+    .string()
+    .regex(/^[a-p]{32}$/)
+    .optional(),
+  COLLECTOR_TOKEN: z.string().min(32).max(128).optional(),
+  WORKER_RUN_ONCE: z
+    .enum(['0', '1'])
+    .default('0')
+    .transform((value) => value === '1'),
+  KAKAO_CONNECTION_SOCKET: z.string().min(1).default('/run/mention/connection/connection.sock'),
+  KAKAO_EVENTS_ENABLED: z
+    .enum(['0', '1'])
+    .default('0')
+    .transform((value) => value === '1'),
+  KAKAO_START_CURSOR: z.string().max(300).optional(),
   MENTION_WRITES_ENABLED: z
     .enum(['0', '1'])
     .default('0')

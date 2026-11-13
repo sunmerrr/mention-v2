@@ -1,0 +1,5199 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "cases": [
+    {
+      "name": "base",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "unknown keys stripped",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [],
+        "ignored": "synthetic",
+        "searchWarning": null
+      }
+    },
+    {
+      "name": "monitor id invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "invalid",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "monitor tabId invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": true,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "monitor page invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 8,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "monitor cycle invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 0,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "monitor cycleRequests invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 15,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "monitor matchedThreads invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 1,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "monitor metadataWarnings invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 1,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "monitor phase invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "foreign",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "monitor inFlight invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": 1,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "monitor nextAt invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": null,
+        "history": []
+      }
+    },
+    {
+      "name": "monitor startedAt invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": -1,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "monitor schedulePolicy invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [],
+        "schedulePolicy": 3
+      }
+    },
+    {
+      "name": "monitor discoveryOverlap invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [],
+        "discoveryOverlap": "true"
+      }
+    },
+    {
+      "name": "monitor searchWarning invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [],
+        "searchWarning": "other"
+      }
+    },
+    {
+      "name": "monitor searchDisabled invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [],
+        "searchDisabled": 1
+      }
+    },
+    {
+      "name": "monitor searchFallbackCycle invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [],
+        "searchFallbackCycle": 2
+      }
+    },
+    {
+      "name": "monitor reason invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "monitor previousHeadIds invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": ["bad"],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "monitor currentHeadIds invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": [
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1"
+        ],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "monitor queue invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [
+          {
+            "id": "1",
+            "url": "https://www.pokergosu.com/free/1"
+          },
+          {
+            "id": "1",
+            "url": "https://www.pokergosu.com/free/1"
+          },
+          {
+            "id": "1",
+            "url": "https://www.pokergosu.com/free/1"
+          },
+          {
+            "id": "1",
+            "url": "https://www.pokergosu.com/free/1"
+          },
+          {
+            "id": "1",
+            "url": "https://www.pokergosu.com/free/1"
+          },
+          {
+            "id": "1",
+            "url": "https://www.pokergosu.com/free/1"
+          },
+          {
+            "id": "1",
+            "url": "https://www.pokergosu.com/free/1"
+          }
+        ],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "monitor history invalid",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [
+          {
+            "sequence": 1,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          }
+        ]
+      }
+    },
+    {
+      "name": "duplicate queue",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [
+          {
+            "id": "101",
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "id": "101",
+            "url": "https://www.pokergosu.com/free/101"
+          }
+        ],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "thread without queue",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "thread",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "paused alarm",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "paused",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "normal event",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 1,
+        "navigations": 1,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [
+          {
+            "sequence": 1,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          }
+        ]
+      }
+    },
+    {
+      "name": "bad event ordinal",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 1,
+        "navigations": 1,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [
+          {
+            "sequence": 2,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          }
+        ]
+      }
+    },
+    {
+      "name": "bad event time",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 1,
+        "navigations": 1,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [
+          {
+            "sequence": 1,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": -1,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          }
+        ]
+      }
+    },
+    {
+      "name": "bad event future cycle",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 1,
+        "navigations": 1,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [
+          {
+            "sequence": 1,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          }
+        ]
+      }
+    },
+    {
+      "name": "inflight consistency",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 1,
+        "navigations": 1,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": true,
+        "nextAt": 31000,
+        "history": [
+          {
+            "sequence": 1,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          }
+        ]
+      }
+    },
+    {
+      "name": "thread skip",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 1,
+        "navigations": 1,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [
+          {
+            "sequence": 1,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "skipped",
+            "reason": "THREAD_MARKUP_UNKNOWN",
+            "url": "https://www.pokergosu.com/free/101"
+          }
+        ]
+      }
+    },
+    {
+      "name": "skip cannot hide access",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 1,
+        "navigations": 1,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [
+          {
+            "sequence": 1,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "skipped",
+            "reason": "BOT_CHALLENGE",
+            "url": "https://www.pokergosu.com/free/101"
+          }
+        ]
+      }
+    },
+    {
+      "name": "search skip",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 1,
+        "navigations": 1,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [
+          {
+            "sequence": 1,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "skipped",
+            "reason": "BOARD_MARKUP_UNKNOWN",
+            "url": "https://www.pokergosu.com/free/search?s=1&v=APL"
+          }
+        ],
+        "searchDisabled": true,
+        "searchFallbackCycle": 1,
+        "searchWarning": "SEARCH_MARKUP_UNKNOWN_USING_BOARD"
+      }
+    },
+    {
+      "name": "matching search descriptor",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [],
+        "search": {
+          "term": "APL",
+          "scope": "4",
+          "url": "https://www.pokergosu.com/free/search?s=4&v=APL",
+          "expiresAt": 2000000
+        }
+      }
+    },
+    {
+      "name": "mismatched search descriptor",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [],
+        "search": {
+          "term": "other",
+          "scope": "4",
+          "url": "https://www.pokergosu.com/free/search?s=4&v=APL",
+          "expiresAt": 2000000
+        }
+      }
+    },
+    {
+      "name": "foreign queued post",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [
+          {
+            "id": "101",
+            "url": "https://evil.invalid/free/101"
+          }
+        ],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "ordinary list cannot be body skip",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 1,
+        "navigations": 1,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [
+          {
+            "sequence": 1,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "skipped",
+            "reason": "THREAD_MARKUP_UNKNOWN",
+            "url": "https://www.pokergosu.com/free"
+          }
+        ]
+      }
+    },
+    {
+      "name": "skip with visible access rejected",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 1,
+        "navigations": 1,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [
+          {
+            "sequence": 1,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "skipped",
+            "reason": "THREAD_MARKUP_UNKNOWN",
+            "url": "https://www.pokergosu.com/free/101",
+            "access": {
+              "kind": "bot_challenge"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "middle inflight history rejected",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 1,
+        "navigations": 2,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [
+          {
+            "sequence": 1,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": null,
+            "outcome": "inflight",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 2,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          }
+        ]
+      }
+    },
+    {
+      "name": "retained fifty events",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 6,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 52,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [
+          {
+            "sequence": 3,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 4,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 5,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 6,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 7,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 8,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 9,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 10,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 11,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 12,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 13,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 14,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 15,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 16,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 17,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 18,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 19,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 20,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 21,
+            "cycle": 3,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 22,
+            "cycle": 3,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 23,
+            "cycle": 3,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 24,
+            "cycle": 3,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 25,
+            "cycle": 3,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 26,
+            "cycle": 3,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 27,
+            "cycle": 3,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 28,
+            "cycle": 3,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 29,
+            "cycle": 3,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 30,
+            "cycle": 3,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 31,
+            "cycle": 4,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 32,
+            "cycle": 4,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 33,
+            "cycle": 4,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 34,
+            "cycle": 4,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 35,
+            "cycle": 4,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 36,
+            "cycle": 4,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 37,
+            "cycle": 4,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 38,
+            "cycle": 4,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 39,
+            "cycle": 4,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 40,
+            "cycle": 4,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 41,
+            "cycle": 5,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 42,
+            "cycle": 5,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 43,
+            "cycle": 5,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 44,
+            "cycle": 5,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 45,
+            "cycle": 5,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 46,
+            "cycle": 5,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 47,
+            "cycle": 5,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 48,
+            "cycle": 5,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 49,
+            "cycle": 5,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 50,
+            "cycle": 5,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 51,
+            "cycle": 6,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 52,
+            "cycle": 6,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          }
+        ]
+      }
+    },
+    {
+      "name": "URL https://www.pokergosu.com/free",
+      "kind": "url",
+      "value": "https://www.pokergosu.com/free"
+    },
+    {
+      "name": "URL https://www.pokergosu.com/free?page=7",
+      "kind": "url",
+      "value": "https://www.pokergosu.com/free?page=7"
+    },
+    {
+      "name": "URL https://www.pokergosu.com/free?page=8",
+      "kind": "url",
+      "value": "https://www.pokergosu.com/free?page=8"
+    },
+    {
+      "name": "URL https://evil.invalid/free/1",
+      "kind": "url",
+      "value": "https://evil.invalid/free/1"
+    },
+    {
+      "name": "URL https://www.pokergosu.com/free/101?x=1",
+      "kind": "url",
+      "value": "https://www.pokergosu.com/free/101?x=1"
+    },
+    {
+      "name": "URL https://www.pokergosu.com/free/search?s=1&v=APL",
+      "kind": "url",
+      "value": "https://www.pokergosu.com/free/search?s=1&v=APL"
+    },
+    {
+      "name": "URL https://www.pokergosu.com/free/search?s=4&v=%25EB%25A3%25A8%25EB%25A3%25A8",
+      "kind": "url",
+      "value": "https://www.pokergosu.com/free/search?s=4&v=%25EB%25A3%25A8%25EB%25A3%25A8"
+    },
+    {
+      "name": "URL https://www.pokergosu.com/free/search?s=5&v=APL",
+      "kind": "url",
+      "value": "https://www.pokergosu.com/free/search?s=5&v=APL"
+    },
+    {
+      "name": "URL https://www.pokergosu.com/free/search?s=1&v=APL&s=4",
+      "kind": "url",
+      "value": "https://www.pokergosu.com/free/search?s=1&v=APL&s=4"
+    },
+    {
+      "name": "access evidence",
+      "kind": "access",
+      "value": {
+        "kind": "bot_challenge",
+        "basis": "visible-page",
+        "http_status": null,
+        "account_ban_confirmed": false,
+        "title": "Synthetic challenge",
+        "indicators": ["challenge-page-title"]
+      }
+    },
+    {
+      "name": "no inferred HTTP status",
+      "kind": "access",
+      "value": {
+        "kind": "bot_challenge",
+        "basis": "visible-page",
+        "http_status": 403,
+        "account_ban_confirmed": false,
+        "title": "Synthetic challenge",
+        "indicators": ["challenge-page-title"]
+      }
+    },
+    {
+      "name": "no inferred ban",
+      "kind": "access",
+      "value": {
+        "kind": "bot_challenge",
+        "basis": "visible-page",
+        "http_status": null,
+        "account_ban_confirmed": true,
+        "title": "Synthetic challenge",
+        "indicators": ["challenge-page-title"]
+      }
+    },
+    {
+      "name": "bounded indicators",
+      "kind": "access",
+      "value": {
+        "kind": "bot_challenge",
+        "basis": "visible-page",
+        "http_status": null,
+        "account_ban_confirmed": false,
+        "title": "Synthetic challenge",
+        "indicators": []
+      }
+    },
+    {
+      "name": "summary",
+      "kind": "summary",
+      "value": {
+        "coverage": "visible-complete",
+        "saved": 2,
+        "media_only": 1,
+        "skipped": 0,
+        "unavailable": 0
+      }
+    },
+    {
+      "name": "partial summary",
+      "kind": "summary",
+      "value": {
+        "coverage": "partial",
+        "saved": 2,
+        "media_only": 1,
+        "skipped": 1,
+        "unavailable": 3
+      }
+    },
+    {
+      "name": "unknown summary",
+      "kind": "summary",
+      "value": {
+        "coverage": "unknown",
+        "saved": 2,
+        "media_only": 1,
+        "skipped": 0,
+        "unavailable": null
+      }
+    },
+    {
+      "name": "false complete",
+      "kind": "summary",
+      "value": {
+        "coverage": "visible-complete",
+        "saved": 2,
+        "media_only": 1,
+        "skipped": 1,
+        "unavailable": 0
+      }
+    },
+    {
+      "name": "media exceeds saved",
+      "kind": "summary",
+      "value": {
+        "coverage": "visible-complete",
+        "saved": 2,
+        "media_only": 3,
+        "skipped": 0,
+        "unavailable": 0
+      }
+    },
+    {
+      "name": "event with summary/access",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 1,
+        "navigations": 1,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [
+          {
+            "sequence": 1,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "stopped",
+            "reason": "BOT_CHALLENGE",
+            "url": "https://www.pokergosu.com/free/101",
+            "access": {
+              "kind": "bot_challenge",
+              "basis": "visible-page",
+              "http_status": null,
+              "account_ban_confirmed": false,
+              "title": "Synthetic challenge",
+              "indicators": ["challenge-page-title"]
+            },
+            "comment_summary": {
+              "coverage": "visible-complete",
+              "saved": 2,
+              "media_only": 1,
+              "skipped": 0,
+              "unavailable": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "next monitor event",
+      "kind": "monitor-transition",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 1,
+        "navigations": 1,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [
+          {
+            "sequence": 1,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          }
+        ]
+      },
+      "previous": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "regression",
+      "kind": "monitor-transition",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      },
+      "previous": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 1,
+        "navigations": 1,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [
+          {
+            "sequence": 1,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          }
+        ]
+      }
+    },
+    {
+      "name": "monitor identity",
+      "kind": "monitor-transition",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 8,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      },
+      "previous": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "terminal monitor same",
+      "kind": "monitor-transition",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "paused",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": "BOT_CHALLENGE",
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": null,
+        "history": []
+      },
+      "previous": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "paused",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": "BOT_CHALLENGE",
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": null,
+        "history": []
+      }
+    },
+    {
+      "name": "terminal monitor cannot resume",
+      "kind": "monitor-transition",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      },
+      "previous": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "paused",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": "BOT_CHALLENGE",
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": null,
+        "history": []
+      }
+    },
+    {
+      "name": "jump two events",
+      "kind": "monitor-transition",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 1,
+        "navigations": 2,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": [
+          {
+            "sequence": 1,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 2,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          }
+        ]
+      },
+      "previous": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "inflight event finalization",
+      "kind": "event-transition",
+      "value": {
+        "sequence": 1,
+        "cycle": 1,
+        "startedAt": 1000,
+        "finishedAt": 2000,
+        "outcome": "success",
+        "reason": null,
+        "url": "https://www.pokergosu.com/free/101"
+      },
+      "previous": {
+        "sequence": 1,
+        "cycle": 1,
+        "startedAt": 1000,
+        "finishedAt": null,
+        "outcome": "inflight",
+        "reason": null,
+        "url": "https://www.pokergosu.com/free/101"
+      }
+    },
+    {
+      "name": "event identity immutable",
+      "kind": "event-transition",
+      "value": {
+        "sequence": 1,
+        "cycle": 1,
+        "startedAt": 3000,
+        "finishedAt": 2000,
+        "outcome": "success",
+        "reason": null,
+        "url": "https://www.pokergosu.com/free/101"
+      },
+      "previous": {
+        "sequence": 1,
+        "cycle": 1,
+        "startedAt": 1000,
+        "finishedAt": 2000,
+        "outcome": "success",
+        "reason": null,
+        "url": "https://www.pokergosu.com/free/101"
+      }
+    },
+    {
+      "name": "final event immutable",
+      "kind": "event-transition",
+      "value": {
+        "sequence": 1,
+        "cycle": 1,
+        "startedAt": 1000,
+        "finishedAt": 2000,
+        "outcome": "success",
+        "reason": "changed",
+        "url": "https://www.pokergosu.com/free/101"
+      },
+      "previous": {
+        "sequence": 1,
+        "cycle": 1,
+        "startedAt": 1000,
+        "finishedAt": 2000,
+        "outcome": "success",
+        "reason": null,
+        "url": "https://www.pokergosu.com/free/101"
+      }
+    },
+    {
+      "name": "trial base",
+      "kind": "trial",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 0,
+        "successful": 0,
+        "status": "running",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": null,
+        "history": []
+      }
+    },
+    {
+      "name": "trial id",
+      "kind": "trial",
+      "value": {
+        "id": "bad",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 0,
+        "successful": 0,
+        "status": "running",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": null,
+        "history": []
+      }
+    },
+    {
+      "name": "trial tabId",
+      "kind": "trial",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": true,
+        "limit": 15,
+        "attempted": 0,
+        "successful": 0,
+        "status": "running",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": null,
+        "history": []
+      }
+    },
+    {
+      "name": "trial limit",
+      "kind": "trial",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 14,
+        "attempted": 0,
+        "successful": 0,
+        "status": "running",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": null,
+        "history": []
+      }
+    },
+    {
+      "name": "trial attempted",
+      "kind": "trial",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 16,
+        "successful": 0,
+        "status": "running",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": null,
+        "history": []
+      }
+    },
+    {
+      "name": "trial status",
+      "kind": "trial",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 0,
+        "successful": 0,
+        "status": "paused",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": null,
+        "history": []
+      }
+    },
+    {
+      "name": "trial startedAt",
+      "kind": "trial",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 0,
+        "successful": 0,
+        "status": "running",
+        "inFlight": false,
+        "startedAt": -1,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": null,
+        "history": []
+      }
+    },
+    {
+      "name": "trial reason",
+      "kind": "trial",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 0,
+        "successful": 0,
+        "status": "running",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": 1,
+        "history": []
+      }
+    },
+    {
+      "name": "trial history",
+      "kind": "trial",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 0,
+        "successful": 0,
+        "status": "running",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": null,
+        "history": [
+          {
+            "sequence": 1,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          }
+        ]
+      }
+    },
+    {
+      "name": "trial nextAt",
+      "kind": "trial",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 0,
+        "successful": 0,
+        "status": "running",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": null,
+        "finishedAt": null,
+        "reason": null,
+        "history": []
+      }
+    },
+    {
+      "name": "trial one",
+      "kind": "trial",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 1,
+        "successful": 1,
+        "status": "running",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": null,
+        "history": [
+          {
+            "sequence": 1,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          }
+        ]
+      }
+    },
+    {
+      "name": "trial wrong successes",
+      "kind": "trial",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 1,
+        "successful": 0,
+        "status": "running",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": null,
+        "history": [
+          {
+            "sequence": 1,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          }
+        ]
+      }
+    },
+    {
+      "name": "trial wrong inflight",
+      "kind": "trial",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 1,
+        "successful": 1,
+        "status": "running",
+        "inFlight": true,
+        "startedAt": 1000,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": null,
+        "history": [
+          {
+            "sequence": 1,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          }
+        ]
+      }
+    },
+    {
+      "name": "trial false completed",
+      "kind": "trial",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 1,
+        "successful": 1,
+        "status": "completed",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": null,
+        "finishedAt": null,
+        "reason": null,
+        "history": [
+          {
+            "sequence": 1,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          }
+        ]
+      }
+    },
+    {
+      "name": "fifteen completed",
+      "kind": "trial",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 15,
+        "successful": 15,
+        "status": "completed",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": null,
+        "finishedAt": null,
+        "reason": null,
+        "history": [
+          {
+            "sequence": 1,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 2,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 3,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 4,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 5,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 6,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 7,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 8,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 9,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 10,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 11,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 12,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 13,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 14,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 15,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          }
+        ]
+      }
+    },
+    {
+      "name": "trial advance",
+      "kind": "trial-transition",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 1,
+        "successful": 1,
+        "status": "running",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": null,
+        "history": [
+          {
+            "sequence": 1,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          }
+        ]
+      },
+      "previous": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 0,
+        "successful": 0,
+        "status": "running",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": null,
+        "history": []
+      }
+    },
+    {
+      "name": "trial regression",
+      "kind": "trial-transition",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 0,
+        "successful": 0,
+        "status": "running",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": null,
+        "history": []
+      },
+      "previous": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 1,
+        "successful": 1,
+        "status": "running",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": null,
+        "history": [
+          {
+            "sequence": 1,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          }
+        ]
+      }
+    },
+    {
+      "name": "trial terminal",
+      "kind": "trial-transition",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 0,
+        "successful": 0,
+        "status": "running",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": null,
+        "history": []
+      },
+      "previous": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 0,
+        "successful": 0,
+        "status": "stopped",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": null,
+        "finishedAt": null,
+        "reason": null,
+        "history": []
+      }
+    },
+    {
+      "name": "trial prefix immutable",
+      "kind": "trial-transition",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 1,
+        "successful": 1,
+        "status": "running",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": null,
+        "history": [
+          {
+            "sequence": 1,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1001,
+            "finishedAt": 2000
+          }
+        ]
+      },
+      "previous": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 1,
+        "successful": 1,
+        "status": "running",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": null,
+        "history": [
+          {
+            "sequence": 1,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          }
+        ]
+      }
+    },
+    {
+      "name": "action start",
+      "kind": "enqueue",
+      "value": {
+        "action": "start"
+      }
+    },
+    {
+      "name": "action resume",
+      "kind": "enqueue",
+      "value": {
+        "action": "resume"
+      }
+    },
+    {
+      "name": "action stop",
+      "kind": "enqueue",
+      "value": {
+        "action": "stop"
+      }
+    },
+    {
+      "name": "action eval",
+      "kind": "enqueue",
+      "value": {
+        "action": "eval"
+      }
+    },
+    {
+      "name": "reload valid",
+      "kind": "enqueue",
+      "value": {
+        "action": "reload",
+        "targetVersion": "0.7.0"
+      }
+    },
+    {
+      "name": "reload invalid",
+      "kind": "enqueue",
+      "value": {
+        "action": "reload",
+        "targetVersion": "https://evil.invalid"
+      }
+    },
+    {
+      "name": "search diagnostic asset",
+      "kind": "enqueue",
+      "value": {
+        "action": "inspect-search",
+        "targetVersion": "https://www.pokergosu.com/pokergosu/synthetic.js"
+      }
+    },
+    {
+      "name": "reject arbitrary asset",
+      "kind": "enqueue",
+      "value": {
+        "action": "inspect-search",
+        "targetVersion": "https://www.pokergosu.com/api/private"
+      }
+    },
+    {
+      "name": "control poll",
+      "kind": "poll",
+      "value": {
+        "instance": "12345678-1234-1234-1234-123456789abc",
+        "version": "0.7.0",
+        "permission": true,
+        "enabled": true
+      },
+      "extensionId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "name": "denied permission is evidence",
+      "kind": "poll",
+      "value": {
+        "instance": "12345678-1234-1234-1234-123456789abc",
+        "version": "0.7.0",
+        "permission": false,
+        "enabled": true
+      },
+      "extensionId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "name": "bad extension",
+      "kind": "poll",
+      "value": {
+        "instance": "12345678-1234-1234-1234-123456789abc",
+        "version": "0.7.0",
+        "permission": true,
+        "enabled": true
+      },
+      "extensionId": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+    },
+    {
+      "name": "bad permission type",
+      "kind": "poll",
+      "value": {
+        "instance": "12345678-1234-1234-1234-123456789abc",
+        "version": "0.7.0",
+        "permission": 1,
+        "enabled": true
+      },
+      "extensionId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "name": "bad version",
+      "kind": "poll",
+      "value": {
+        "instance": "12345678-1234-1234-1234-123456789abc",
+        "version": "v1",
+        "permission": true,
+        "enabled": true
+      },
+      "extensionId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "name": "result {\"ok\":true,\"code\":\"STARTED\"}",
+      "kind": "result",
+      "value": {
+        "ok": true,
+        "code": "STARTED"
+      }
+    },
+    {
+      "name": "result {\"ok\":false,\"code\":\"INTERRUPTED_UNKNOWN_NO_RETRY\"}",
+      "kind": "result",
+      "value": {
+        "ok": false,
+        "code": "INTERRUPTED_UNKNOWN_NO_RETRY"
+      }
+    },
+    {
+      "name": "result {\"ok\":1,\"code\":\"STARTED\"}",
+      "kind": "result",
+      "value": {
+        "ok": 1,
+        "code": "STARTED"
+      }
+    },
+    {
+      "name": "result {\"ok\":true,\"code\":\"bad-code\"}",
+      "kind": "result",
+      "value": {
+        "ok": true,
+        "code": "bad-code"
+      }
+    },
+    {
+      "name": "ack",
+      "kind": "ack",
+      "value": {
+        "instance": "12345678-1234-1234-1234-123456789abc",
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "result": {
+          "ok": true,
+          "code": "STARTED"
+        }
+      },
+      "extensionId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "name": "ack malformed ID",
+      "kind": "ack",
+      "value": {
+        "instance": "12345678-1234-1234-1234-123456789abc",
+        "id": "bad",
+        "result": {
+          "ok": true,
+          "code": "STARTED"
+        }
+      },
+      "extensionId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "name": "trailing newline run identity",
+      "kind": "monitor",
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc\n",
+        "status": "running",
+        "tabId": 7,
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "startedAt": 1000,
+        "finishedAt": null,
+        "reason": null,
+        "phase": "board",
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "lastGapAt": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "index": 0,
+        "inFlight": false,
+        "nextAt": 31000,
+        "history": []
+      }
+    },
+    {
+      "name": "trailing newline control result",
+      "kind": "result",
+      "value": {
+        "ok": true,
+        "code": "STARTED\n"
+      }
+    },
+    {
+      "name": "trailing newline client version",
+      "kind": "poll",
+      "value": {
+        "instance": "12345678-1234-1234-1234-123456789abc",
+        "version": "0.7.0\n",
+        "permission": true,
+        "enabled": true
+      },
+      "extensionId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "name": "unicode trusted static filename",
+      "kind": "enqueue",
+      "value": {
+        "action": "inspect-search",
+        "targetVersion": "https://www.pokergosu.com/pokergosu/합성.js"
+      }
+    }
+  ],
+  "expected": [
+    {
+      "ok": true,
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "index": 0,
+        "status": "running",
+        "phase": "board",
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "searchWarning": null,
+        "searchDisabled": false,
+        "searchFallbackCycle": null,
+        "search": null,
+        "startedAt": 1000,
+        "finishedAt": null,
+        "nextAt": 31000,
+        "lastGapAt": null,
+        "cycleStartedAt": null,
+        "inFlight": false,
+        "schedulePolicy": 1,
+        "discoveryOverlap": false,
+        "reason": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "history": []
+      }
+    },
+    {
+      "ok": true,
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "index": 0,
+        "status": "running",
+        "phase": "board",
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "searchWarning": null,
+        "searchDisabled": false,
+        "searchFallbackCycle": null,
+        "search": null,
+        "startedAt": 1000,
+        "finishedAt": null,
+        "nextAt": 31000,
+        "lastGapAt": null,
+        "cycleStartedAt": null,
+        "inFlight": false,
+        "schedulePolicy": 1,
+        "discoveryOverlap": false,
+        "reason": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "history": []
+      }
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_COUNTER"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_BUDGET"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_BUDGET"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_BUDGET"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_BUDGET"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_BUDGET"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_STATE"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_STATE"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_SCHEDULE"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_TIME"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_SCHEDULE_POLICY"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_OVERLAP"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_SEARCH_WARNING"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_SEARCH_FALLBACK"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_SEARCH_FALLBACK"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_REASON"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_HEAD"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_HEAD"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_PLAN"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_HISTORY"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_PLAN"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_PLAN"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_STOP"
+    },
+    {
+      "ok": true,
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 1,
+        "navigations": 1,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "index": 0,
+        "status": "running",
+        "phase": "board",
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "searchWarning": null,
+        "searchDisabled": false,
+        "searchFallbackCycle": null,
+        "search": null,
+        "startedAt": 1000,
+        "finishedAt": null,
+        "nextAt": 31000,
+        "lastGapAt": null,
+        "cycleStartedAt": null,
+        "inFlight": false,
+        "schedulePolicy": 1,
+        "discoveryOverlap": false,
+        "reason": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "history": [
+          {
+            "sequence": 1,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          }
+        ]
+      }
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_HISTORY"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_TIME"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_HISTORY"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_INFLIGHT"
+    },
+    {
+      "ok": true,
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 1,
+        "navigations": 1,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "index": 0,
+        "status": "running",
+        "phase": "board",
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "searchWarning": null,
+        "searchDisabled": false,
+        "searchFallbackCycle": null,
+        "search": null,
+        "startedAt": 1000,
+        "finishedAt": null,
+        "nextAt": 31000,
+        "lastGapAt": null,
+        "cycleStartedAt": null,
+        "inFlight": false,
+        "schedulePolicy": 1,
+        "discoveryOverlap": false,
+        "reason": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "history": [
+          {
+            "sequence": 1,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "skipped",
+            "reason": "THREAD_MARKUP_UNKNOWN",
+            "url": "https://www.pokergosu.com/free/101"
+          }
+        ]
+      }
+    },
+    {
+      "ok": false,
+      "error": "INVALID_THREAD_SKIP"
+    },
+    {
+      "ok": true,
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 1,
+        "navigations": 1,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "index": 0,
+        "status": "running",
+        "phase": "board",
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "searchWarning": "SEARCH_MARKUP_UNKNOWN_USING_BOARD",
+        "searchDisabled": true,
+        "searchFallbackCycle": 1,
+        "search": null,
+        "startedAt": 1000,
+        "finishedAt": null,
+        "nextAt": 31000,
+        "lastGapAt": null,
+        "cycleStartedAt": null,
+        "inFlight": false,
+        "schedulePolicy": 1,
+        "discoveryOverlap": false,
+        "reason": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "history": [
+          {
+            "sequence": 1,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "skipped",
+            "reason": "BOARD_MARKUP_UNKNOWN",
+            "url": "https://www.pokergosu.com/free/search?s=1&v=APL"
+          }
+        ]
+      }
+    },
+    {
+      "ok": true,
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 0,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "index": 0,
+        "status": "running",
+        "phase": "board",
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "searchWarning": null,
+        "searchDisabled": false,
+        "searchFallbackCycle": null,
+        "search": {
+          "term": "APL",
+          "scope": "4",
+          "url": "https://www.pokergosu.com/free/search?s=4&v=APL",
+          "expiresAt": 2000000
+        },
+        "startedAt": 1000,
+        "finishedAt": null,
+        "nextAt": 31000,
+        "lastGapAt": null,
+        "cycleStartedAt": null,
+        "inFlight": false,
+        "schedulePolicy": 1,
+        "discoveryOverlap": false,
+        "reason": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "history": []
+      }
+    },
+    {
+      "ok": false,
+      "error": "INVALID_SEARCH_STATE"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_PLAN"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_THREAD_SKIP"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_THREAD_SKIP"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_HISTORY"
+    },
+    {
+      "ok": true,
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "page": 1,
+        "cycle": 6,
+        "cyclesCompleted": 0,
+        "cycleRequests": 0,
+        "navigations": 52,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "index": 0,
+        "status": "running",
+        "phase": "board",
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "searchWarning": null,
+        "searchDisabled": false,
+        "searchFallbackCycle": null,
+        "search": null,
+        "startedAt": 1000,
+        "finishedAt": null,
+        "nextAt": 31000,
+        "lastGapAt": null,
+        "cycleStartedAt": null,
+        "inFlight": false,
+        "schedulePolicy": 1,
+        "discoveryOverlap": false,
+        "reason": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "history": [
+          {
+            "sequence": 3,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 4,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 5,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 6,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 7,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 8,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 9,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 10,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 11,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 12,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 13,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 14,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 15,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 16,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 17,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 18,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 19,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 20,
+            "cycle": 2,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 21,
+            "cycle": 3,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 22,
+            "cycle": 3,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 23,
+            "cycle": 3,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 24,
+            "cycle": 3,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 25,
+            "cycle": 3,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 26,
+            "cycle": 3,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 27,
+            "cycle": 3,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 28,
+            "cycle": 3,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 29,
+            "cycle": 3,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 30,
+            "cycle": 3,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 31,
+            "cycle": 4,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 32,
+            "cycle": 4,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 33,
+            "cycle": 4,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 34,
+            "cycle": 4,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 35,
+            "cycle": 4,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 36,
+            "cycle": 4,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 37,
+            "cycle": 4,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 38,
+            "cycle": 4,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 39,
+            "cycle": 4,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 40,
+            "cycle": 4,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 41,
+            "cycle": 5,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 42,
+            "cycle": 5,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 43,
+            "cycle": 5,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 44,
+            "cycle": 5,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 45,
+            "cycle": 5,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 46,
+            "cycle": 5,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 47,
+            "cycle": 5,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 48,
+            "cycle": 5,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 49,
+            "cycle": 5,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 50,
+            "cycle": 5,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 51,
+            "cycle": 6,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          },
+          {
+            "sequence": 52,
+            "cycle": 6,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "success",
+            "reason": null,
+            "url": "https://www.pokergosu.com/free/101"
+          }
+        ]
+      }
+    },
+    {
+      "ok": true,
+      "value": "https://www.pokergosu.com/free"
+    },
+    {
+      "ok": true,
+      "value": "https://www.pokergosu.com/free?page=7"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_URL"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_URL"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR_URL"
+    },
+    {
+      "ok": true,
+      "value": "https://www.pokergosu.com/free/search?s=1&v=APL"
+    },
+    {
+      "ok": true,
+      "value": "https://www.pokergosu.com/free/search?s=4&v=%25EB%25A3%25A8%25EB%25A3%25A8"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_SEARCH_URL"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_SEARCH_URL"
+    },
+    {
+      "ok": true,
+      "value": {
+        "kind": "bot_challenge",
+        "title": "Synthetic challenge",
+        "indicators": ["challenge-page-title"],
+        "basis": "visible-page",
+        "http_status": null,
+        "account_ban_confirmed": false
+      }
+    },
+    {
+      "ok": false,
+      "error": "INVALID_ACCESS_EVIDENCE"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_ACCESS_EVIDENCE"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_ACCESS_EVIDENCE"
+    },
+    {
+      "ok": true,
+      "value": {
+        "coverage": "visible-complete",
+        "saved": 2,
+        "media_only": 1,
+        "skipped": 0,
+        "unavailable": 0
+      }
+    },
+    {
+      "ok": true,
+      "value": {
+        "coverage": "partial",
+        "saved": 2,
+        "media_only": 1,
+        "skipped": 1,
+        "unavailable": 3
+      }
+    },
+    {
+      "ok": true,
+      "value": {
+        "coverage": "unknown",
+        "saved": 2,
+        "media_only": 1,
+        "skipped": 0,
+        "unavailable": null
+      }
+    },
+    {
+      "ok": false,
+      "error": "INVALID_COMMENT_SUMMARY"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_COMMENT_SUMMARY"
+    },
+    {
+      "ok": true,
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "page": 1,
+        "cycle": 1,
+        "cyclesCompleted": 0,
+        "cycleRequests": 1,
+        "navigations": 1,
+        "threadsSaved": 0,
+        "matchedThreads": 0,
+        "metadataWarnings": 0,
+        "pendingThreads": 0,
+        "discoveryGaps": 0,
+        "index": 0,
+        "status": "running",
+        "phase": "board",
+        "expectedUrl": "https://www.pokergosu.com/free",
+        "searchWarning": null,
+        "searchDisabled": false,
+        "searchFallbackCycle": null,
+        "search": null,
+        "startedAt": 1000,
+        "finishedAt": null,
+        "nextAt": 31000,
+        "lastGapAt": null,
+        "cycleStartedAt": null,
+        "inFlight": false,
+        "schedulePolicy": 1,
+        "discoveryOverlap": false,
+        "reason": null,
+        "previousHeadIds": [],
+        "currentHeadIds": ["101"],
+        "queue": [],
+        "history": [
+          {
+            "sequence": 1,
+            "cycle": 1,
+            "startedAt": 1000,
+            "finishedAt": 2000,
+            "outcome": "stopped",
+            "reason": "BOT_CHALLENGE",
+            "url": "https://www.pokergosu.com/free/101",
+            "comment_summary": {
+              "coverage": "visible-complete",
+              "saved": 2,
+              "media_only": 1,
+              "skipped": 0,
+              "unavailable": 0
+            },
+            "access": {
+              "kind": "bot_challenge",
+              "title": "Synthetic challenge",
+              "indicators": ["challenge-page-title"],
+              "basis": "visible-page",
+              "http_status": null,
+              "account_ban_confirmed": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "ok": true,
+      "value": null
+    },
+    {
+      "ok": false,
+      "error": "MONITOR_COUNTER_REGRESSION"
+    },
+    {
+      "ok": false,
+      "error": "MONITOR_IDENTITY_CONFLICT"
+    },
+    {
+      "ok": true,
+      "value": null
+    },
+    {
+      "ok": false,
+      "error": "MONITOR_ALREADY_FINISHED"
+    },
+    {
+      "ok": false,
+      "error": "MONITOR_COUNTER_REGRESSION"
+    },
+    {
+      "ok": true,
+      "value": null
+    },
+    {
+      "ok": false,
+      "error": "MONITOR_EVENT_CONFLICT"
+    },
+    {
+      "ok": false,
+      "error": "MONITOR_EVENT_CONFLICT"
+    },
+    {
+      "ok": true,
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 0,
+        "successful": 0,
+        "status": "running",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": null,
+        "history": []
+      }
+    },
+    {
+      "ok": false,
+      "error": "INVALID_TRIAL"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_TRIAL"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_TRIAL_LIMIT"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_TRIAL_LIMIT"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_TRIAL_STATUS"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_TRIAL_TIME"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_TEXT"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_TRIAL_HISTORY"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_TRIAL_SCHEDULE"
+    },
+    {
+      "ok": true,
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 1,
+        "successful": 1,
+        "status": "running",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": 31000,
+        "finishedAt": null,
+        "reason": null,
+        "history": [
+          {
+            "sequence": 1,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          }
+        ]
+      }
+    },
+    {
+      "ok": false,
+      "error": "INVALID_TRIAL_SUCCESSES"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_TRIAL_INFLIGHT"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_TRIAL_COMPLETION"
+    },
+    {
+      "ok": true,
+      "value": {
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "tabId": 7,
+        "limit": 15,
+        "attempted": 15,
+        "successful": 15,
+        "status": "completed",
+        "inFlight": false,
+        "startedAt": 1000,
+        "nextAt": null,
+        "finishedAt": null,
+        "reason": null,
+        "history": [
+          {
+            "sequence": 1,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 2,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 3,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 4,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 5,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 6,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 7,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 8,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 9,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 10,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 11,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 12,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 13,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 14,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          },
+          {
+            "sequence": 15,
+            "outcome": "success",
+            "reason": null,
+            "startedAt": 1000,
+            "finishedAt": 2000
+          }
+        ]
+      }
+    },
+    {
+      "ok": true,
+      "value": null
+    },
+    {
+      "ok": false,
+      "error": "TRIAL_COUNTER_REGRESSION"
+    },
+    {
+      "ok": false,
+      "error": "TRIAL_ALREADY_FINISHED"
+    },
+    {
+      "ok": false,
+      "error": "TRIAL_HISTORY_CONFLICT"
+    },
+    {
+      "ok": true,
+      "value": {
+        "action": "start",
+        "targetVersion": null
+      }
+    },
+    {
+      "ok": true,
+      "value": {
+        "action": "resume",
+        "targetVersion": null
+      }
+    },
+    {
+      "ok": true,
+      "value": {
+        "action": "stop",
+        "targetVersion": null
+      }
+    },
+    {
+      "ok": false,
+      "error": "INVALID_CONTROL_ACTION"
+    },
+    {
+      "ok": true,
+      "value": {
+        "action": "reload",
+        "targetVersion": "0.7.0"
+      }
+    },
+    {
+      "ok": false,
+      "error": "INVALID_TARGET_VERSION"
+    },
+    {
+      "ok": true,
+      "value": {
+        "action": "inspect-search",
+        "targetVersion": "https://www.pokergosu.com/pokergosu/synthetic.js"
+      }
+    },
+    {
+      "ok": false,
+      "error": "INVALID_SEARCH_ASSET"
+    },
+    {
+      "ok": true,
+      "value": {
+        "owner": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:12345678-1234-1234-1234-123456789abc",
+        "instance": "12345678-1234-1234-1234-123456789abc",
+        "version": "0.7.0",
+        "permission": true,
+        "enabled": true
+      }
+    },
+    {
+      "ok": true,
+      "value": {
+        "owner": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:12345678-1234-1234-1234-123456789abc",
+        "instance": "12345678-1234-1234-1234-123456789abc",
+        "version": "0.7.0",
+        "permission": false,
+        "enabled": true
+      }
+    },
+    {
+      "ok": false,
+      "error": "INVALID_CONTROL_CLIENT"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_CONTROL_CLIENT"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_CONTROL_CLIENT"
+    },
+    {
+      "ok": true,
+      "value": {
+        "ok": true,
+        "code": "STARTED"
+      }
+    },
+    {
+      "ok": true,
+      "value": {
+        "ok": false,
+        "code": "INTERRUPTED_UNKNOWN_NO_RETRY"
+      }
+    },
+    {
+      "ok": false,
+      "error": "INVALID_CONTROL_RESULT"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_CONTROL_RESULT"
+    },
+    {
+      "ok": true,
+      "value": {
+        "owner": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:12345678-1234-1234-1234-123456789abc",
+        "instance": "12345678-1234-1234-1234-123456789abc",
+        "id": "12345678-1234-1234-1234-123456789abc",
+        "result": {
+          "ok": true,
+          "code": "STARTED"
+        }
+      }
+    },
+    {
+      "ok": false,
+      "error": "INVALID_CONTROL_REQUEST"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_MONITOR"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_CONTROL_RESULT"
+    },
+    {
+      "ok": false,
+      "error": "INVALID_CONTROL_CLIENT"
+    },
+    {
+      "ok": true,
+      "value": {
+        "action": "inspect-search",
+        "targetVersion": "https://www.pokergosu.com/pokergosu/합성.js"
+      }
+    }
+  ]
+}

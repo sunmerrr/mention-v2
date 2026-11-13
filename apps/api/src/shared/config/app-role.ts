@@ -8,13 +8,22 @@
  */
 import { config } from './index.js';
 
-export type AppRole = 'api' | 'worker' | 'all';
+export type AppRole = 'api' | 'worker' | 'ingest' | 'migrate' | 'register-collector' | 'all';
 
-const KNOWN_ROLES: readonly string[] = ['api', 'worker', 'all'];
+const KNOWN_ROLES: readonly string[] = [
+  'api',
+  'worker',
+  'ingest',
+  'migrate',
+  'register-collector',
+  'all',
+];
 
 export function getActiveRoles(): AppRole[] {
   // 검증된 config 경유 — process.env 직접 읽기 금지. 기본값('all')·빈 값 차단은 config 스키마가 처리.
   const roles = config.APP_ROLE.split(',').map((r) => r.trim());
+  if (roles.includes('migrate') && roles.length !== 1)
+    throw new Error('MIGRATION_MUST_RUN_AS_A_SEPARATE_ROLE');
   // 오타 역할(APP_ROLE=wroker)은 조용히 무시되면 컨트롤러/워커 없는 프로세스가 뜬다 — 부팅에서 죽인다.
   // 재시작 백오프는 오케스트레이터(docker/ECS/K8s) 내장 기능에 맡긴다.
   const unknown = roles.filter((r) => !KNOWN_ROLES.includes(r));

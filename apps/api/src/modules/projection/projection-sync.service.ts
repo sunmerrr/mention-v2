@@ -49,12 +49,13 @@ export class ProjectionSync implements OnModuleInit, OnModuleDestroy {
   private async run() {
     try {
       await importProjection(this.source, this.target);
-    } catch {
+    } catch (error) {
       // The source may advance while paging; retain the previous committed generation.
       this.logger.warn(
         { event: 'projection_sync_failed' },
         'Read projection retained its last complete generation',
       );
+      if (config.WORKER_RUN_ONCE) throw error;
     }
   }
   async onModuleDestroy() {

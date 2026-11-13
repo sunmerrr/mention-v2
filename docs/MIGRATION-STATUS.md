@@ -1,3 +1,14 @@
+# Server consolidation update — 2026-11-13
+
+The new preparation and remaining gates are documented in SERVER-CONSOLIDATION.md
+and USEFUL-CONTEXT.md. Node owner intake, durable PostgreSQL raw inbox/cursors,
+independent Node forum intake and a common role image have been implemented for
+synthetic validation. Native collection remains disabled in this workspace.
+Only item8-1 is deferred; item7 is now part of the migration. No production
+routing, owner login, collection cursor or Chrome profile changed. The earlier
+checkpoint below describes the existing transitional projection and still applies
+until the remaining native behavior and write contracts are ported.
+
 # Migration checkpoint — 2026-11-12
 
 ## Verified local implementation

@@ -149,3 +149,45 @@ The earlier Docker/environment blocker is resolved by the isolated local runtime
 Actual verify:full passes, including real PostgreSQL integration and Docker targets.
 See MIGRATION-STATUS for current boundaries; historical checkpoint paragraphs above
 are not current deployment claims. Public routing and native ownership are unchanged.
+
+## Approved server consolidation — 2026-11-13
+
+The user approved replacing server-side Python/SQLite dependencies with one
+TypeScript/NestJS project and PostgreSQL16/Drizzle. Host-only exceptions are the
+existing Kakao connection owner and Chrome extension. Keep the owner's existing
+RPC contract and one authenticated connection. The Mac initiates reverse SSH to
+an AWS Docker host; containers mount a dedicated host socket directory. No AWS
+instance, security-group change, production cutover, reconnect, native owner
+restart or live test send is implied by preparing this implementation.
+
+SSR and API share the api role; browser assets and every server role are built
+into one application image. Roles are api, ingest, dialogue and worker (aggregate/
+schedule); one-shot database migration uses the same image and an explicit job.
+Infrastructure PostgreSQL uses its standard separate image, initially in-stack,
+with an external DATABASE_URL supported for a later managed database.
+Server models, validation and native ID representation are shared. UI reads
+completed projections; it must not invoke upstream collection during reads.
+The existing source proxy is transitional and is not the target runtime.
+
+Explicitly deferred by the user's latest instruction: item7's useful-context
+minimum/expansion semantics, and item8-1's local durable buffer/database retention
+policy. Do not change these in the native owner or production service. Incoming
+server raw persistence is part of the approved PostgreSQL transition, but live
+activation waits for data/receipt/cursor parity and a coordinated handoff. No
+historical replay or simultaneous production consumers is authorized by a test.
+
+Chrome extension work is delegated by user request to existing session
+01a1c416-7ad3-76a0-ade9-69cda78db61a. It prepares remote-only packaging and the
+independent receiver contract; no live profile/schedule/collection changes.
+Temporary collection-search policies remain independent of web matching policy.
+
+## Updated context scope — 2026-11-13
+
+The user subsequently approved item7 in this migration. Context collection must
+fill the useful-message quota after deduplicating and excluding advertisements,
+greetings and short non-substantive reactions. Presentation expansion reads saved
+PostgreSQL evidence rather than invoking native history from the web request.
+Preserve the previously requested15 useful messages per direction and15-message
+presentation increments, with explicit scan bounds and honest shortage/gap reasons.
+Only item8-1 (local owner durable buffer/database retention) remains deferred until
+the current server migration is complete. No local retention policy is changed.

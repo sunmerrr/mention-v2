@@ -14,7 +14,7 @@ set -euo pipefail
 # ─────────────────────────────────────────────────────────────
 # CONFIG (저장소별로 다른 유일한 영역)
 # ─────────────────────────────────────────────────────────────
-DOCKER_TARGETS="api web web-dist"      # reference: "api web admin web-dist"
+DOCKER_TARGETS="api"      # reference: "api web admin web-dist"
 COMPOSE_FILE="apps/deploy/local.yml"
 WEB_DIST_HTML="apps/web/dist/index.html"
 RUNTIME_PLACEHOLDER="__APP_RUNTIME_CONFIG__"
@@ -60,6 +60,7 @@ echo "═══ pnpm verify$( [ "$FULL" = 1 ] && echo ':full' ) (${ROOT_DIR##*/}
 step "lint (biome)"          "pnpm lint"
 step "build (turbo)"         "pnpm build"
 step "unit tests"            "pnpm test"
+step "reverse SSH arguments" "node scripts/reverse-ssh.test.mjs"
 step "e2e tests"             "pnpm test:e2e"
 
 if [ "$FULL" = 1 ]; then
@@ -76,6 +77,8 @@ if [ "$FULL" = 1 ]; then
 
   step "compose config 검증" \
     "docker compose -f '${COMPOSE_FILE}' config >/dev/null"
+
+  step "server stack compose" "node scripts/check-server-compose.mjs"
 
   # 프론트 산출물엔 런타임 placeholder 가 남아 있어야 한다(치환은 배포/실행 시점).
   step "web dist placeholder(${RUNTIME_PLACEHOLDER})" \

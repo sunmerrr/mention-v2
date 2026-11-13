@@ -17,7 +17,39 @@ async function bootstrap() {
 
   // 2) 병합 후에 config(zod 검증)와 AppModule(APP_ROLE 분기)을 로드한다.
   const { config } = await import('./shared/config/index.js');
+  if (config.APP_ROLE === 'migrate') {
+    await import('./db/migrate.js');
+    return;
+  }
+  if (config.APP_ROLE === 'register-collector') {
+    if (!config.COLLECTOR_ID || !config.COLLECTOR_EXTENSION_ID || !config.COLLECTOR_TOKEN)
+      throw new Error('COLLECTOR_REGISTRATION_ENV_REQUIRED');
+    const { ForumStore } = await import('./modules/forum-intake/forum-store.js');
+    const store = new ForumStore();
+    try {
+      await store.register(
+        config.COLLECTOR_ID,
+        config.COLLECTOR_EXTENSION_ID,
+        config.COLLECTOR_TOKEN,
+      );
+    } finally {
+      await store.close();
+    }
+    const { default: pino } = await import('pino');
+    pino().info(
+      { event: 'collector_registered', collector: config.COLLECTOR_ID },
+      'Collector registered; token is not logged',
+    );
+    return;
+  }
   const { AppModule } = await import('./app.module.js');
+  if (config.WORKER_RUN_ONCE) {
+    if (config.APP_ROLE !== 'worker') throw new Error('ONE_SHOT_REQUIRES_WORKER_ROLE');
+    const context = await NestFactory.createApplicationContext(AppModule, { bufferLogs: true });
+    context.useLogger(context.get(Logger));
+    await context.close();
+    return;
+  }
 
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
@@ -44,7 +76,17 @@ async function bootstrap() {
   await app.register(helmet, { contentSecurityPolicy: false });
 
   await app.register(cors, {
-    origin: config.CORS_ORIGINS.length > 0 ? config.CORS_ORIGINS : true,
+    origin: (origin, done) => {
+      const extension =
+        typeof origin === 'string' && /^chrome-extension:\/\/[a-p]{32}$/.test(origin);
+      const allowed =
+        (extension &&
+          config.APP_ROLE.split(',').some((role) => ['all', 'ingest'].includes(role.trim()))) ||
+        !origin ||
+        config.CORS_ORIGINS.length === 0 ||
+        config.CORS_ORIGINS.includes(origin);
+      done(null, allowed);
+    },
     credentials: true,
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });

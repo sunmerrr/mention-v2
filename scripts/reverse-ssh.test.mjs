@@ -1,0 +1,11 @@
+import { strict as assert } from 'node:assert';
+import { tunnelArguments } from './reverse-ssh.mjs';
+const env={MENTION_SSH_TARGET:'mention@ec2.example.com',MENTION_LOCAL_OWNER_SOCKET:'/tmp/synthetic-owner.sock',MENTION_REMOTE_OWNER_SOCKET:'/home/mention/run/connection.sock'};
+const args=tunnelArguments(env);
+assert.equal(args[args.length-1],env.MENTION_SSH_TARGET);
+assert.equal(args[args.indexOf('-R')+1],'/home/mention/run/connection.sock:/tmp/synthetic-owner.sock');
+assert(!args.some(v=>/Unlink=yes|StrictHostKeyChecking=no/.test(v)));
+assert.throws(()=>tunnelArguments({...env,MENTION_SSH_TARGET:'-oProxyCommand=bad'}));
+assert.throws(()=>tunnelArguments({...env,MENTION_REMOTE_OWNER_SOCKET:'relative.sock'}));
+assert.throws(()=>tunnelArguments({...env,MENTION_LOCAL_OWNER_SOCKET:'/tmp/a:123'}));
+process.stdout.write('Reverse SSH argument checks passed; no SSH process or network connection started.\n');
