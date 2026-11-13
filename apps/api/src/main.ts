@@ -69,6 +69,22 @@ async function bootstrap() {
     }
     return;
   }
+  if (config.APP_ROLE === 'import-native-rooms') {
+    if (!config.NATIVE_STATE_SNAPSHOT_ID) throw Error('NATIVE_STATE_SNAPSHOT_ID_REQUIRED');
+    const { EvidenceRepository } = await import('./modules/evidence/evidence.repository.js');
+    const { RoomsRepository } = await import('./modules/monitoring/rooms.repository.js');
+    const target = new EvidenceRepository();
+    try {
+      const result = await new RoomsRepository(target).importSnapshot(
+        config.NATIVE_STATE_SNAPSHOT_ID,
+      );
+      const { default: pino } = await import('pino');
+      pino().info({ event: 'native_rooms_import_complete', ...result });
+    } finally {
+      await target.close();
+    }
+    return;
+  }
   if (config.APP_ROLE === 'import-native-state') {
     if (!config.NATIVE_STATE_IMPORT_FILE) throw Error('NATIVE_STATE_IMPORT_FILE_REQUIRED');
     const { EvidenceRepository } = await import('./modules/evidence/evidence.repository.js');

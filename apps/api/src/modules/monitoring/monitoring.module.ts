@@ -6,6 +6,7 @@ import { SettingsModule } from '../settings/settings.module.js';
 import { BookmarksRepository } from './bookmarks.repository.js';
 import { MONITORING_SOURCE, MonitoringRepository } from './monitoring.repository.js';
 import { MonitoringService } from './monitoring.service.js';
+import { RoomsRepository } from './rooms.repository.js';
 
 @Module({
   imports: [SettingsModule],
@@ -19,6 +20,7 @@ import { MonitoringService } from './monitoring.service.js';
     MonitoringRepository,
     MonitoringService,
     BookmarksRepository,
+    RoomsRepository,
   ],
   exports: [EvidenceRepository, MonitoringService, ProjectionRepository, MonitoringRepository],
 })

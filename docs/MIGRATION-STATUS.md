@@ -222,3 +222,32 @@ DB and all running production processes were untouched.
 Actual verify:full passed51 unit and54 integration tests, common image, reverse
 SSH and Compose checks. No AWS destination, remote tunnel, public routing change,
 owner restart, authentication action, live send or historical replay occurred.
+
+## Collection-target PostgreSQL slice
+
+The import-native-rooms role materializes a complete archived source snapshot
+into room policy and precomputed per-day message metrics. It retains native room
+IDs, names, joined/excluded state, verified-title metadata and source gaps. Message
+metrics use the existing include/exclude matching rules, including numeric
+exclusion patterns; web reads do not scan message evidence. Import replay is
+idempotent and a different source snapshot cannot silently overwrite edited
+policy: it requires a separate reviewed handoff.
+
+In PostgreSQL mode the preserved workspace rooms read and room-settings mutation
+now use these tables. Bulk selection validates all room IDs before any change,
+deduplicates selection, writes policy history and creates a gap on exclusion
+removal. Repeated inclusion creates no duplicate gap. No guide/respond/schedule
+state, host-owner configuration or original records are changed by this operation.
+
+Populated comparison used the original Python room-page/overview rules on the
+same isolated snapshot:22 included,1 excluded,1 inactive room, and all returned
+fields/counts matched. Desktop/mobile default and searched pages passed four real
+Chrome checks with the legacy API unreachable, no hydration/JavaScript failures
+or overflow. Screenshots were visually inspected. Preview was stopped afterward.
+Actual verify:full passed51 unit and55 integration tests plus image/Compose.
+
+This is a migrated configuration screen and preserved baseline, not a claim that
+new inventory/live keyword-count refresh or analytics/guide worker cutover has
+finished. Those workers must consume the same PostgreSQL policy before routing
+production to the replacement. Existing production policy remains authoritative
+until the coordinated handoff.

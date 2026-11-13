@@ -141,6 +141,13 @@
       "when": 1794571463668,
       "tag": "0019_panoramic_paibok",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794571773826,
+      "tag": "0020_gorgeous_magik",
+      "breakpoints": true
     }
   ]
 }

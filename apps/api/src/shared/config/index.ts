@@ -59,6 +59,7 @@ const envSchema = z.object({
   APP_ROLE: z.string().min(1).default('all'),
   FORUM_ARCHIVE_IMPORT_FILE: z.string().optional(),
   NATIVE_REFERENCE_IMPORT_FILE: z.string().optional(),
+  NATIVE_STATE_SNAPSHOT_ID: z.uuid().optional(),
   NATIVE_STATE_IMPORT_FILE: z.string().optional(),
   // 빈 문자열("")은 미설정 취급 — 컨테이너 env 로 `LOG_LEVEL=` 빈 값 주입은 흔한 사고.
   LOG_LEVEL: z.preprocess(

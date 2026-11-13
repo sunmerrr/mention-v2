@@ -229,6 +229,32 @@ export const nativeRoomDirty = pgTable('native_room_dirty', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const monitoringRooms = pgTable('monitoring_rooms', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  roomId: varchar('room_id', { length: 19 }).notNull().unique(),
+  body: jsonb('body').$type<Record<string, unknown>>().notNull(),
+  metrics: jsonb('metrics')
+    .$type<Record<string, { count: number; live: number; last: number | null }>>()
+    .notNull(),
+  excluded: boolean('excluded').notNull(),
+  joined: boolean('joined').notNull(),
+  snapshotId: uuid('snapshot_id').notNull(),
+});
+export const monitoringRoomPolicyHistory = pgTable('monitoring_room_policy_history', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  roomId: varchar('room_id', { length: 19 }).notNull(),
+  previous: boolean('previous').notNull(),
+  excluded: boolean('excluded').notNull(),
+  at: timestamp('at', { withTimezone: true }).notNull().defaultNow(),
+});
+export const monitoringRoomGaps = pgTable('monitoring_room_gaps', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  roomId: varchar('room_id', { length: 19 }),
+  sourceKey: varchar('source_key', { length: 150 }).notNull().unique(),
+  body: jsonb('body').$type<Record<string, unknown>>().notNull(),
+  resolved: boolean('resolved').notNull().default(false),
+});
+
 export const collectorPrincipals = pgTable('collector_principals', {
   pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
   id: varchar('id', { length: 128 }).notNull().unique(),

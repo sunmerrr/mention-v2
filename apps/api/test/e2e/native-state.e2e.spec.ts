@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { koreanDay } from '@app/shared/monitoring/domain/time';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { eq } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
@@ -12,6 +13,7 @@ import {
   importNativeState,
   nativeStateTables,
 } from '../../src/modules/evidence/import-native-state.js';
+import { RoomsRepository } from '../../src/modules/monitoring/rooms.repository.js';
 
 let container: StartedPostgreSqlContainer,
   client: ReturnType<typeof createDatabase>,
@@ -109,4 +111,62 @@ it('rejects unsafe settings, missing tables and unordered records', async () => 
       client,
     ),
   ).rejects.toThrow('NATIVE_STATE_RECORD_ORDER_INVALID');
+});
+
+it('materializes room policy and completed counts without replaying guide or send work', async () => {
+  const h = header();
+  h.counts.campaign_sends = 0;
+  h.counts.rooms = 2;
+  h.counts.settings = 2;
+  h.counts.messages = 3;
+  const day = koreanDay(Date.now()),
+    cid = '18497500347065223',
+    other = '18497500347065224';
+  await importNativeState(
+    await file(h, [
+      {
+        table: 'rooms',
+        ordinal: 0,
+        body: { id: cid, name: 'APL % 방', excluded: 1, joined: 1, title_verified: 1 },
+      },
+      {
+        table: 'rooms',
+        ordinal: 1,
+        body: { id: other, name: '다른 방', excluded: 0, joined: 1, title_verified: 1 },
+      },
+      { table: 'settings', ordinal: 0, body: { key: 'keywords', value: '["APL"]' } },
+      {
+        table: 'settings',
+        ordinal: 1,
+        body: { key: 'exclude_keywords', value: '["홍보 [숫자]회"]' },
+      },
+      ...['APL 질문', 'APL 홍보 12회', '미해당'].map((text, ordinal) => ({
+        table: 'messages',
+        ordinal,
+        body: { room_id: cid, text, day, sort_at: 1700000000000, source: 'live' },
+      })),
+    ]),
+    client,
+  );
+  const rooms = new RoomsRepository(client);
+  expect((await rooms.importSnapshot(h.id)).rooms).toBe(2);
+  expect((await rooms.importSnapshot(h.id)).replayed).toBe(true);
+  const result = await rooms.list({ q: '%' });
+  expect(result.excluded.total).toBe(1);
+  expect(result.included.total).toBe(0);
+  expect(result.excluded.rooms[0]?.count).toBe(1);
+  expect(result.summary.messages).toBe(1);
+  await expect(rooms.save({ room_ids: [cid, '9'], excluded: false })).rejects.toThrow(
+    '알 수 없는 방',
+  );
+  expect((await rooms.list({})).excluded.total).toBe(1);
+  await rooms.save({ room_ids: [cid, cid], excluded: false });
+  expect((await rooms.list({})).excluded.total).toBe(0);
+  expect((await rooms.list({})).summary.unresolved_gaps).toBe(1);
+  await rooms.save({ room_ids: [cid], excluded: false });
+  expect((await rooms.list({})).summary.unresolved_gaps).toBe(1);
+  const newer = header();
+  newer.counts.campaign_sends = 0;
+  await importNativeState(await file(newer, []), client);
+  await expect(rooms.importSnapshot(newer.id)).rejects.toThrow('ROOM_SOURCE_HANDOFF_REQUIRED');
 });
