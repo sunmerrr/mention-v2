@@ -57,6 +57,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(4200),
   // 빈 값 차단(min 1) — 빈 APP_ROLE 이 통과하면 역할 분기가 전부 false 가 되어 컨트롤러 없는 서버가 조용히 뜬다.
   APP_ROLE: z.string().min(1).default('all'),
+  FORUM_ARCHIVE_IMPORT_FILE: z.string().optional(),
   // 빈 문자열("")은 미설정 취급 — 컨테이너 env 로 `LOG_LEVEL=` 빈 값 주입은 흔한 사고.
   LOG_LEVEL: z.preprocess(
     (v) => (v === '' ? undefined : v),

@@ -73,3 +73,19 @@ No new Chrome profile/receiver or production worker has been activated by this c
 Forum list, opinion aggregation and review writes now use compact card/evaluation
 columns instead of reading or rewriting article/comment JSON. After the populated
 backfill,177 saved DTOs and9 opinion scopes still matched the original reference.
+
+## Full legacy forum archive
+
+The explicit `import-forum-archive` role accepts a bounded JSONL snapshot with
+table counts. Rows are retained inertly in the shared PostgreSQL migration archive;
+this does not import commands into an executable queue. Original unknown/sending
+states cannot trigger a retry from archival import. The source exporter uses a
+read-only SQLite transaction and is a one-off migration tool, not a server role.
+
+Actual snapshot at2026-11-13T10:20:43Z:2579 rows across1457 thread records,
+259 revisions,646 state records,2 read errors,133 search provenance records,
+20 commands,60 control events,1 heartbeat and1 owner record. Full record comparison
+against PostgreSQL found zero missing rows. This later snapshot includes189
+collected payloads; it does not claim the earlier177-card public snapshot is live
+current. Final canonical catch-up and current command ownership reconciliation
+remain cutover gates. Files, hashes and detailed parity reports stay private.

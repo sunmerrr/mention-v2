@@ -21,6 +21,20 @@ async function bootstrap() {
     await import('./db/migrate.js');
     return;
   }
+  if (config.APP_ROLE === 'import-forum-archive') {
+    if (!config.FORUM_ARCHIVE_IMPORT_FILE) throw Error('FORUM_ARCHIVE_IMPORT_FILE_REQUIRED');
+    const { EvidenceRepository } = await import('./modules/evidence/evidence.repository.js');
+    const { importForumArchive } = await import('./modules/forum/import-forum-archive.js');
+    const archive = new EvidenceRepository();
+    try {
+      const result = await importForumArchive(config.FORUM_ARCHIVE_IMPORT_FILE, archive);
+      const { default: pino } = await import('pino');
+      pino().info({ event: 'forum_archive_import_complete', ...result });
+    } finally {
+      await archive.close();
+    }
+    return;
+  }
   if (config.APP_ROLE === 'import-workspace') {
     if (!config.WORKSPACE_IMPORT_FILE) throw Error('WORKSPACE_IMPORT_FILE_REQUIRED');
     const { KeywordSettingsRepository } = await import(

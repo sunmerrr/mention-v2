@@ -50,6 +50,7 @@ export class EvidenceRepository {
         'forum-reviews',
         'forum-receipts',
         'forum-history',
+        'forum-source',
         'judgment-exclusions',
         'judgment-decisions',
         'judgment-events',
