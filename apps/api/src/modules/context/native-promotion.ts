@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { keywordMatches } from '@app/shared/monitoring/domain/keyword-rules';
+import { matchingExclusions } from '../../shared/monitoring/exclusion-rules.js';
 import type { NativeMessage } from './native-message.js';
 import { exclusion } from './useful-context.js';
 
@@ -98,7 +99,7 @@ export function promotionReferences(
       (watch) => row.sortAt >= watch.at && BigInt(row.logId) > BigInt(watch.logId),
     );
     const cause = exclusion({ ...row, authorId: row.authorId });
-    const hasExclusion = keywordMatches(row.text, excluded, true).length > 0;
+    const hasExclusion = matchingExclusions(row.text, excluded).length > 0;
     const isPromotion =
       cause === 'promotion' ||
       (cause === null && keywordMatches(row.text, promotionMarkers).length > 0);

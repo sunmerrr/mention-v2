@@ -1,6 +1,6 @@
-import { keywordMatches } from '@app/shared/monitoring/domain/keyword-rules';
 import { and, asc, desc, eq, gt, gte, lt, lte, sql } from 'drizzle-orm';
 import { kakaoMessages } from '../../db/schema.js';
+import { matchingExclusions } from '../../shared/monitoring/exclusion-rules.js';
 import type { EvidenceRepository } from '../evidence/evidence.repository.js';
 import { nativeId } from './native-message.js';
 import type { ContextMessage, ContextPage, ContextSource } from './useful-context.js';
@@ -67,7 +67,7 @@ export class StoredContextSource implements ContextSource {
         sortAt: body.sortAt,
         replyTo: body.replyTo,
         relation:
-          keywordMatches(body.text, this.input.exclude ?? [], true).length > 0
+          matchingExclusions(body.text, this.input.exclude ?? []).length > 0
             ? 'ignored_noise'
             : this.input.relations?.get(body.logId),
       }),

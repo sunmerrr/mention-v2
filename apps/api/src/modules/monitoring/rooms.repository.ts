@@ -12,6 +12,7 @@ import {
   nativeStateSnapshots,
 } from '../../db/schema.js';
 import { AppError } from '../../shared/errors/app-error.js';
+import { matchingExclusions } from '../../shared/monitoring/exclusion-rules.js';
 import { EvidenceRepository } from '../evidence/evidence.repository.js';
 
 const roomId = z.string().regex(/^[1-9][0-9]{0,18}$/);
@@ -78,7 +79,7 @@ export class RoomsRepository {
           table !== 'messages' ||
           typeof body.text !== 'string' ||
           !keywordMatches(body.text, keywords).length ||
-          keywordMatches(body.text, excluded, true).length
+          matchingExclusions(body.text, excluded).length
         )
           continue;
         const cid = roomId.parse(body.room_id),

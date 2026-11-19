@@ -5,6 +5,7 @@ import {
   sourceKeywords,
 } from '@app/shared/monitoring/contracts/keyword-policy';
 import { keywordIdentity, keywordMatches } from '@app/shared/monitoring/domain/keyword-rules';
+import { matchingExclusions } from '../../shared/monitoring/exclusion-rules.js';
 import { type NativeEpisode, nativeOrder } from './native-groups.js';
 import type { NativeMessage } from './native-message.js';
 import type { KeywordMatch } from './native-promotion.js';
@@ -40,7 +41,7 @@ export function nativeMatch(
   if (
     anchor.own !== false ||
     exclusion({ ...anchor, authorId: anchor.authorId ?? undefined }) ||
-    keywordMatches(anchor.text, excluded, true).length
+    matchingExclusions(anchor.text, excluded).length
   )
     return null;
   const match = matchText(anchor.text);

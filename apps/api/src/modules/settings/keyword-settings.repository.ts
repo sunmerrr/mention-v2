@@ -12,6 +12,7 @@ import { createDatabase } from '../../db/client.js';
 import { monitoringJobs, monitoringSettings } from '../../db/schema.js';
 import { config } from '../../shared/config/index.js';
 import { AppError } from '../../shared/errors/app-error.js';
+import { matchingExclusions } from '../../shared/monitoring/exclusion-rules.js';
 import { stableJson } from '../connection/stable-json.js';
 
 const hash = (value: unknown) => createHash('sha256').update(stableJson(value)).digest('hex');
@@ -195,7 +196,7 @@ export class KeywordSettingsRepository {
         .max(8000)
         .parse(value.sample ?? '');
     const matched = keywordMatches(sample, words),
-      excluded = keywordMatches(sample, exclude, true);
+      excluded = matchingExclusions(sample, exclude);
     const groups = Array.isArray(value.keyword_groups)
       ? value.keyword_groups
       : saved.policy.keyword_groups;
