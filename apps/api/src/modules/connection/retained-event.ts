@@ -23,6 +23,8 @@ export function retainEvents(events: unknown[], cacheValue: unknown, ownerInstan
   };
   if (events.length > 100) throw Error('INVALID_OWNER_EVENT_BATCH');
   const knownRooms = new Map<string, string>();
+  const verifiedTitles = new Map<string, Set<string>>();
+  const publicKinds = new Set(['OD', 'OM', 'OPEN']);
   for (const raw of Array.isArray(cache.rooms) ? cache.rooms : []) {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
     const room = raw as Record<string, unknown>,
@@ -30,9 +32,20 @@ export function retainEvents(events: unknown[], cacheValue: unknown, ownerInstan
     if (!id || typeof room.kind !== 'string') continue;
     const previous = knownRooms.get(id);
     knownRooms.set(id, previous && previous !== room.kind ? 'unknown' : room.kind);
+    if (
+      publicKinds.has(room.kind) &&
+      typeof room.name === 'string' &&
+      ['wire', 'custom', 'link'].includes(String(room.name_source))
+    ) {
+      const name = [...room.name.replace(/\s*<코드1004>/gu, '').trim()].slice(0, 300).join('');
+      if (name) {
+        const titles = verifiedTitles.get(id) ?? new Set<string>();
+        titles.add(name);
+        verifiedTitles.set(id, titles);
+      }
+    }
   }
-  const publicKinds = new Set(['OD', 'OM', 'OPEN']),
-    privateKinds = new Set(['DirectChat', 'MultiChat', 'PlusChat', 'MemoChat', 'PartnerChat']);
+  const privateKinds = new Set(['DirectChat', 'MultiChat', 'PlusChat', 'MemoChat', 'PartnerChat']);
   const validated = events.flatMap((raw) => {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw Error('INVALID_OWNER_EVENT');
     const event = raw as Record<string, unknown>,
@@ -99,5 +112,10 @@ export function retainEvents(events: unknown[], cacheValue: unknown, ownerInstan
       payload: retained,
     };
   });
-  return { records, snapshots: [...snapshots.values()] };
+  const rooms = [...new Set(validated.map(({ roomId }) => roomId))].map((roomId) => {
+    const names = verifiedTitles.get(roomId);
+    const name = names?.size === 1 ? names.values().next().value : undefined;
+    return { roomId, name };
+  });
+  return { records, snapshots: [...snapshots.values()], rooms };
 }

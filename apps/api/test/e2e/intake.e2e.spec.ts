@@ -21,6 +21,7 @@ import { StoredContextSource } from '../../src/modules/context/stored-context-so
 import { collectUsefulContext } from '../../src/modules/context/useful-context.js';
 import { EvidenceRepository } from '../../src/modules/evidence/evidence.repository.js';
 import { BookmarksRepository } from '../../src/modules/monitoring/bookmarks.repository.js';
+import { GuideRepository } from '../../src/modules/monitoring/guide.repository.js';
 import { config } from '../../src/shared/config/index.js';
 
 describe('native intake on disposable PostgreSQL', () => {
@@ -87,8 +88,66 @@ describe('native intake on disposable PostgreSQL', () => {
       expect(rows.rows).toHaveLength(1);
       expect(rows.rows[0].log_id).toBe('3970073012646000642');
       expect(rows.rows[0].payload.event.text).toBe('합성 원문');
+      const [room] = await c.db
+        .select()
+        .from(monitoringRooms)
+        .where(eq(monitoringRooms.roomId, rows.rows[0].room_id));
+      expect(room).toMatchObject({
+        joined: true,
+        excluded: false,
+        snapshotId: null,
+        body: { name: '방 이름 확인 중 · 065223', title_verified: 0 },
+      });
+      const guide = new GuideRepository({ db: c.db });
+      await expect(
+        guide.save({
+          room_id: rows.rows[0].room_id,
+          enabled: true,
+          respond: false,
+          keywords: [],
+          names: [],
+        }),
+      ).resolves.toMatchObject({ ok: true });
     } finally {
       await c.pool.end();
+    }
+  });
+  it('refreshes verified titles without changing manual room policy or retaining private rooms', async () => {
+    const connection = createDatabase(config.DATABASE_URL ?? '');
+    const roomId = '18497500347065223';
+    const prior = await store.cursor();
+    if (!prior) throw Error('MISSING_SYNTHETIC_CHECKPOINT');
+    try {
+      await connection.db
+        .update(monitoringRooms)
+        .set({ excluded: true, joined: false, metrics: { all: { count: 19, live: 15, last: 1 } } })
+        .where(eq(monitoringRooms.roomId, roomId));
+      const batch = reply(prior.cursor);
+      const raw = batch.result as { events: unknown[] };
+      raw.events.push({ chat_id: '822', log_id: '300', text: 'private' });
+      batch.cache = {
+        ...(batch.cache as object),
+        rooms: [
+          { chat_id: roomId, kind: 'OM', name_source: 'link', name: '실제 테스트방 <코드1004>' },
+          { chat_id: '822', kind: 'DirectChat', name_source: 'wire', name: 'Private room' },
+        ],
+      };
+      await store.accept(prior.cursor, batch);
+      const [room] = await connection.db
+        .select()
+        .from(monitoringRooms)
+        .where(eq(monitoringRooms.roomId, roomId));
+      expect(room).toMatchObject({
+        excluded: true,
+        joined: false,
+        metrics: { all: { count: 19, live: 15, last: 1 } },
+        body: { name: '실제 테스트방', title_verified: 1 },
+      });
+      expect(
+        await connection.db.select().from(monitoringRooms).where(eq(monitoringRooms.roomId, '822')),
+      ).toHaveLength(0);
+    } finally {
+      await connection.pool.end();
     }
   });
   it('rejects stale commits, owner changes and backwards cursors without advancing state', async () => {

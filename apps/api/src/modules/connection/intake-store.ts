@@ -1,8 +1,14 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import type { PoolClient } from 'pg';
 import { createDatabase } from '../../db/client.js';
-import { intakeEvents, intakeGaps, intakeOffsets, intakeWireSnapshots } from '../../db/schema.js';
+import {
+  intakeEvents,
+  intakeGaps,
+  intakeOffsets,
+  intakeWireSnapshots,
+  monitoringRooms,
+} from '../../db/schema.js';
 import { config } from '../../shared/config/index.js';
 import type { OwnerReply } from './owner-client.js';
 import { retainEvents } from './retained-event.js';
@@ -77,7 +83,7 @@ export class IntakeStore {
       next = result.next_cursor;
     if (cursorSequence(next, instance) < cursorSequence(expected, instance))
       throw new Error('OWNER_CURSOR_REGRESSION');
-    const { records, snapshots } = retainEvents(result.events, reply.cache, instance);
+    const { records, snapshots, rooms } = retainEvents(result.events, reply.cache, instance);
     await this.database.transaction(async (tx) => {
       const [current] = await tx
         .select()
@@ -86,6 +92,32 @@ export class IntakeStore {
         .for('update');
       if (!current || current.ownerInstance !== instance || current.cursor !== expected)
         throw new Error('INTAKE_CHECKPOINT_CONFLICT');
+      if (rooms.length) {
+        // Share the room-policy lock with the import and settings paths.
+        await tx.execute(sql`select pg_advisory_xact_lock(271826,1)`);
+        await tx
+          .insert(monitoringRooms)
+          .values(
+            rooms.map(({ roomId, name }) => ({
+              roomId,
+              body: {
+                id: roomId,
+                name: name ?? `방 이름 확인 중 · ${roomId.slice(-6)}`,
+                title_verified: Number(Boolean(name)),
+              },
+              metrics: {},
+              excluded: false,
+              joined: true,
+            })),
+          )
+          .onConflictDoUpdate({
+            target: monitoringRooms.roomId,
+            set: { body: sql`${monitoringRooms.body} || excluded.body` },
+            setWhere: sql`excluded.body->>'title_verified' = '1' AND
+            (${monitoringRooms.body}->>'name' IS DISTINCT FROM excluded.body->>'name'
+             OR ${monitoringRooms.body}->>'title_verified' IS DISTINCT FROM '1')`,
+          });
+      }
       if (records.length) await tx.insert(intakeEvents).values(records).onConflictDoNothing();
       if (snapshots.length)
         await tx.insert(intakeWireSnapshots).values(snapshots).onConflictDoNothing();

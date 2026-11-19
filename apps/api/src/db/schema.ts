@@ -238,7 +238,7 @@ export const monitoringRooms = pgTable('monitoring_rooms', {
     .notNull(),
   excluded: boolean('excluded').notNull(),
   joined: boolean('joined').notNull(),
-  snapshotId: uuid('snapshot_id').notNull(),
+  snapshotId: uuid('snapshot_id'),
 });
 export const monitoringRoomPolicyHistory = pgTable('monitoring_room_policy_history', {
   pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
@@ -260,7 +260,7 @@ export const dialogueGuideRooms = pgTable('dialogue_guide_rooms', {
   roomId: varchar('room_id', { length: 19 }).notNull().unique(),
   config: jsonb('config').$type<Record<string, unknown>>().notNull(),
   messageCount: integer('message_count').notNull().default(0),
-  snapshotId: uuid('snapshot_id').notNull(),
+  snapshotId: uuid('snapshot_id'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
 });
 export const dialogueGuideMessages = pgTable(

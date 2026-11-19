@@ -246,11 +246,13 @@ Chrome checks with the legacy API unreachable, no hydration/JavaScript failures
 or overflow. Screenshots were visually inspected. Preview was stopped afterward.
 Actual verify:full passed51 unit and55 integration tests plus image/Compose.
 
-This is a migrated configuration screen and preserved baseline, not a claim that
-new inventory/live keyword-count refresh or analytics/guide worker cutover has
-finished. Those workers must consume the same PostgreSQL policy before routing
-production to the replacement. Existing production policy remains authoritative
-until the coordinated handoff.
+Live intake now adds open rooms observed in validated owner event batches and
+refreshes verified titles in the cursor transaction. Existing inclusion,
+exclusion, membership and metrics survive title updates. Owner cache absence
+does not identify a departure, and rooms that have not yet produced events
+continue to use the archived inventory. Live metrics and operational worker
+handoff still require verification. Existing production policy remains
+authoritative until the coordinated handoff.
 
 ## Guide configuration and saved-message slice
 

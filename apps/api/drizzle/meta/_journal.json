@@ -155,6 +155,13 @@
       "when": 1794572022950,
       "tag": "0021_known_norrin_radd",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1795083732702,
+      "tag": "0022_useful_ghost_rider",
+      "breakpoints": true
     }
   ]
 }
