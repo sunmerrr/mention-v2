@@ -61,8 +61,16 @@ export class MonitoringController {
   @Get('conversations') conversations(@Query() query: MonitoringListDto) {
     return this.monitoring.conversations(query);
   }
-  @Get('conversations/:id') detail(@Param('id') id: string) {
-    return this.monitoring.detail(id);
+  @Get('conversations/:id') detail(
+    @Param('id') id: string,
+    @Query('before') before: unknown,
+    @Query('after') after: unknown,
+  ) {
+    const limit = z.enum(['15', '30']).default('15');
+    return this.monitoring.detail(id, {
+      before: Number(limit.parse(before)),
+      after: Number(limit.parse(after)),
+    });
   }
   @Get('classifications') classifications(@Query() query: MonitoringListDto) {
     return this.monitoring.classifications(query);

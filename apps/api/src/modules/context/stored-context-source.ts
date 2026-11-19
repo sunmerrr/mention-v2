@@ -1,3 +1,4 @@
+import { keywordMatches } from '@app/shared/monitoring/domain/keyword-rules';
 import { and, asc, desc, eq, gt, gte, lt, lte, sql } from 'drizzle-orm';
 import { kakaoMessages } from '../../db/schema.js';
 import type { EvidenceRepository } from '../evidence/evidence.repository.js';
@@ -14,6 +15,7 @@ export class StoredContextSource implements ContextSource {
       direction: 'before' | 'after';
       from: number;
       until: number;
+      exclude?: readonly string[];
       relations?: ReadonlyMap<string, NonNullable<ContextMessage['relation']>>;
     },
   ) {
@@ -64,7 +66,10 @@ export class StoredContextSource implements ContextSource {
         own: body.own,
         sortAt: body.sortAt,
         replyTo: body.replyTo,
-        relation: this.input.relations?.get(body.logId),
+        relation:
+          keywordMatches(body.text, this.input.exclude ?? [], true).length > 0
+            ? 'ignored_noise'
+            : this.input.relations?.get(body.logId),
       }),
     );
     return {

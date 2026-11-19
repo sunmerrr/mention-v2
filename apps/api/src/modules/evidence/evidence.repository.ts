@@ -195,14 +195,26 @@ export class EvidenceRepository {
       return { id, unchanged: false };
     });
   }
-  async detail(id: string): Promise<Detail> {
+  async detail(id: string, window = { before: 15, after: 15 }): Promise<Detail> {
     id = await this.canonicalId(id);
     const [row] = await this.db
       .select({ detail: conversations.detail })
       .from(conversations)
       .where(and(eq(conversations.sourceId, id), eq(conversations.active, true)));
     if (!row) throw new AppError('NOT_FOUND', '저장된 대화를 찾을 수 없습니다.', 404);
-    return row.detail;
+    const detail = row.detail;
+    if (!detail.contextPaging) return detail;
+    const before = Math.min(detail.before, window.before);
+    const after = Math.min(detail.after, window.after);
+    return {
+      ...detail,
+      before,
+      after,
+      messages: detail.messages.slice(
+        detail.before - before,
+        detail.messages.length - (detail.after - after),
+      ),
+    };
   }
   async options(id: string): Promise<Classification[]> {
     id = await this.canonicalId(id);

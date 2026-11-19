@@ -64,6 +64,12 @@ export const conversationEvidenceSchema = z.object({
   promotionFollowupNeeded: z.boolean().optional(),
   before: z.number().int().nonnegative(),
   after: z.number().int().nonnegative(),
+  contextPaging: z
+    .object({
+      beforeTotal: z.number().int().nonnegative(),
+      afterTotal: z.number().int().nonnegative(),
+    })
+    .optional(),
   source: z.enum(['legacy', 'synthetic']),
   episodes: z.array(z.object({ id: z.string(), title: z.string() })).optional(),
 });

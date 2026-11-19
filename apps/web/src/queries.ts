@@ -70,11 +70,14 @@ export const conversationsQuery = (scope: Scope, label = '', status = '') => ({
   initialPageParam: undefined as string | undefined,
   getNextPageParam: (last: Page<Conversation>) => last.nextCursor || undefined,
 });
-export const detailQuery = (id: string) =>
-  queryOptions({
-    queryKey: ['conversation', id],
-    queryFn: () => api<Detail>(`/api/conversations/${encodeURIComponent(id)}`),
+export const detailQuery = (id: string, window?: { before: number; after: number }) => {
+  const search = window ? `?before=${window.before}&after=${window.after}` : '';
+  return queryOptions({
+    queryKey: window ? ['conversation', id, window] : ['conversation', id],
+    queryFn: () => api<Detail>(`/api/conversations/${encodeURIComponent(id)}${search}`),
+    placeholderData: (previous, query) => (query?.queryKey[1] === id ? previous : undefined),
   });
+};
 export const classificationQuery = (scope: Scope, label = '') => ({
   queryKey: ['classifications', scope, label],
   queryFn: ({ pageParam }: { pageParam: string | undefined }) =>

@@ -279,3 +279,39 @@ Four real Chrome desktop/mobile list/settings checks passed with the legacy API
 unreachable; mobile settings were visually inspected. The preview was stopped.
 Production owner, responder, worker schedules, tokens and send receipts were
 untouched. AWS SSH target remains unavailable and no operational cutover occurred.
+
+## 2026-11-18 Kakao analysis migration rehearsal
+
+- The NestJS worker now turns normalized Kakao messages into canonical evidence
+  when explicitly enabled with `KAKAO_CONTEXT_ENABLED=1` and
+  `MONITORING_EVIDENCE_BACKEND=postgres`. It uses the PostgreSQL room and keyword
+  policy, waits for a bounded follow-up window, and commits the evidence and
+  checkpoint together. Imported anchors and existing reviews survive replays.
+- New native evidence has up to 30 useful messages per side. Detail initially
+  returns at most 15 per side. Expansion reads the already saved evidence and
+  never requests native history. Legacy records still use existing behavior.
+- A read-only copy of the active SQLite database was imported into isolated
+  PostgreSQL 16. The rehearsal verified 107,769 records across 41 archived
+  tables, 28 room policies, 2,569 legacy episode links, 20,148 retained native
+  messages, and a completed projection of all 1,255 conversations. All 1,607
+  imported classifications matched the export by ID, label, note and origin.
+- The live worker remains on Python/SQLite. Live room inventory and Kakao
+  image handling, final delta and cursor reconciliation, AWS reverse SSH
+  verification and public routing are pending.
+
+### Grouping and promotion attribution
+
+- The publisher uses the legacy same-room overlap and participant thresholds
+  within the Korean day. It commits each group with aliases for its individual
+  anchors. A group becomes eligible to publish after the 30-minute grouping
+  window and the additional 15-minute follow-up window. Published groups keep
+  their evidence and decisions if messages arrive after publication.
+- Excluded promotions can contribute only a metadata reference to published
+  evidence. Native replies and inferred topic candidates are distinguished,
+  including target ambiguity. Repeated copies of the same ad do not create new
+  subjects for inference.
+- Given the same already-selected messages, the Node grouping rule reproduced
+  all 1,258 legacy groups for 2,572 episode entries across 182 samples from an
+  operating snapshot. Promotion attribution matched the Python pipeline on
+  all ten synthetic scenarios. These checks cover rules and do not constitute
+  verification of a live cutover or exact parity of per-episode context selection.

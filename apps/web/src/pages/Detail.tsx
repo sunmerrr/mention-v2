@@ -1,6 +1,6 @@
 import type { Classification } from '@app/shared/monitoring/contracts/api';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, MessagesSquare } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, MessagesSquare } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ClassificationControl } from '../components/ClassificationControl';
@@ -30,9 +30,12 @@ import {
 import { Highlight } from './manage/Records';
 export default function Detail() {
   const menu = useMenuOrigin();
-  const { id = '' } = useParams(),
-    navigate = useNavigate(),
-    query = useQuery(detailQuery(id));
+  const { id = '' } = useParams();
+  const navigate = useNavigate();
+  const [visible, setVisible] = useState<{ id: string; before: number; after: number }>();
+  const contextWindow =
+    visible?.id === id ? { before: visible.before, after: visible.after } : undefined;
+  const query = useQuery(detailQuery(id, contextWindow));
   const classifications = useQuery({
     queryKey: ['classifications', 'conversation', id],
     queryFn: () =>
@@ -43,6 +46,33 @@ export default function Detail() {
   if (query.isPending) return <Pending />;
   if (query.isError) return <Failure error={query.error} retry={query.refetch} />;
   const { conversation: c, messages, limited, before, after } = query.data;
+  const { contextPaging } = query.data;
+  const moreContext = (direction: 'before' | 'after') => {
+    if (!contextPaging) return <ContextExpandButton controller={expansion} direction={direction} />;
+    const prior = direction === 'before';
+    if (prior ? contextPaging.beforeTotal <= before : contextPaging.afterTotal <= after)
+      return null;
+    return (
+      <Box className="context-expand">
+        <Button
+          intent="quiet"
+          disabled={query.isPlaceholderData}
+          loading={query.isPlaceholderData && contextWindow?.[direction] === 30}
+          onClick={() =>
+            setVisible({
+              id,
+              before: contextWindow?.before ?? 15,
+              after: contextWindow?.after ?? 15,
+              [direction]: 30,
+            })
+          }
+        >
+          {prior ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          {prior ? '이전' : '이후'} 대화 더 불러오기
+        </Button>
+      </Box>
+    );
+  };
   return (
     <>
       <PageHeader
@@ -86,7 +116,7 @@ export default function Detail() {
                   ? ' · 일부 맥락 미확보'
                   : ''}
             </Text>
-            <ContextExpandButton controller={expansion} direction="before" />
+            {moreContext('before')}
             {messages.map((m, index) => {
               const boundary = index === 0 || messages[index - 1]?.phase !== m.phase;
               const content = (
@@ -168,7 +198,7 @@ export default function Detail() {
                 </Box>
               );
             })}
-            <ContextExpandButton controller={expansion} direction="after" />
+            {moreContext('after')}
           </Card>
         }
         aside={

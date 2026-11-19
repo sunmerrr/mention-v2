@@ -169,6 +169,11 @@ export function exclusion(message: ContextMessage): Exclusion | null {
     !substantive &&
     (promotion.filter((word) => plain.includes(word)).length >= 2 ||
       (plain.includes('포스터') && /GTD|토너먼트|새틀/iu.test(plain)) ||
+      (text.includes('open.kakao.com/o/') &&
+        /^[\p{So}\p{Sk}]/u.test(plain) &&
+        ([...plain].length < 160 ||
+          (text.match(urls) ?? []).filter((link) => link.includes('open.kakao.com/o/')).length >=
+            3)) ||
       /^많은\s*참여\s*(?:부탁드립니다|바랍니다|부탁드려요)[\s\W]*$/u.test(plain))
   )
     return 'promotion';

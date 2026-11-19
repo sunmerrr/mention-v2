@@ -51,6 +51,7 @@ export interface Detail {
   promotionFollowupNeeded?: boolean;
   before: number;
   after: number;
+  contextPaging?: { beforeTotal: number; afterTotal: number };
   source: 'legacy' | 'synthetic';
   episodes?: { id: string; title: string }[];
 }

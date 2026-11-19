@@ -90,9 +90,10 @@ export class MonitoringService {
   asset(endpoint: string) {
     return this.repository.asset(endpoint);
   }
-  detail(id: string) {
+  detail(id: string, window?: { before: number; after: number }) {
     const valid = monitoringIdSchema.parse(id);
-    if (config.MONITORING_EVIDENCE_BACKEND === 'postgres') return this.evidence.detail(valid);
+    if (config.MONITORING_EVIDENCE_BACKEND === 'postgres')
+      return this.evidence.detail(valid, window);
     return this.repository.read(`/api/conversations/${encodeURIComponent(valid)}`);
   }
 }

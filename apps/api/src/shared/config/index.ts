@@ -28,6 +28,10 @@ const envSchema = z.object({
     .enum(['0', '1'])
     .default('0')
     .transform((value) => value === '1'),
+  KAKAO_CONTEXT_ENABLED: z
+    .enum(['0', '1'])
+    .default('0')
+    .transform((value) => value === '1'),
   KAKAO_START_CURSOR: z.string().max(300).optional(),
   MENTION_WRITES_ENABLED: z
     .enum(['0', '1'])

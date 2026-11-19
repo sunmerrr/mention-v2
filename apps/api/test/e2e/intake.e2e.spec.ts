@@ -1,16 +1,26 @@
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { eq } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDatabase } from '../../src/db/client.js';
-import { intakeEvents } from '../../src/db/schema.js';
+import {
+  intakeEvents,
+  kakaoMessages,
+  monitoringRooms,
+  monitoringSettings,
+  nativeWorkerOffsets,
+} from '../../src/db/schema.js';
 import { IntakeStore } from '../../src/modules/connection/intake-store.js';
 import type { OwnerReply } from '../../src/modules/connection/owner-client.js';
 import { importNativeMessages } from '../../src/modules/context/import-native-messages.js';
+import { NativeContextPublisher } from '../../src/modules/context/native-context-publisher.service.js';
 import { NativeNormalizer } from '../../src/modules/context/native-normalizer.service.js';
 import { StoredContextSource } from '../../src/modules/context/stored-context-source.js';
 import { collectUsefulContext } from '../../src/modules/context/useful-context.js';
 import { EvidenceRepository } from '../../src/modules/evidence/evidence.repository.js';
+import { BookmarksRepository } from '../../src/modules/monitoring/bookmarks.repository.js';
 import { config } from '../../src/shared/config/index.js';
 
 describe('native intake on disposable PostgreSQL', () => {
@@ -385,6 +395,224 @@ describe('native intake on disposable PostgreSQL', () => {
       expect(
         (await evidence.db.execute('select count(*)::int n from intake_events')).rows[0]?.n,
       ).toBe(3);
+    } finally {
+      await evidence.close();
+    }
+  });
+  it('publishes a retained, classified room into canonical evidence with an atomic checkpoint', async () => {
+    const evidence = new EvidenceRepository();
+    try {
+      const roomId = '65421';
+      const at = Date.parse('2026-11-17T04:00:00Z');
+      const logId = '3970073012646000888';
+      const [raw] = await evidence.db
+        .insert(intakeEvents)
+        .values({
+          source: 'kakao',
+          ownerInstance: 'synthetic',
+          identity: 'c'.repeat(64),
+          roomId,
+          logId,
+          payload: {},
+        })
+        .returning();
+      if (!raw) throw Error('FIXTURE_RAW_EVENT_REQUIRED');
+      await evidence.db.insert(monitoringRooms).values({
+        roomId,
+        body: { name: 'Synthetic room' },
+        metrics: {},
+        excluded: false,
+        joined: true,
+        snapshotId: randomUUID(),
+      });
+      await evidence.db.insert(monitoringSettings).values({
+        key: 'keywords',
+        value: {
+          keywords: ['APL'],
+          keyword_groups: [{ id: 'apl', name: 'APL', kind: 'service', keywords: ['APL'] }],
+          exclude_keywords: ['테스트 제외 [숫자]회', '합성 APL 공지:'],
+        },
+      });
+      const base = {
+        roomId,
+        authorId: '77',
+        authorName: '참가자',
+        type: 1,
+        own: false,
+        observedAt: new Date(at).toISOString(),
+        sortAt: at,
+        sentAt: new Date(at).toISOString(),
+        timeSource: 'native' as const,
+        prevId: null,
+        replyTo: null,
+        wireStatus: 'verified' as const,
+        source: 'live' as const,
+      };
+      const bodies = [
+        { ...base, logId, text: 'APL 티켓은 어디서 쓰나요?' },
+        {
+          ...base,
+          logId: '3970073012646000887',
+          text: '대회 정보를 찾아봤어요',
+          sortAt: at - 1000,
+        },
+        { ...base, logId: '3970073012646000889', text: 'ㅋㅋ' },
+        { ...base, logId: '3970073012646000890', text: '테스트 제외 25회 홍보' },
+        { ...base, logId: '3970073012646000891', text: '안내 페이지에 사용처가 나와 있어요' },
+      ];
+      const preceding = Array.from({ length: 15 }, (_, i) => ({
+        ...base,
+        logId: String(BigInt(logId) - BigInt(i + 2)),
+        text: `대회 참가 일정 ${i + 1}번을 확인했어요`,
+        sortAt: at - (i + 2) * 1000,
+      }));
+      await evidence.db.insert(kakaoMessages).values(
+        [...bodies, ...preceding].map((body, i) => ({
+          roomId,
+          logId: body.logId,
+          orderId: body.logId,
+          body,
+          intakePk: i === 0 ? raw.pk : null,
+        })),
+      );
+      const worker = new NativeContextPublisher(evidence);
+      expect(await worker.processBatch(at + 2_700_000)).toEqual({ published: 0, lastPk: 0 });
+      await evidence.db
+        .update(nativeWorkerOffsets)
+        .set({ lastPk: raw.pk })
+        .where(eq(nativeWorkerOffsets.consumer, 'native-normalize'));
+      expect(await worker.processBatch(at + 2_700_000)).toEqual({ published: 1, lastPk: raw.pk });
+      expect(await worker.processBatch(at + 2_700_000)).toEqual({ published: 0, lastPk: raw.pk });
+      const entries = await evidence.list({
+        day: '2026-11-17',
+        target: 'APL',
+        label: '',
+        limit: 10,
+      });
+      expect(entries.total).toBe(1);
+      const detail = await evidence.detail(entries.items[0]?.conversationId ?? '');
+      expect(detail.contextPaging).toEqual({ beforeTotal: 16, afterTotal: 1 });
+      expect(detail.before).toBe(15);
+      expect(detail.messages.map((m) => m.id)).toEqual([
+        ...preceding
+          .slice(0, 14)
+          .reverse()
+          .map((body) => body.logId),
+        bodies[1]?.logId,
+        logId,
+        bodies[4]?.logId,
+      ]);
+      const expanded = await evidence.detail(detail.conversation.id, { before: 30, after: 15 });
+      expect(expanded.before).toBe(16);
+      expect(expanded.messages.map((m) => m.id)).toEqual([
+        preceding[14]?.logId,
+        ...detail.messages.map((m) => m.id),
+      ]);
+      expect(detail.limited).toBe(true);
+      expect((await evidence.options(detail.conversation.id))[0]?.label).toBe('unreviewed');
+    } finally {
+      await evidence.close();
+    }
+  });
+  it('publishes a complete group across batch boundaries and exposes only the ad reference', async () => {
+    const evidence = new EvidenceRepository();
+    try {
+      const roomId = '65422';
+      const at = Date.parse('2026-11-17T05:00:00Z');
+      const ad = '합성 APL 공지: 티켓 신청 안내 많은관심부탁드립니다';
+      const fixtures = [
+        { logId: '700', text: ad, authorId: '56' },
+        { logId: '701', text: '티켓이 너무 비싸네요', replyTo: '700', authorId: '57' },
+        { logId: '702', text: '그 가격에는 참가하기 어렵겠어요', authorId: '58' },
+        { logId: '703', text: 'APL 평일 티켓 가격도 같은가요?', authorId: '58' },
+        { logId: '704', text: '주말 기준이라면 후기 보고 결정할게요', authorId: '57' },
+      ];
+      await evidence.db.insert(monitoringRooms).values({
+        roomId,
+        body: { name: 'Synthetic group' },
+        metrics: {},
+        excluded: false,
+        joined: true,
+        snapshotId: randomUUID(),
+      });
+      const raw = await evidence.db
+        .insert(intakeEvents)
+        .values(
+          fixtures.map(({ logId }) => ({
+            source: 'kakao',
+            ownerInstance: 'synthetic',
+            identity: logId.padStart(64, '0'),
+            roomId,
+            logId,
+            payload: {},
+          })),
+        )
+        .returning();
+      await evidence.db.insert(kakaoMessages).values(
+        fixtures.map((fixture, index) => {
+          const sortAt = at + index * 60_000;
+          return {
+            roomId,
+            logId: fixture.logId,
+            orderId: fixture.logId,
+            intakePk: raw[index]?.pk,
+            body: {
+              ...fixture,
+              roomId,
+              type: fixture.replyTo ? 26 : 1,
+              own: false,
+              authorName: '합성 참가자',
+              replyTo: fixture.replyTo ?? null,
+              sortAt,
+              sentAt: new Date(sortAt).toISOString(),
+              observedAt: new Date(sortAt + 1000).toISOString(),
+              timeSource: 'native',
+              prevId: null,
+              wireStatus: 'verified',
+              source: 'live',
+            },
+          };
+        }),
+      );
+      const lastPk = raw.at(-1)?.pk;
+      if (!lastPk) throw Error('GROUP_FIXTURE_RAW_EVENTS_MISSING');
+      await evidence.db
+        .update(nativeWorkerOffsets)
+        .set({ lastPk })
+        .where(eq(nativeWorkerOffsets.consumer, 'native-normalize'));
+      const worker = new NativeContextPublisher(evidence);
+      expect((await worker.processBatch(at + 2_760_000)).published).toBe(1);
+      expect((await worker.processBatch(at + 3_000_000)).published).toBe(0);
+      const entries = await evidence.list({
+        day: '2026-11-17',
+        target: 'APL',
+        label: '',
+        limit: 10,
+      });
+      const entry = entries.items.find((item) => item.room === 'Synthetic group');
+      if (!entry) throw Error('GROUP_FIXTURE_NOT_PUBLISHED');
+      expect(entries.items.filter((item) => item.room === entry.room)).toHaveLength(1);
+      const detail = await evidence.detail(entry.conversationId);
+      expect(detail.messages.map((row) => row.id)).toEqual(['701', '702', '703', '704']);
+      expect(detail.conversation.keywords).toEqual({ APL: 1 });
+      expect(detail.messages[0]?.promotionReference).toMatchObject({
+        logId: '700',
+        method: 'explicit_reply',
+        targets: ['APL'],
+      });
+      expect(detail.episodes).toHaveLength(2);
+      expect(await evidence.canonicalId(detail.episodes?.[1]?.id ?? '')).toBe(
+        detail.conversation.id,
+      );
+      expect(JSON.stringify(detail)).not.toContain(ad);
+      const bookmarks = new BookmarksRepository(evidence);
+      const source_id = detail.episodes?.[1]?.id;
+      await bookmarks.save({ kind: 'conversation', source_id });
+      await bookmarks.save({ kind: 'episode', source_id });
+      expect(
+        (await bookmarks.list({ kind: 'conversation', source_id: detail.conversation.id })).total,
+      ).toBe(1);
+      expect((await bookmarks.list({ kind: 'episode', source_id })).total).toBe(1);
     } finally {
       await evidence.close();
     }

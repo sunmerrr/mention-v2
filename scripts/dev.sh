@@ -32,6 +32,7 @@ port_for() {
       ;;
     web) echo 5173 ;;
     worker) echo 4201 ;;
+    ingest) echo 4202 ;;
     *)   echo "" ;;
   esac
 }
@@ -51,6 +52,7 @@ start_cmd_for() {
       ;;
     web) echo "node scripts/ssr-preview.mjs" ;;
     worker) echo "APP_ROLE=worker PORT=4201 pnpm --filter @app/api run start" ;;
+    ingest) echo "APP_ROLE=ingest PORT=4202 pnpm --filter @app/api run start" ;;
     *)   echo "" ;;
   esac
 }
@@ -132,7 +134,7 @@ expand_targets() {
 
 valid_target() {
   local t="$1" x
-  [ "$t" = "all" ] && return 0
+  [[ "$t" = "all" || "$t" = "ingest" ]] && return 0
   for x in $TARGETS_ALL; do [ "$x" = "$t" ] && return 0; done
   return 1
 }
@@ -255,7 +257,7 @@ for a in "$@"; do
   case "$a" in
     --debug) DEBUG=1 ;;
     -f|--follow) FOLLOW=1 ;;
-    api|web|worker|admin|all) TARGET="$a" ;;
+    api|web|worker|ingest|admin|all) TARGET="$a" ;;
     *) echo "알 수 없는 인자: $a" >&2; exit 2 ;;
   esac
 done
