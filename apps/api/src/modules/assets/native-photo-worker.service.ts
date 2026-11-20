@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, open, realpath, rm } from 'node:fs/promises';
 import { basename, dirname, join } from 'node:path';
 import { Injectable, type OnModuleDestroy, Optional } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
-import { and, asc, eq, inArray, lte } from 'drizzle-orm';
+import { and, asc, eq, inArray, lte, sql } from 'drizzle-orm';
 import sharp from 'sharp';
 import { monitoringRooms, monitoringSettings, nativePhotoJobs } from '../../db/schema.js';
 import { config } from '../../shared/config/index.js';
@@ -98,7 +98,7 @@ export class NativePhotoWorker implements OnModuleDestroy {
         .where(
           and(
             inArray(nativePhotoJobs.state, ['pending', 'working']),
-            lte(nativePhotoJobs.after, new Date()),
+            lte(nativePhotoJobs.after, sql`clock_timestamp()`),
           ),
         )
         .orderBy(asc(nativePhotoJobs.after), asc(nativePhotoJobs.pk))
@@ -110,7 +110,7 @@ export class NativePhotoWorker implements OnModuleDestroy {
         .set({
           state: 'working',
           attempts: candidate.attempts + 1,
-          after: new Date(Date.now() + LEASE_MS),
+          after: sql`clock_timestamp() + (${LEASE_MS} * interval '1 millisecond')`,
         })
         .where(eq(nativePhotoJobs.pk, candidate.pk))
         .returning();
@@ -194,7 +194,7 @@ export class NativePhotoWorker implements OnModuleDestroy {
         .update(nativePhotoJobs)
         .set({
           state: job.attempts < MAX_ATTEMPTS ? 'pending' : 'failed',
-          after: new Date(Date.now() + 15_000 * 2 ** job.attempts),
+          after: sql`clock_timestamp() + (${15 * 2 ** job.attempts} * interval '1 second')`,
         })
         .where(claimed);
     } finally {
