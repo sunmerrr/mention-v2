@@ -40,7 +40,7 @@ export async function render(
   const requestUrl = new URL(url, 'http://localhost'),
     scope = scopeFrom(requestUrl.search),
     label = requestUrl.searchParams.get('label') || '',
-    client = createQueryClient();
+    client = createQueryClient(true);
   await preloadRoute(requestUrl.pathname);
   const conversationLabel = label === 'unreviewed' ? '' : label;
   const conversationStatus =
