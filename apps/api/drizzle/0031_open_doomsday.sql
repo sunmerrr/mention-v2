@@ -1,0 +1,3 @@
+CREATE INDEX "idx_migration_native_message" ON "migration_native_records" USING btree ("snapshot_pk","table_name",("body"->>'room_id'),("body"->>'log_id'));--> statement-breakpoint
+CREATE INDEX "idx_migration_native_episode_link" ON "migration_native_records" USING btree ("snapshot_pk","table_name",("body"->>'episode_id'));--> statement-breakpoint
+CREATE INDEX "idx_migration_native_request" ON "migration_native_records" USING btree ("snapshot_pk","table_name",("body"->>'request_id'));

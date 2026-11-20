@@ -2,12 +2,17 @@ import type { FastifyRequest } from 'fastify';
 import { config } from '../../shared/config/index.js';
 import { AppError } from '../../shared/errors/app-error.js';
 
-export function requestOriginScope(request: FastifyRequest) {
-  const local =
+export function isLocalRequest(request: FastifyRequest) {
+  return (
     ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(request.ip) &&
     !['cf-ray', 'cf-connecting-ip', 'x-forwarded-for', 'forwarded', 'x-monitor-public'].some(
       (key) => request.headers[key] !== undefined,
-    );
+    )
+  );
+}
+
+export function requestOriginScope(request: FastifyRequest) {
+  const local = isLocalRequest(request);
   const allowed = new Set([
     `http://127.0.0.1:${config.PORT}`,
     `http://localhost:${config.PORT}`,

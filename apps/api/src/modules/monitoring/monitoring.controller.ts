@@ -10,9 +10,9 @@ import { AppError } from '../../shared/errors/app-error.js';
 import { CorrectionDto } from './dto/correction.dto.js';
 import { MonitoringListDto, MonitoringScopeDto } from './dto/monitoring-query.dto.js';
 import { MonitoringService } from './monitoring.service.js';
-import { mutationScope, requestOriginScope } from './mutation-scope.js';
+import { isLocalRequest, mutationScope, requestOriginScope } from './mutation-scope.js';
 
-@Controller('api/v1/monitoring')
+@Controller(['api/v1/monitoring', 'api'])
 export class MonitoringController {
   constructor(private readonly monitoring: MonitoringService) {}
   @Get('classifications/request-state/:requestId') requestState(
@@ -49,8 +49,9 @@ export class MonitoringController {
   @Get('workspace/:feature') workspace(
     @Param('feature') feature: string,
     @Query() query: Record<string, string>,
+    @Req() request: FastifyRequest,
   ) {
-    return this.monitoring.workspace(feature, query);
+    return this.monitoring.workspace(feature, query, isLocalRequest(request));
   }
   @Get('conversations/:id/classifications') options(@Param('id') id: string) {
     return this.monitoring.options(id);

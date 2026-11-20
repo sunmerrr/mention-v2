@@ -372,3 +372,38 @@ bindings are archived. The Node worker does not consume the live observation
 broker yet. Retiring the legacy local service before these routes and the broker
 are migrated would interrupt those functions. The last rehearsal was isolated.
 The owner, legacy analytics and existing public route continued serving.
+
+### PostgreSQL workspace implementation
+
+The PostgreSQL API now owns the message record and its cursor pagination, JSON
+and CSV exports, context CSV, trends, briefing revisions and PNG, alias
+decisions, operations status, and reaction observation reads. The message
+timeline is produced by the worker from an explicitly selected archive and
+normalized native intake. A keyword policy change publishes a consistent
+timeline while retaining stable message cursors. The web server uses completed
+projections and stored context. The API does not ask the Kakao connection owner
+for history.
+
+Confirmed observation registration has a separate, optional private socket
+client. The worker validates the established receipt, preserves a matching
+archived observation ID, commits the anchor and retained evidence, then
+acknowledges. Enable it only after the old analytics consumer releases the
+handoff. Activity from excluded rooms stays outside shared reaction views.
+PostgreSQL backup operations use the worker, a private volume, and a separate
+temporary restore database.
+
+The 12:33 KST export contains 123,689 records across 42 tables. Its PostgreSQL
+rehearsal produced 1,495 conversations and matched 1,876 classification
+records. The live owner's read-only cursor probe confirmed continuity from
+that archive position. These results cover the rehearsal. The live dashboard
+and analysis consumer still used the existing route when this was recorded.
+The remaining operational gates are final media and cursor delta reconciliation,
+unattended local process routing with rollback, and verification of the remaining
+legacy mutation paths, including delivery actions and inherited review history.
+
+The populated browser test runs with the legacy HTTP source unreachable. It
+checks the message list, trends, briefing, operations, alias candidates,
+reaction observations and comparisons. It also verifies the message CSV,
+context CSV, JSON and briefing PNG routes. A separate Compose rehearsal
+queued a backup through the API, used PostgreSQL 16 tools in the worker,
+successfully restored the dump, and removed the temporary verification database.

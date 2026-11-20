@@ -45,11 +45,6 @@ export async function render(
   const conversationLabel = label === 'unreviewed' ? '' : label;
   const conversationStatus =
     requestUrl.searchParams.get('status') || (label === 'unreviewed' ? 'pending' : '');
-  const listInput = listSchema.parse({
-    ...scope,
-    label: requestUrl.pathname === '/conversations' ? conversationLabel : label,
-    status: requestUrl.pathname === '/conversations' ? conversationStatus : '',
-  });
   const detail = /^\/conversations\/([^/]+)$/.exec(requestUrl.pathname);
   const feature = routeFeature(requestUrl.pathname);
   const pokergosuId = /^\/(?:pokergosu|posts)\/([1-9][0-9]{0,18})$/.exec(requestUrl.pathname)?.[1];
@@ -88,6 +83,11 @@ export async function render(
       queryFn: () => queries.detail(detail[1] ?? ''),
     });
   else if (['/', '/conversations', '/reviews'].includes(requestUrl.pathname)) {
+    const listInput = listSchema.parse({
+      ...scope,
+      label: requestUrl.pathname === '/conversations' ? conversationLabel : label,
+      status: requestUrl.pathname === '/conversations' ? conversationStatus : '',
+    });
     await Promise.all([
       client.fetchQuery({
         ...overviewQuery(scope),

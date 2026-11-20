@@ -193,6 +193,7 @@ export async function importNativeState(filename: string, target: Pick<EvidenceR
       .update(nativeStateSnapshots)
       .set({ complete: true, completedAt: new Date() })
       .where(eq(nativeStateSnapshots.pk, pk));
+    await target.db.execute(sql`analyze ${nativeStateRecords}`);
     return { id: header.id, records: total, tables: Object.keys(header.counts).length };
   } finally {
     lines.close();

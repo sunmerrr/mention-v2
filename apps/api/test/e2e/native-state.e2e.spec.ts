@@ -266,3 +266,202 @@ it('keeps guide switches and references separate from analysis exclusions', asyn
   ).rejects.toThrow();
   expect((await guide.list({ room: cid })).config.enabled).toBe(false);
 });
+
+it('publishes the archived message feed independently with stable paging and safe CSV', async () => {
+  const { MessageTimeline } = await import('../../src/modules/monitoring/message-timeline.js');
+  const h = header();
+  h.counts.campaign_sends = 0;
+  h.counts.messages = 102;
+  const observed = '2026-11-13T10:00:00.000+09:00';
+  const records = Array.from({ length: 102 }, (_, ordinal) => ({
+    table: 'messages',
+    ordinal,
+    body: {
+      room_id: '1',
+      log_id: String(ordinal + 1),
+      text: ordinal === 101 ? '=APL 123' : 'APL 질문',
+      observed_at: observed,
+      sort_at: Date.parse(observed),
+      day: '2026-11-13',
+      type: 1,
+      own: 0,
+      source: 'live',
+    },
+  }));
+  await importNativeState(await file(h, records), client);
+  const { monitoringSettings } = await import('../../src/db/schema.js');
+  await client.db
+    .insert(monitoringSettings)
+    .values({
+      key: 'keywords',
+      value: { keywords: ['APL'], keyword_groups: [], exclude_keywords: [] },
+    })
+    .onConflictDoUpdate({
+      target: monitoringSettings.key,
+      set: { value: { keywords: ['APL'], keyword_groups: [], exclude_keywords: [] } },
+    });
+  const timeline = new MessageTimeline(client);
+  await timeline.refresh(h.id);
+  const params = { day: '2026-11-13' };
+  const first = await timeline.list(params);
+  expect(first.messages).toHaveLength(100);
+  expect(first.keyword_counts).toEqual({ APL: 102 });
+  expect(first.messages[0]?.text).toBe('=APL 123');
+  expect(first.next_before).toBeTruthy();
+  const second = await timeline.list({ ...params, before: first.next_before ?? '' });
+  expect(second.messages).toHaveLength(2);
+  expect(second.next_before).toBeNull();
+  expect(second.messages.map(({ log_id }) => log_id)).toEqual(['2', '1']);
+  const csv = await timeline.asset('/download/2026-11-13.csv');
+  expect(csv.bytes.toString()).toContain("'=APL 123");
+  await client.db
+    .update(monitoringSettings)
+    .set({
+      value: { keywords: ['APL'], keyword_groups: [], exclude_keywords: ['123'] },
+    })
+    .where(eq(monitoringSettings.key, 'keywords'));
+  await expect(timeline.list(params)).rejects.toMatchObject({ code: 'TIMELINE_NOT_READY' });
+  await timeline.refresh(h.id);
+  const after = await timeline.list(params);
+  expect(after.keyword_counts).toEqual({ APL: 101 });
+  expect(after.messages[0]?.cursor).toBe(first.messages[1]?.cursor);
+});
+
+it('reads and saves PostgreSQL briefings with an idempotent revision and downloadable PNG', async () => {
+  const { BriefingRepository } = await import(
+    '../../src/modules/monitoring/briefing.repository.js'
+  );
+  const { TimelineTrends } = await import('../../src/modules/monitoring/timeline-trends.js');
+  const { generations, state } = await import('../../src/db/schema.js');
+  const [generation] = await client.db
+    .insert(generations)
+    .values({
+      metadata: {
+        targets: [],
+        capturedAt: new Date().toISOString(),
+        source: 'synthetic',
+        collectionState: 'idle',
+        gaps: 0,
+      },
+      digest: 'synthetic',
+      sourceCapturedAt: new Date(),
+    })
+    .returning();
+  if (!generation) throw Error('TEST_GENERATION_REQUIRED');
+  await client.db.insert(state).values({ key: 'active', generationPk: generation.pk });
+  const briefing = new BriefingRepository(client, new TimelineTrends(client));
+  const day = '2026-11-13';
+  expect(await briefing.read(day)).toMatchObject({ saved: false, report: { day } });
+  expect(await briefing.refresh(day)).toMatchObject({ saved: true, stale: false, revision: 1 });
+  expect(await briefing.refresh(day)).toMatchObject({ saved: true, revision: 1 });
+  const { bytes } = await briefing.image(day);
+  expect(bytes.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+});
+
+it('registers exact confirmed observations once, keeps their evidence and hides excluded rooms from shared reads', async () => {
+  const { CampaignRegistry } = await import('../../src/modules/monitoring/campaign-registry.js');
+  const { CampaignView } = await import('../../src/modules/monitoring/campaign-view.js');
+  const { campaignFingerprint } = await import(
+    '../../src/modules/monitoring/observation-protocol.js'
+  );
+  const { monitoringRooms, monitoringCampaignLinks } = await import('../../src/db/schema.js');
+  await client.db.insert(monitoringRooms).values({
+    roomId: '9001',
+    joined: true,
+    excluded: false,
+    metrics: {},
+    body: { name: '합성 관찰 방' },
+  });
+  const registry = new CampaignRegistry(client);
+  const view = new CampaignView(client);
+  const request = {
+    room_id: '9001',
+    request_id: 'mention_v2_synthetic_receipt',
+    title: '질문 🃏',
+    seed: 'APL 티켓은 어디서 쓰나요?',
+    duration: 15 as const,
+  };
+  const at = Date.now();
+  const item = {
+    request,
+    fingerprint: campaignFingerprint(request),
+    receipt: {
+      anchor_ms: at,
+      message: {
+        chat_id: '9001',
+        log_id: '9002',
+        text: request.seed,
+        type: 1,
+        own: true,
+        observed_at: new Date(at).toISOString(),
+        sent_at: null,
+      },
+    },
+  };
+  const first = await registry.confirmed(item);
+  expect(first).toMatchObject({ request_id: request.request_id, log_id: '9002' });
+  expect(await registry.confirmed(item)).toEqual(first);
+  expect(
+    await client.db
+      .select()
+      .from(monitoringCampaignLinks)
+      .where(eq(monitoringCampaignLinks.campaignId, first.episode_id)),
+  ).toHaveLength(1);
+  const changed = {
+    ...item,
+    receipt: { ...item.receipt, message: { ...item.receipt.message, log_id: '9003' } },
+  };
+  await expect(registry.confirmed(changed)).rejects.toThrow('OBSERVATION_REQUEST_CONFLICT');
+  expect(await view.episode(first.episode_id)).toMatchObject({
+    anchor_log_id: '9002',
+    messages: [{ log_id: '9002', role: 'anchor' }],
+  });
+  await client.db
+    .update(monitoringRooms)
+    .set({ excluded: true })
+    .where(eq(monitoringRooms.roomId, '9001'));
+  expect(await view.episode(first.episode_id, false)).toBeNull();
+  expect(await view.episode(first.episode_id, true)).toMatchObject({ anchor_log_id: '9002' });
+  const { EpisodeEdits } = await import('../../src/modules/monitoring/episode-edits.js');
+  const edits = new EpisodeEdits(client, view);
+  await client.db.insert(monitoringCampaignLinks).values({
+    campaignId: first.episode_id,
+    logId: '9004',
+    at: at + 5000,
+    role: 'after',
+    relation: 'pending',
+    body: {
+      log_id: '9004',
+      time_ms: at + 5000,
+      text: '티켓 사용처가 궁금합니다.',
+      type: 1,
+      own: false,
+      room_id: '9001',
+    },
+  });
+  const result = await edits.review(
+    { id: first.episode_id, log_id: '9004', relation: 'related' },
+    true,
+  );
+  expect(result.undo_ids).toHaveLength(1);
+  await edits.annotate(
+    {
+      id: first.episode_id,
+      log_id: '9004',
+      topics: ['benefit'],
+      stance: 'neutral',
+      note: '합성 메모',
+    },
+    true,
+  );
+  expect(await view.episode(first.episode_id, true)).toMatchObject({
+    feedback_count: 1,
+    messages: [
+      { log_id: '9002' },
+      { log_id: '9004', feedback_annotation: { topics: ['benefit'], stance: 'neutral' } },
+    ],
+  });
+  await expect(edits.undo(result.undo_ids?.[0], true)).rejects.toMatchObject({
+    code: 'CONTEXT_REVIEW_CHANGED',
+  });
+});

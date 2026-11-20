@@ -6,6 +6,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { config } from '../../shared/config/index.js';
 import { ForumService } from '../forum/forum.service.js';
 import { MonitoringService } from '../monitoring/monitoring.service.js';
+import { isLocalRequest } from '../monitoring/mutation-scope.js';
 import { serializeBootstrap } from './web-state.js';
 
 const pages = new Set([
@@ -85,16 +86,11 @@ export class WebController {
         this.monitoring.classifications(query),
       detail: (id: string) => this.monitoring.detail(id),
     };
+    const local = isLocalRequest(request);
     const workspace = {
       read: (feature: string, search: string) =>
-        this.monitoring.workspace(feature, Object.fromEntries(new URLSearchParams(search))),
+        this.monitoring.workspace(feature, Object.fromEntries(new URLSearchParams(search)), local),
     };
-    // Preserve SSR and existing UI. This migration preview deliberately has no write rights.
-    const local =
-      ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(request.ip) &&
-      !['cf-ray', 'x-forwarded-for', 'forwarded', 'x-monitor-public'].some(
-        (key) => request.headers[key],
-      );
     const page = await entry.render(
       request.url,
       queries,

@@ -16,6 +16,9 @@ import { matchingExclusions } from '../../shared/monitoring/exclusion-rules.js';
 import { stableJson } from '../connection/stable-json.js';
 
 const hash = (value: unknown) => createHash('sha256').update(stableJson(value)).digest('hex');
+type SettingsTransaction = Parameters<
+  Parameters<ReturnType<typeof createDatabase>['db']['transaction']>[0]
+>[0];
 const exclusions = z.array(z.string().trim().min(1).max(200)).max(100);
 @Injectable()
 export class KeywordSettingsRepository {
@@ -128,7 +131,7 @@ export class KeywordSettingsRepository {
       revision: row?.revision ?? 0,
     };
   }
-  async save(value: Record<string, unknown>) {
+  async save(value: Record<string, unknown>, transaction?: SettingsTransaction) {
     let policy: ReturnType<typeof validateKeywordPolicy>;
     try {
       policy = validateKeywordPolicy(value.keyword_policy);
@@ -136,7 +139,7 @@ export class KeywordSettingsRepository {
       throw new AppError('INVALID_KEYWORD_POLICY', '대상·별칭과 출처 설정을 확인해 주세요.', 400);
     }
     const exclude = [...new Set(exclusions.parse(value.exclude_keywords ?? []))];
-    return this.db.transaction(async (tx) => {
+    const save = async (tx: SettingsTransaction) => {
       await tx.execute(sql`select pg_advisory_xact_lock(271816,1)`);
       const [row] = await tx
         .select()
@@ -182,7 +185,8 @@ export class KeywordSettingsRepository {
         processing: { state: 'queued', revision },
         forum_processing: { state: 'queued', revision },
       };
-    });
+    };
+    return transaction ? save(transaction) : this.db.transaction(save);
   }
   async check(value: Record<string, unknown>) {
     const saved = await this.policy();

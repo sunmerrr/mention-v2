@@ -6,7 +6,9 @@ import { NativeContextPublisher } from '../modules/context/native-context-publis
 import { NativeNormalizer } from '../modules/context/native-normalizer.service.js';
 import { ForumModule } from '../modules/forum/forum.module.js';
 import { ForumAggregate } from '../modules/forum/forum-aggregate.service.js';
+import { MessageTimelineWorker } from '../modules/monitoring/message-timeline-worker.js';
 import { MonitoringModule } from '../modules/monitoring/monitoring.module.js';
+import { ObservationBrokerWorker } from '../modules/monitoring/observation-broker-worker.js';
 import { ProjectionSync } from '../modules/projection/projection-sync.service.js';
 import { SettingsModule } from '../modules/settings/settings.module.js';
 
@@ -19,6 +21,8 @@ import { SettingsModule } from '../modules/settings/settings.module.js';
     NativeNormalizer,
     NativeContextPublisher,
     NativePhotoWorker,
+    MessageTimelineWorker,
+    ObservationBrokerWorker,
   ],
 })
 export class WorkerModule {}

@@ -219,6 +219,22 @@ export const nativeStateRecords = pgTable(
   (t) => [
     uniqueIndex('uniq_migration_native_record').on(t.snapshotPk, t.key),
     index('idx_migration_native_table').on(t.snapshotPk, t.tableName),
+    index('idx_migration_native_message').on(
+      t.snapshotPk,
+      t.tableName,
+      sql`(${t.body}->>'room_id')`,
+      sql`(${t.body}->>'log_id')`,
+    ),
+    index('idx_migration_native_episode_link').on(
+      t.snapshotPk,
+      t.tableName,
+      sql`(${t.body}->>'episode_id')`,
+    ),
+    index('idx_migration_native_request').on(
+      t.snapshotPk,
+      t.tableName,
+      sql`(${t.body}->>'request_id')`,
+    ),
   ],
 );
 export const nativeRoomDirty = pgTable('native_room_dirty', {
@@ -647,3 +663,132 @@ export const nativePhotoJobs = pgTable(
     index('idx_native_photo_jobs_ready').on(t.state, t.after),
   ],
 );
+
+export const timelineMessages = pgTable(
+  'monitoring_timeline_messages',
+  {
+    pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+    roomId: varchar('room_id', { length: 19 }).notNull(),
+    logId: varchar('log_id', { length: 19 }).notNull(),
+    day: date('day', { mode: 'string' }).notNull(),
+    sortAt: bigint('sort_at', { mode: 'number' }).notNull(),
+    hits: jsonb('hits').$type<string[]>().notNull(),
+    body: jsonb('body')
+      .$type<import('../modules/monitoring/message-timeline.js').TimelineMessage>()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex('uniq_timeline_message').on(t.roomId, t.logId),
+    index('idx_timeline_day_cursor').on(t.day, t.sortAt, t.pk),
+    index('idx_timeline_cursor').on(t.sortAt, t.pk),
+  ],
+);
+export const timelineState = pgTable('monitoring_timeline_state', {
+  key: varchar('key', { length: 30 }).primaryKey(),
+  snapshotId: uuid('snapshot_id').notNull(),
+  settingsDigest: char('settings_digest', { length: 64 }).notNull(),
+  lastIntakePk: integer('last_intake_pk').notNull(),
+});
+
+export const briefingRevisions = pgTable(
+  'monitoring_briefing_revisions',
+  {
+    pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+    day: date('day', { mode: 'string' }).notNull(),
+    revision: integer('revision').notNull(),
+    report: jsonb('report').$type<Record<string, unknown>>().notNull(),
+    digest: char('digest', { length: 64 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('uniq_monitoring_briefing_revision').on(t.day, t.revision)],
+);
+
+export const monitoringCampaigns = pgTable(
+  'monitoring_campaigns',
+  {
+    id: char('id', { length: 32 }).primaryKey(),
+    requestId: varchar('request_id', { length: 128 }).notNull().unique(),
+    roomId: varchar('room_id', { length: 19 }).notNull(),
+    anchorAt: bigint('anchor_at', { mode: 'number' }).notNull(),
+    endsAt: bigint('ends_at', { mode: 'number' }).notNull(),
+    anchorLogId: varchar('anchor_log_id', { length: 19 }),
+    title: varchar('title', { length: 140 }).notNull(),
+    seed: text('seed').notNull(),
+    fingerprint: char('fingerprint', { length: 64 }).notNull(),
+    receiptHash: char('receipt_hash', { length: 64 }),
+    coverage: varchar('coverage', { length: 50 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('idx_monitoring_campaign_date').on(t.anchorAt, t.id)],
+);
+
+export const monitoringCampaignLinks = pgTable(
+  'monitoring_campaign_links',
+  {
+    pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+    campaignId: char('campaign_id', { length: 32 })
+      .notNull()
+      .references(() => monitoringCampaigns.id),
+    logId: varchar('log_id', { length: 19 }).notNull(),
+    at: bigint('at', { mode: 'number' }).notNull(),
+    role: varchar('role', { length: 10 }).notNull(),
+    relation: varchar('relation', { length: 24 }).notNull(),
+    body: jsonb('body').$type<Record<string, unknown>>().notNull(),
+  },
+  (t) => [
+    uniqueIndex('uniq_campaign_link').on(t.campaignId, t.logId),
+    index('idx_campaign_link_date').on(t.campaignId, t.at),
+  ],
+);
+
+export const monitoringBackups = pgTable('monitoring_backups', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  state: varchar('state', { length: 20 }).notNull().default('queued'),
+  bytes: bigint('bytes', { mode: 'number' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  touchedAt: timestamp('touched_at', { withTimezone: true }).notNull().defaultNow(),
+  verifiedAt: timestamp('verified_at', { withTimezone: true }),
+  error: varchar('error', { length: 100 }),
+});
+
+export const monitoringAliasDecisions = pgTable('monitoring_alias_decisions', {
+  tokenKey: varchar('token_key', { length: 100 }).primaryKey(),
+  body: jsonb('body').$type<Record<string, unknown> | null>(),
+  changedAt: timestamp('changed_at', { withTimezone: true }).notNull().defaultNow(),
+});
+export const monitoringAliasHistory = pgTable('monitoring_alias_history', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  tokenKey: varchar('token_key', { length: 100 }).notNull(),
+  previous: jsonb('previous').$type<Record<string, unknown> | null>(),
+  next: jsonb('next').$type<Record<string, unknown> | null>(),
+  changedAt: timestamp('changed_at', { withTimezone: true }).notNull().defaultNow(),
+});
+export const monitoringAliasCache = pgTable('monitoring_alias_cache', {
+  days: integer('days').primaryKey(),
+  body: jsonb('body').$type<Record<string, unknown>>().notNull(),
+  capturedAt: timestamp('captured_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const monitoringEpisodeEdits = pgTable('monitoring_episode_edits', {
+  episodeId: varchar('episode_id', { length: 100 }).primaryKey(),
+  body: jsonb('body').$type<Record<string, unknown>>().notNull(),
+});
+export const monitoringContextEdits = pgTable(
+  'monitoring_context_edits',
+  {
+    pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+    episodeId: varchar('episode_id', { length: 100 }).notNull(),
+    logId: varchar('log_id', { length: 19 }).notNull(),
+    body: jsonb('body').$type<Record<string, unknown>>().notNull(),
+  },
+  (t) => [uniqueIndex('uniq_context_edit').on(t.episodeId, t.logId)],
+);
+export const monitoringContextHistory = pgTable('monitoring_context_history', {
+  pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+  episodeId: varchar('episode_id', { length: 100 }).notNull(),
+  logId: varchar('log_id', { length: 19 }).notNull(),
+  previous: jsonb('previous').$type<Record<string, unknown>>().notNull(),
+  next: jsonb('next').$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  undone: boolean('undone').notNull().default(false),
+});

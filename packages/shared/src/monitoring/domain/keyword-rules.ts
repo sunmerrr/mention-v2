@@ -39,3 +39,13 @@ export function keywordMatches(text: string, keywords: readonly string[], numeri
   const value = normalized(text);
   return keywords.filter((word) => expression(word, numeric).test(value));
 }
+
+export function keywordSpans(text: string, keywords: readonly string[]) {
+  const value = normalized(text);
+  return keywords.flatMap((keyword) =>
+    [...value.matchAll(new RegExp(expression(keyword, false).source, 'gu'))].map((match) => ({
+      start: match.index,
+      end: match.index + match[0].length,
+    })),
+  );
+}

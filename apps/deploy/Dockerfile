@@ -88,9 +88,16 @@ RUN pnpm --filter @app/web build
 
 
 # ---------- api 런타임 ----------
+FROM postgres:16-bookworm AS postgres-tools
+
 FROM node:24.14.0-slim AS api
 WORKDIR /app
 ENV NODE_ENV=production MENTION_WEB_ROOT=/app/web
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends fonts-noto-cjk libpq5 liblz4-1 libzstd1 zlib1g \
+    && rm -rf /var/lib/apt/lists/* \
+    && install -d -m 700 -o node -g node /app/backup
+COPY --from=postgres-tools /usr/lib/postgresql/16/bin/pg_dump /usr/lib/postgresql/16/bin/pg_restore /usr/local/bin/
 # api-typecheck 가 성공해야 이 파일이 있다. 이 COPY 가 없으면 BuildKit 이 typecheck 스테이지를 건너뛴다.
 COPY --from=api-typecheck /typecheck.ok /app/.typechecked
 # self-contained 번들 하나만 복사(심볼릭 트리 불필요). dist/package.json/node_modules 포함.

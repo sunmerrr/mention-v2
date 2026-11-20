@@ -35,7 +35,7 @@ services:
       postgres: {condition: service_healthy}
   api:
     <<: *app
-    environment: {APP_ROLE: api, PORT: "4200"}
+    environment: {APP_ROLE: api, PORT: "4200", MENTION_BACKUP_DIRECTORY: /app/backup}
     ports: ["4200:4200"]
     depends_on:
       migrate: {condition: service_completed_successfully}
@@ -67,12 +67,14 @@ services:
       migrate: {condition: service_completed_successfully}
   worker:
     <<: *app
-    environment: {APP_ROLE: worker, PORT: "4201"}
+    environment: {APP_ROLE: worker, PORT: "4201", MENTION_BACKUP_DIRECTORY: /app/backup}
     volumes:
       - *connection-socket
+      - mention-backups:/app/backup
     depends_on:
       migrate: {condition: service_completed_successfully}
 networks:
   mention:
 volumes:
   mention-postgres:
+  mention-backups:
