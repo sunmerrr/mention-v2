@@ -23,6 +23,7 @@ export const nativeStateTables = [
   'collection_intervals',
   'collection_recoveries',
   'collection_runtime',
+  'confirmed_observations',
   'context_dirty',
   'context_expansions',
   'context_messages',
@@ -52,6 +53,7 @@ export const nativeStateTables = [
   'settings',
 ] as const;
 const settingsKeys = new Set([
+  'automatic_ad_exclusions_removed',
   'briefing_delivery',
   'connection_event_cursor',
   'context_bootstrap_v1',
@@ -64,6 +66,7 @@ const settingsKeys = new Set([
   'exclude_policy_v1',
   'guide_config',
   'keyword_groups',
+  'keyword_policy',
   'keyword_processing',
   'keywords',
   'promotion_watch_refs_v1',
