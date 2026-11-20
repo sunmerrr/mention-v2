@@ -72,6 +72,8 @@ export async function importWorkspace(
     if (!initialized || !summary || ids.size !== expected)
       throw Error('WORKSPACE_IMPORT_INCOMPLETE');
     await forum.importSummary(summary);
+    const { policy } = await settings.policy();
+    await forum.rebuildOpinions(policy.keyword_groups);
     return { posts: ids.size, audits, receipts, images };
   } finally {
     lines.close();
