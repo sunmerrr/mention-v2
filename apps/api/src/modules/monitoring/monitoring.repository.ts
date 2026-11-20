@@ -105,11 +105,13 @@ export class MonitoringRepository {
         // The migration must never acquire local-only privileges at the source.
         headers: { 'x-monitor-public': '1' },
       });
-    } catch {
+    } catch (cause) {
       throw new AppError(
         'MONITORING_UNAVAILABLE',
         '기존 모니터링 서버에 연결하지 못했습니다.',
         503,
+        undefined,
+        { cause },
       );
     }
     if (!response.ok) {
