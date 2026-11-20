@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { eq } from 'drizzle-orm';
@@ -8,10 +8,14 @@ import { createDatabase } from '../../src/db/client.js';
 import {
   intakeEvents,
   kakaoMessages,
+  monitoringAssets,
   monitoringRooms,
   monitoringSettings,
+  nativeStateRecords,
+  nativeStateSnapshots,
   nativeWorkerOffsets,
 } from '../../src/db/schema.js';
+import { AssetRepository } from '../../src/modules/assets/asset.repository.js';
 import { IntakeStore } from '../../src/modules/connection/intake-store.js';
 import type { OwnerReply } from '../../src/modules/connection/owner-client.js';
 import { importNativeMessages } from '../../src/modules/context/import-native-messages.js';
@@ -78,6 +82,76 @@ describe('native intake on disposable PostgreSQL', () => {
     await store?.close();
     config.DATABASE_URL = prior;
     await container?.stop();
+  });
+  it('uses only the complete snapshot’s analytics cursor to verify a handoff', async () => {
+    const c = createDatabase(config.DATABASE_URL ?? '');
+    const id = randomUUID();
+    try {
+      const [snapshot] = await c.db
+        .insert(nativeStateSnapshots)
+        .values({ id, capturedAt: new Date(), counts: { settings: 2 } })
+        .returning();
+      if (!snapshot) throw Error('SYNTHETIC_HANDOFF_SNAPSHOT_REQUIRED');
+      await c.db.insert(nativeStateRecords).values([
+        {
+          snapshotPk: snapshot.pk,
+          key: 'settings:0',
+          tableName: 'settings',
+          digest: '0'.repeat(64),
+          body: { key: 'dialogue_event_cursor', value: '"synthetic:owner:81"' },
+        },
+        {
+          snapshotPk: snapshot.pk,
+          key: 'settings:1',
+          tableName: 'settings',
+          digest: '1'.repeat(64),
+          body: { key: 'connection_event_cursor', value: '"synthetic:owner:80"' },
+        },
+      ]);
+      await expect(store.archivedCursor(id)).rejects.toThrow('ARCHIVED_ANALYTICS_CURSOR_REQUIRED');
+      await c.db
+        .update(nativeStateSnapshots)
+        .set({ complete: true })
+        .where(eq(nativeStateSnapshots.id, id));
+      await expect(store.archivedCursor(id)).resolves.toBe('synthetic:owner:80');
+    } finally {
+      await c.pool.end();
+    }
+  });
+  it('serves retained Kakao photos by legacy URL, deduplicates bytes and honors current exclusions', async () => {
+    const assets = new AssetRepository();
+    const bytes = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAC0lEQVR4nGNgQAYAAA4AAamRc7EAAAAASUVORK5CYII=',
+      'base64',
+    );
+    const digest = createHash('sha256').update(bytes).digest('hex');
+    const route = '/photo/777/888/0';
+    const metadata = { messageText: null, contextText: '합성 사진', filename: 'photo-888-0.png' };
+    try {
+      await assets.db
+        .insert(monitoringSettings)
+        .values({ key: 'keywords', value: { keywords: ['APL'], exclude_keywords: [] } });
+      await assets.importNativePhoto({ route, ...metadata }, bytes, digest);
+      await assets.importNativePhoto({ route: `${route}?thumb=1`, ...metadata }, null, digest);
+      expect(await assets.nativePhoto(route + '?thumb=1')).toMatchObject({
+        bytes,
+        contentType: 'image/png',
+      });
+      expect((await assets.nativePhoto(route + '?download=1')).disposition).toBe(
+        'attachment; filename="photo-888-0.png"',
+      );
+      expect(
+        await assets.db.select().from(monitoringAssets).where(eq(monitoringAssets.digest, digest)),
+      ).toHaveLength(1);
+      await assets.db
+        .update(monitoringSettings)
+        .set({ value: { keywords: ['APL'], exclude_keywords: ['합성 사진'] } })
+        .where(eq(monitoringSettings.key, 'keywords'));
+      await expect(assets.nativePhoto(route)).rejects.toMatchObject({ statusCode: 404 });
+    } finally {
+      await assets.db.delete(monitoringSettings).where(eq(monitoringSettings.key, 'keywords'));
+      await assets.close();
+    }
   });
   it('atomically stores original event, wire evidence and committed cursor', async () => {
     await store.accept('synthetic:owner:0', reply());

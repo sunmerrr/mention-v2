@@ -101,6 +101,21 @@ async function bootstrap() {
     }
     return;
   }
+  if (config.APP_ROLE === 'import-native-photos') {
+    if (!config.NATIVE_PHOTO_IMPORT_DIRECTORY)
+      throw Error('NATIVE_PHOTO_IMPORT_DIRECTORY_REQUIRED');
+    const { AssetRepository } = await import('./modules/assets/asset.repository.js');
+    const { importNativePhotos } = await import('./modules/assets/import-native-photos.js');
+    const assets = new AssetRepository();
+    try {
+      const result = await importNativePhotos(config.NATIVE_PHOTO_IMPORT_DIRECTORY, assets);
+      const { default: pino } = await import('pino');
+      pino().info({ event: 'native_photos_import_complete', ...result });
+    } finally {
+      await assets.close();
+    }
+    return;
+  }
   if (config.APP_ROLE === 'import-native-state') {
     if (!config.NATIVE_STATE_IMPORT_FILE) throw Error('NATIVE_STATE_IMPORT_FILE_REQUIRED');
     const { EvidenceRepository } = await import('./modules/evidence/evidence.repository.js');

@@ -618,3 +618,12 @@ export const monitoringAssets = pgTable('monitoring_assets', {
   digest: char('digest', { length: 64 }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+export const nativePhotoAssets = pgTable('native_photo_assets', {
+  route: varchar('route', { length: 100 }).primaryKey(),
+  assetPk: integer('asset_pk')
+    .notNull()
+    .references(() => monitoringAssets.pk),
+  messageText: text('message_text'),
+  contextText: text('context_text'),
+  filename: varchar('filename', { length: 120 }).notNull(),
+});

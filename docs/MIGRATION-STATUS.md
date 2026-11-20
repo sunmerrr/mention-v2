@@ -301,6 +301,24 @@ untouched. AWS SSH target remains unavailable and no operational cutover occurre
   image handling, final delta and cursor reconciliation, AWS reverse SSH
   verification and public routing are pending.
 
+### Retained photo archive and initial cursor verification
+
+The photo exporter reads a SQLite snapshot and copies referenced originals and
+thumbnails into a private bundle keyed by SHA-256. The Node `import-native-photos`
+role reads `NATIVE_PHOTO_IMPORT_DIRECTORY`. PostgreSQL stores one byte payload per
+digest and preserves the existing photo URLs, download names and current keyword
+visibility filtering. This covers retained images. The live collection and
+image retention handoff must be verified before retiring the legacy collector.
+The November 20 rehearsal verified all 43,038 photo and thumbnail routes and
+6,689 unique byte payloads in PostgreSQL, with zero missing files, checksum
+mismatches or unmatched routes in that snapshot.
+
+For first attachment, set `NATIVE_STATE_SNAPSHOT_ID` to the complete final archive
+and `KAKAO_START_CURSOR` to its committed analysis cursor. Before committing a
+PostgreSQL intake offset, the worker compares the cursor to that archive and
+probes the same live owner for an explicit gap-free response. It does not advance
+the cursor through that probe. Use the final cutover snapshot, not a rehearsal.
+
 ### Grouping and promotion attribution
 
 - The publisher uses the legacy same-room overlap and participant thresholds

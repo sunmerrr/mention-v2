@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import type { PoolClient } from 'pg';
 import { createDatabase } from '../../db/client.js';
@@ -8,6 +8,8 @@ import {
   intakeOffsets,
   intakeWireSnapshots,
   monitoringRooms,
+  nativeStateRecords,
+  nativeStateSnapshots,
 } from '../../db/schema.js';
 import { config } from '../../shared/config/index.js';
 import type { OwnerReply } from './owner-client.js';
@@ -58,6 +60,25 @@ export class IntakeStore {
       .from(intakeOffsets)
       .where(eq(intakeOffsets.consumer, this.consumer ?? ''));
     return row;
+  }
+  async archivedCursor(snapshotId: string) {
+    const rows = await this.database
+      .select({ value: nativeStateRecords.body })
+      .from(nativeStateRecords)
+      .innerJoin(nativeStateSnapshots, eq(nativeStateSnapshots.pk, nativeStateRecords.snapshotPk))
+      .where(
+        and(
+          eq(nativeStateSnapshots.id, snapshotId),
+          eq(nativeStateSnapshots.complete, true),
+          eq(nativeStateRecords.tableName, 'settings'),
+          sql`${nativeStateRecords.body}->>'key' = 'connection_event_cursor'`,
+        ),
+      );
+    const encoded = rows[0]?.value.value;
+    const value: unknown = typeof encoded === 'string' ? JSON.parse(encoded) : null;
+    if (rows.length !== 1 || typeof value !== 'string')
+      throw Error('ARCHIVED_ANALYTICS_CURSOR_REQUIRED');
+    return value;
   }
   async initialize(instance: string, cursor: string) {
     cursorSequence(cursor, instance);

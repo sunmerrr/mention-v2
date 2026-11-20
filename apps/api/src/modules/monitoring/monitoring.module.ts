@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { config } from '../../shared/config/index.js';
+import { AssetsModule } from '../assets/assets.module.js';
 import { EvidenceRepository } from '../evidence/evidence.repository.js';
 import { ProjectionRepository } from '../projection/projection.repository.js';
 import { SettingsModule } from '../settings/settings.module.js';
@@ -10,7 +11,7 @@ import { MonitoringService } from './monitoring.service.js';
 import { RoomsRepository } from './rooms.repository.js';
 
 @Module({
-  imports: [SettingsModule],
+  imports: [AssetsModule, SettingsModule],
   providers: [
     {
       provide: MONITORING_SOURCE,

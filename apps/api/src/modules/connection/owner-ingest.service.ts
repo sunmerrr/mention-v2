@@ -3,8 +3,25 @@ import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@ne
 import { config } from '../../shared/config/index.js';
 import { LifecycleState } from '../health/lifecycle-state.js';
 import { IntakeStore } from './intake-store.js';
-import { OwnerClient } from './owner-client.js';
+import { OwnerClient, type OwnerReply } from './owner-client.js';
 import { OwnerRoomClassificationError } from './retained-event.js';
+
+export function assertHandoffCoverage(reply: OwnerReply, instance: string) {
+  const batch = reply.result as {
+    gap?: unknown;
+    history_sync_required?: unknown;
+    events?: unknown;
+  } | null;
+  if (!reply.state.connected || reply.state.stream_error || reply.state.instance_id !== instance)
+    throw Error('OWNER_CHANGED_DURING_HANDOFF');
+  if (
+    !batch ||
+    !Array.isArray(batch.events) ||
+    batch.gap !== false ||
+    batch.history_sync_required !== false
+  )
+    throw Error('HANDOFF_EVENT_COVERAGE_UNVERIFIED');
+}
 
 @Injectable()
 export class OwnerIngest implements OnModuleInit, OnModuleDestroy {
@@ -30,6 +47,14 @@ export class OwnerIngest implements OnModuleInit, OnModuleDestroy {
       const existing = await this.store.cursor();
       if (!existing) {
         if (!config.KAKAO_START_CURSOR) throw new Error('EXPLICIT_INITIAL_CURSOR_REQUIRED');
+        if (
+          config.NATIVE_STATE_SNAPSHOT_ID &&
+          (await this.store.archivedCursor(config.NATIVE_STATE_SNAPSHOT_ID)) !==
+            config.KAKAO_START_CURSOR
+        )
+          throw Error('HANDOFF_CURSOR_MISMATCH');
+        const proof = await owner.events(config.KAKAO_START_CURSOR, this.stop.signal);
+        assertHandoffCoverage(proof, status.state.instance_id);
         await this.store.initialize(status.state.instance_id, config.KAKAO_START_CURSOR);
       } else if (existing.ownerInstance !== status.state.instance_id)
         throw new Error('OWNER_INSTANCE_CHANGED');

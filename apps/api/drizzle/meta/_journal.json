@@ -162,6 +162,13 @@
       "when": 1795083732702,
       "tag": "0022_useful_ghost_rider",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1795138366918,
+      "tag": "0023_aberrant_glorian",
+      "breakpoints": true
     }
   ]
 }

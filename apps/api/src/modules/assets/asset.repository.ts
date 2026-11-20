@@ -1,9 +1,19 @@
 import { createHash } from 'node:crypto';
+import { sharedPolicy, sourceKeywords } from '@app/shared/monitoring/contracts/keyword-policy';
+import { keywordMatches } from '@app/shared/monitoring/domain/keyword-rules';
 import { Injectable } from '@nestjs/common';
 import { eq, inArray } from 'drizzle-orm';
 import { createDatabase } from '../../db/client.js';
-import { monitoringAssets } from '../../db/schema.js';
+import { monitoringAssets, monitoringSettings, nativePhotoAssets } from '../../db/schema.js';
 import { config } from '../../shared/config/index.js';
+import { AppError } from '../../shared/errors/app-error.js';
+import { matchingExclusions } from '../../shared/monitoring/exclusion-rules.js';
+
+export const nativePhotoPath = /^\/photo\/[1-9][0-9]{0,18}\/[1-9][0-9]{0,18}\/[0-9]{1,3}$/u;
+type NativePhoto = Pick<
+  typeof nativePhotoAssets.$inferInsert,
+  'route' | 'messageText' | 'contextText' | 'filename'
+>;
 export const boardMediaPath = (key: string) => `/api/v1/monitoring/pokergosu/media/${key}`;
 export function imageMime(bytes: Buffer) {
   if (bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])))
@@ -63,5 +73,92 @@ export class AssetRepository {
       .insert(monitoringAssets)
       .values({ path: boardMediaPath(key), mime, bytes, digest })
       .onConflictDoNothing();
+  }
+
+  async importNativePhoto(photo: NativePhoto, bytes: Buffer | null, digest: string) {
+    if (
+      !/^[a-f0-9]{64}$/u.test(digest) ||
+      (bytes &&
+        (!bytes.length ||
+          bytes.length > 32 * 1024 * 1024 ||
+          createHash('sha256').update(bytes).digest('hex') !== digest))
+    )
+      throw Error('INVALID_NATIVE_PHOTO_BYTES');
+    const path = `/internal/native-photo/${digest}`;
+    await this.db.transaction(async (tx) => {
+      if (bytes) {
+        let mime = 'application/octet-stream';
+        try {
+          mime = imageMime(bytes);
+        } catch {
+          // Unrecognized legacy formats remain downloadable as opaque attachments.
+        }
+        await tx
+          .insert(monitoringAssets)
+          .values({ path, mime, bytes, digest })
+          .onConflictDoNothing();
+      }
+      const [asset] = await tx
+        .select({ pk: monitoringAssets.pk })
+        .from(monitoringAssets)
+        .where(eq(monitoringAssets.path, path));
+      if (!asset) throw Error('NATIVE_PHOTO_STORAGE_FAILED');
+      await tx
+        .insert(nativePhotoAssets)
+        .values({ ...photo, assetPk: asset.pk })
+        .onConflictDoUpdate({
+          target: nativePhotoAssets.route,
+          set: {
+            assetPk: asset.pk,
+            messageText: photo.messageText,
+            contextText: photo.contextText,
+            filename: photo.filename,
+          },
+        });
+    });
+  }
+
+  async nativePhoto(endpoint: string) {
+    const url = new URL(endpoint, 'http://photo.local');
+    const invalid = () => new AppError('ASSET_UNAVAILABLE', '파일을 가져오지 못했습니다.', 404);
+    if (url.origin !== 'http://photo.local' || !nativePhotoPath.test(url.pathname)) throw invalid();
+    const route = url.pathname + (url.searchParams.get('thumb') === '1' ? '?thumb=1' : '');
+    const [photo] = await this.db
+      .select()
+      .from(nativePhotoAssets)
+      .where(eq(nativePhotoAssets.route, route));
+    const [settings] = await this.db
+      .select({ value: monitoringSettings.value })
+      .from(monitoringSettings)
+      .where(eq(monitoringSettings.key, 'keywords'));
+    if (!photo || !settings) throw invalid();
+    const excludes = Array.isArray(settings.value.exclude_keywords)
+      ? settings.value.exclude_keywords.filter((rule): rule is string => typeof rule === 'string')
+      : [];
+    const allowed = (body: string | null | undefined) =>
+      body != null && !matchingExclusions(body, excludes).length;
+    if (
+      !allowed(photo.contextText) &&
+      !(
+        photo.messageText != null &&
+        allowed(photo.messageText) &&
+        keywordMatches(photo.messageText, sourceKeywords(sharedPolicy(settings.value), 'kakao'))
+          .length
+      )
+    )
+      throw invalid();
+    const [asset] = await this.db
+      .select()
+      .from(monitoringAssets)
+      .where(eq(monitoringAssets.pk, photo.assetPk));
+    if (!asset) throw invalid();
+    return {
+      bytes: asset.bytes,
+      contentType: asset.mime,
+      disposition:
+        url.searchParams.has('download') || asset.mime === 'application/octet-stream'
+          ? `attachment; filename="${photo.filename}"`
+          : null,
+    };
   }
 }

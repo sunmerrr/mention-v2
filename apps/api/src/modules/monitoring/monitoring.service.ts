@@ -4,6 +4,7 @@ import type { Correction } from '@app/shared/monitoring/contracts/api';
 import { Injectable } from '@nestjs/common';
 import { config } from '../../shared/config/index.js';
 import { AppError } from '../../shared/errors/app-error.js';
+import { AssetRepository } from '../assets/asset.repository.js';
 import { EvidenceRepository } from '../evidence/evidence.repository.js';
 import { ProjectionRepository } from '../projection/projection.repository.js';
 import { KeywordSettingsRepository } from '../settings/keyword-settings.repository.js';
@@ -22,6 +23,7 @@ export class MonitoringService {
     private readonly bookmarks: BookmarksRepository,
     private readonly rooms: RoomsRepository,
     private readonly guide: GuideRepository,
+    private readonly assets: AssetRepository,
   ) {}
   requestState(id: string) {
     if (config.MONITORING_EVIDENCE_BACKEND === 'postgres') return this.evidence.requestState(id);
@@ -88,6 +90,8 @@ export class MonitoringService {
     );
   }
   asset(endpoint: string) {
+    if (config.MONITORING_EVIDENCE_BACKEND === 'postgres' && endpoint.startsWith('/photo/'))
+      return this.assets.nativePhoto(endpoint);
     return this.repository.asset(endpoint);
   }
   detail(id: string, window?: { before: number; after: number }) {
