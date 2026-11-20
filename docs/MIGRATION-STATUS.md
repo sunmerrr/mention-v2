@@ -335,3 +335,40 @@ the cursor through that probe. Use the final cutover snapshot, not a rehearsal.
   operating snapshot. Promotion attribution matched the Python pipeline on
   all ten synthetic scenarios. These checks cover rules and do not constitute
   verification of a live cutover or exact parity of per-episode context selection.
+
+### November 20 local migration rehearsal
+
+The one-off exporter makes a read-only consistent SQLite copy and writes its
+approved analysis tables to a private JSONL file. It includes the confirmed
+observation bindings and current keyword policy. Use a new destination for each
+export.
+
+```sh
+python3 scripts/export-native-state.py --database "$ANALYSIS_SQLITE" --output "$SNAPSHOT_FILE"
+```
+
+A populated PostgreSQL rehearsal imported 123,235 records across 42 tables,
+28 rooms and 23,898 retained context messages. The published projection contained
+1,484 conversations. All 1,863 imported classification records matched their
+source IDs, labels, summaries, origins and evidence tokens. The forum workspace
+import contained 613 posts and 59 classification request receipts. It also
+archived 9,133 raw records, including 5,426 thread records. Workspace
+imports publish the initial completed forum opinion model so the combined page
+can read it immediately.
+
+The Node photo worker queues selected context attachments, uses the existing
+owner RPC for downloads, generates a preview and stores byte-identical output
+once by SHA-256. The same-host staging path has to be visible at the same
+absolute path to both processes. The production image does not enable live
+media collection by default. Runtime processing errors include the full
+available stack and cause chain in PostgreSQL and omit SQL values and
+credentials.
+
+A browser rehearsal with the source unreachable verified the PostgreSQL home,
+combined, Pokergosu, conversations, review, keywords, rooms, guide and bookmark
+pages. Messages, trends, reaction observation and comparison, briefing, aliases
+and operations still delegate to the previous source. The confirmed observation
+bindings are archived. The Node worker does not consume the live observation
+broker yet. Retiring the legacy local service before these routes and the broker
+are migrated would interrupt those functions. The last rehearsal was isolated.
+The owner, legacy analytics and existing public route continued serving.
