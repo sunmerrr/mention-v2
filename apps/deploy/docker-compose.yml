@@ -1,4 +1,10 @@
 name: mention
+x-connection-socket: &connection-socket
+  type: bind
+  source: ${CONNECTION_SOCKET_DIRECTORY}
+  target: /run/mention/connection
+  read_only: true
+  bind: {create_host_path: false}
 x-app: &app
   image: ${ECR_REPOSITORY}:${IMAGE_TAG_MENTION_SERVER}
   env_file: .env
@@ -56,16 +62,14 @@ services:
           path: /collector/pokergosu/v1/*
           healthCheckPath: /health
     volumes:
-      - type: bind
-        source: ${CONNECTION_SOCKET_DIRECTORY}
-        target: /run/mention/connection
-        read_only: true
-        bind: {create_host_path: false}
+      - *connection-socket
     depends_on:
       migrate: {condition: service_completed_successfully}
   worker:
     <<: *app
     environment: {APP_ROLE: worker, PORT: "4201"}
+    volumes:
+      - *connection-socket
     depends_on:
       migrate: {condition: service_completed_successfully}
 networks:

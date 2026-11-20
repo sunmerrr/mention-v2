@@ -14,9 +14,11 @@ try{
  }
  assert.equal(services.migrate.environment.APP_ROLE,'migrate');
  assert.equal(services.api.depends_on.migrate.condition,'service_completed_successfully');
- assert.equal(services.ingest.volumes[0].target,'/run/mention/connection');
- assert.equal(services.ingest.volumes[0].read_only,true);
- assert.equal(services.ingest.volumes[0].bind.create_host_path,false);
+ for(const role of ['ingest','worker']){
+  assert.equal(services[role].volumes[0].target,'/run/mention/connection');
+  assert.equal(services[role].volumes[0].read_only,true);
+  assert.equal(services[role].volumes[0].bind.create_host_path,false);
+ }
  assert.equal(services.ingest.environment.KAKAO_EVENTS_ENABLED,'0');
  assert(!services.api.volumes?.length);assert(!services.postgres.ports?.length);
  console.log('Server Compose checked: one app image, migration gate, private PostgreSQL and dedicated directory socket mount. No services started.');
