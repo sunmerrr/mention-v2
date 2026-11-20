@@ -241,7 +241,7 @@ describe('native intake on disposable PostgreSQL', () => {
       await c.pool.end();
     }
   });
-  it('refreshes verified titles without changing manual room policy or retaining private rooms', async () => {
+  it('refreshes titles without retaining excluded, inactive or private room messages', async () => {
     const connection = createDatabase(config.DATABASE_URL ?? '');
     const roomId = '18497500347065223';
     const prior = await store.cursor();
@@ -254,8 +254,10 @@ describe('native intake on disposable PostgreSQL', () => {
       const batch = reply(prior.cursor);
       const raw = batch.result as { events: unknown[] };
       raw.events.push({ chat_id: '822', log_id: '300', text: 'private' });
+      raw.events.push({ chat_id: roomId, log_id: '301', text: 'excluded text' });
       batch.cache = {
         ...(batch.cache as object),
+        logs: [[roomId, '301', { message: 'excluded wire' }]],
         rooms: [
           { chat_id: roomId, kind: 'OM', name_source: 'link', name: '실제 테스트방 <코드1004>' },
           { chat_id: '822', kind: 'DirectChat', name_source: 'wire', name: 'Private room' },
@@ -275,7 +277,25 @@ describe('native intake on disposable PostgreSQL', () => {
       expect(
         await connection.db.select().from(monitoringRooms).where(eq(monitoringRooms.roomId, '822')),
       ).toHaveLength(0);
+      expect(
+        (
+          await connection.pool.query(
+            "select log_id from intake_events where log_id in ('300','301')",
+          )
+        ).rowCount,
+      ).toBe(0);
+      expect(
+        (
+          await connection.pool.query(
+            "select log_id from intake_wire_snapshots where log_id = '301'",
+          )
+        ).rowCount,
+      ).toBe(0);
     } finally {
+      await connection.db
+        .update(monitoringRooms)
+        .set({ excluded: false, joined: true })
+        .where(eq(monitoringRooms.roomId, roomId));
       await connection.pool.end();
     }
   });

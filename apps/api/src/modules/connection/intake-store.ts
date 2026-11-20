@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import type { PoolClient } from 'pg';
 import { createDatabase } from '../../db/client.js';
@@ -138,10 +138,28 @@ export class IntakeStore {
             (${monitoringRooms.body}->>'name' IS DISTINCT FROM excluded.body->>'name'
              OR ${monitoringRooms.body}->>'title_verified' IS DISTINCT FROM '1')`,
           });
+        const eligible = new Set(
+          (
+            await tx
+              .select({ roomId: monitoringRooms.roomId })
+              .from(monitoringRooms)
+              .where(
+                and(
+                  inArray(
+                    monitoringRooms.roomId,
+                    rooms.map(({ roomId }) => roomId),
+                  ),
+                  eq(monitoringRooms.joined, true),
+                  eq(monitoringRooms.excluded, false),
+                ),
+              )
+          ).map(({ roomId }) => roomId),
+        );
+        const admitted = records.filter(({ roomId }) => eligible.has(roomId));
+        const wire = snapshots.filter(({ roomId }) => eligible.has(roomId));
+        if (admitted.length) await tx.insert(intakeEvents).values(admitted).onConflictDoNothing();
+        if (wire.length) await tx.insert(intakeWireSnapshots).values(wire).onConflictDoNothing();
       }
-      if (records.length) await tx.insert(intakeEvents).values(records).onConflictDoNothing();
-      if (snapshots.length)
-        await tx.insert(intakeWireSnapshots).values(snapshots).onConflictDoNothing();
       if (result.gap === true || result.history_sync_required === true)
         await tx
           .insert(intakeGaps)
