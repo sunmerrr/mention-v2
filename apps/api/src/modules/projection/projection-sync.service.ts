@@ -1,7 +1,8 @@
-import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
+import { Injectable, type OnModuleDestroy, type OnModuleInit, Optional } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 import type { PoolClient } from 'pg';
 import { config } from '../../shared/config/index.js';
+import { SystemErrorService } from '../../shared/services/system-error.service.js';
 import { EvidenceRepository } from '../evidence/evidence.repository.js';
 import { MonitoringRepository } from '../monitoring/monitoring.repository.js';
 import { importProjection } from './import-projection.js';
@@ -10,7 +11,6 @@ import { ProjectionRepository } from './projection.repository.js';
 /** One rebuildable read projection producer, not a Kakao/AI/responder worker. */
 @Injectable()
 export class ProjectionSync implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(ProjectionSync.name);
   private session?: PoolClient;
   private flight?: Promise<void>;
   private stopped = false;
@@ -18,16 +18,14 @@ export class ProjectionSync implements OnModuleInit, OnModuleDestroy {
     private readonly source: MonitoringRepository,
     private readonly target: ProjectionRepository,
     private readonly evidence: EvidenceRepository,
+    @Optional() private readonly errors?: SystemErrorService,
   ) {}
   async onModuleInit() {
     if (config.MONITORING_READ_BACKEND !== 'postgres') return;
     this.session = await this.target.producerSession();
-    this.session.on('error', () => {
+    this.session.on('error', (error) => {
       this.stopped = true;
-      this.logger.error(
-        { event: 'projection_lease_lost' },
-        'Projection producer lost its database lease',
-      );
+      this.errors?.log('projection_lease_lost', error);
       process.kill(process.pid, 'SIGTERM');
     });
     await this.session.query('LISTEN mention_projection_refresh');
@@ -55,10 +53,7 @@ export class ProjectionSync implements OnModuleInit, OnModuleDestroy {
       else await importProjection(this.source, this.target);
     } catch (error) {
       // The source may advance while paging; retain the previous committed generation.
-      this.logger.warn(
-        { event: 'projection_sync_failed' },
-        'Read projection retained its last complete generation',
-      );
+      this.errors?.log('projection_sync_failed', error);
       if (config.WORKER_RUN_ONCE) throw error;
     }
   }

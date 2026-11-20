@@ -76,21 +76,33 @@ describe('PostgreSQL projection on a disposable real database', () => {
     expect(after.total).toBe(dataset.conversations.length);
     expect(after.items).toEqual(ordered);
   });
-  it('persists 5xx operational metadata without sensitive error text or query strings', async () => {
+  it('persists complete failure causes and redacts SQL parameter values and query strings', async () => {
     const errors = new SystemErrorService();
-    errors.log('http-5xx', new Error('SYNTHETIC_PRIVATE_TEXT'), {
-      method: 'GET',
-      url: '/api/v1/monitoring/conversations?search=SYNTHETIC_PRIVATE_TEXT',
-      statusCode: 503,
-    });
+    let failure = new Error('reason at depth eight');
+    for (let index = 7; index >= 0; index--) {
+      failure = new Error(`stage ${index}`, { cause: failure });
+    }
+    errors.log(
+      'http-5xx',
+      new Error('database write failed\nparams: SYNTHETIC_PRIVATE_TEXT\nsecond line', {
+        cause: failure,
+      }),
+      {
+        method: 'GET',
+        url: '/api/v1/monitoring/conversations?search=SYNTHETIC_PRIVATE_TEXT',
+        statusCode: 503,
+      },
+    );
     await errors.onApplicationShutdown();
     const connection = createDatabase(config.DATABASE_URL ?? '');
     try {
       const rows = await connection.pool.query(
-        'SELECT source, kind, metadata FROM system_error_logs',
+        'SELECT source, kind, payload, metadata FROM system_error_logs',
       );
       expect(rows.rows).toHaveLength(1);
       expect(JSON.stringify(rows.rows)).not.toContain('SYNTHETIC_PRIVATE_TEXT');
+      expect(JSON.stringify(rows.rows[0].payload)).toContain('reason at depth eight');
+      expect(rows.rows[0].payload.stack).toContain('projection.e2e.spec.ts');
       expect(rows.rows[0].metadata).toEqual({
         method: 'GET',
         route: '/api/v1/monitoring/conversations',

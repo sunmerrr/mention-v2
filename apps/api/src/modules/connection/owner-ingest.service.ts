@@ -1,6 +1,7 @@
 import { setTimeout as pause } from 'node:timers/promises';
-import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
+import { Injectable, type OnModuleDestroy, type OnModuleInit, Optional } from '@nestjs/common';
 import { config } from '../../shared/config/index.js';
+import { SystemErrorService } from '../../shared/services/system-error.service.js';
 import { LifecycleState } from '../health/lifecycle-state.js';
 import { IntakeStore } from './intake-store.js';
 import { OwnerClient, type OwnerReply } from './owner-client.js';
@@ -25,17 +26,15 @@ export function assertHandoffCoverage(reply: OwnerReply, instance: string) {
 
 @Injectable()
 export class OwnerIngest implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(OwnerIngest.name);
   private readonly stop = new AbortController();
   private running?: Promise<void>;
   private readonly store = new IntakeStore();
-  constructor(private readonly lifecycle: LifecycleState) {}
+  constructor(
+    private readonly lifecycle: LifecycleState,
+    @Optional() private readonly errors?: SystemErrorService,
+  ) {}
   async onModuleInit() {
     if (!config.KAKAO_EVENTS_ENABLED) {
-      this.logger.log(
-        { event: 'kakao_intake_disabled' },
-        'Live intake is disabled pending coordinated handoff',
-      );
       return;
     }
     const owner = new OwnerClient(config.KAKAO_CONNECTION_SOCKET);
@@ -60,6 +59,7 @@ export class OwnerIngest implements OnModuleInit, OnModuleDestroy {
         throw new Error('OWNER_INSTANCE_CHANGED');
       this.running = this.poll(owner);
     } catch (error) {
+      this.errors?.log('kakao_intake_startup_failed', error);
       await this.store.close();
       throw error;
     }
@@ -86,16 +86,12 @@ export class OwnerIngest implements OnModuleInit, OnModuleDestroy {
             : phase === 'checkpoint_read'
               ? 'POSTGRES_CHECKPOINT_READ_FAILED'
               : 'POSTGRES_COMMIT_FAILED';
-        this.logger.error(
-          {
-            event: 'kakao_intake_unavailable',
-            reason,
-            phase,
-            ownerConnected,
-            roomId: error instanceof OwnerRoomClassificationError ? error.roomId : undefined,
-          },
-          'Intake paused; owner authentication is unchanged',
-        );
+        this.errors?.log('kakao_intake_unavailable', error, {
+          reason,
+          phase,
+          ownerConnected,
+          roomId: error instanceof OwnerRoomClassificationError ? error.roomId : undefined,
+        });
         if (
           [
             'OWNER_INSTANCE_CHANGED',

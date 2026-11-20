@@ -35,15 +35,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     // 1) 도메인 비즈니스 에러
     if (exception instanceof AppError) {
       if (exception.statusCode >= 500) {
-        this.logger.error(
-          { err: exception, method: request.method, url: request.url },
-          exception.message,
-        );
         this.log5xx(exception, request, exception.statusCode);
       } else {
         // 4xx 는 사용자 잘못 — warn 으로만 (알람 폭발 방지). system_error_logs 에 넣지 않음.
         this.logger.warn(
-          { code: exception.code, method: request.method, url: request.url },
+          { code: exception.code, method: request.method, url: request.url.split('?')[0] },
           exception.message,
         );
       }
@@ -79,10 +75,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       if (status >= 500) {
-        this.logger.error(
-          { err: exception, method: request.method, url: request.url },
-          exception.message,
-        );
         this.log5xx(exception, request, status);
       }
       reply.status(status).send({
@@ -97,10 +89,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     // 4) 알 수 없는 에러 — 5xx
-    this.logger.error(
-      { err: exception, method: request.method, url: request.url },
-      exception instanceof Error ? exception.message : 'Unknown error',
-    );
     this.log5xx(exception, request, 500);
     reply.status(500).send({
       success: false,

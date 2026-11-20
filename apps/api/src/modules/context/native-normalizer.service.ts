@@ -1,4 +1,4 @@
-import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
+import { Injectable, type OnModuleDestroy, type OnModuleInit, Optional } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 import { and, asc, eq, gt, isNull, lt, or, sql } from 'drizzle-orm';
 import {
@@ -9,16 +9,19 @@ import {
   nativeWorkerOffsets,
 } from '../../db/schema.js';
 import { config } from '../../shared/config/index.js';
+import { SystemErrorService } from '../../shared/services/system-error.service.js';
 import { EvidenceRepository } from '../evidence/evidence.repository.js';
 import { normalizeNativeEvent } from './native-message.js';
 
 /** Native normalization consumes PostgreSQL only; no owner, authentication or send operation. */
 @Injectable()
 export class NativeNormalizer implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(NativeNormalizer.name);
   private flight?: Promise<void>;
   private stopped = false;
-  constructor(private readonly evidence: EvidenceRepository) {}
+  constructor(
+    private readonly evidence: EvidenceRepository,
+    @Optional() private readonly errors?: SystemErrorService,
+  ) {}
   async onModuleInit() {
     if (config.MONITORING_EVIDENCE_BACKEND === 'postgres') await this.refresh();
   }
@@ -34,14 +37,7 @@ export class NativeNormalizer implements OnModuleInit, OnModuleDestroy {
     try {
       await this.processBatch();
     } catch (error) {
-      const reason =
-        error instanceof Error && /^NATIVE_[A-Z_]+$/.test(error.message)
-          ? error.message
-          : 'NORMALIZATION_FAILED';
-      this.logger.warn(
-        { event: 'native_message_normalization_failed', reason },
-        'Raw checkpoint retained; no source reconnection attempted',
-      );
+      this.errors?.log('native_message_normalization_failed', error);
       if (config.WORKER_RUN_ONCE) throw error;
     }
   }
