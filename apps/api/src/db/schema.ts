@@ -627,3 +627,23 @@ export const nativePhotoAssets = pgTable('native_photo_assets', {
   contextText: text('context_text'),
   filename: varchar('filename', { length: 120 }).notNull(),
 });
+export const nativePhotoJobs = pgTable(
+  'native_photo_jobs',
+  {
+    pk: integer('pk').primaryKey().generatedAlwaysAsIdentity(),
+    roomId: varchar('room_id', { length: 19 }).notNull(),
+    logId: varchar('log_id', { length: 19 }).notNull(),
+    text: text('text').notNull(),
+    state: varchar('state', { length: 20 }).notNull().default('pending'),
+    attempts: integer('attempts').notNull().default(0),
+    after: timestamp('after', { withTimezone: true }).notNull().defaultNow(),
+    photos: jsonb('photos')
+      .$type<{ url: string; thumbnail: string | null }[]>()
+      .notNull()
+      .default([]),
+  },
+  (t) => [
+    uniqueIndex('uniq_native_photo_job').on(t.roomId, t.logId),
+    index('idx_native_photo_jobs_ready').on(t.state, t.after),
+  ],
+);

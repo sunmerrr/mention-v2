@@ -169,6 +169,13 @@
       "when": 1795138366918,
       "tag": "0023_aberrant_glorian",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1795139309545,
+      "tag": "0024_mute_ender_wiggin",
+      "breakpoints": true
     }
   ]
 }

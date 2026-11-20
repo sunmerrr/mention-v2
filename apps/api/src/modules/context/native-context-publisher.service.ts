@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { sharedPolicy } from '@app/shared/monitoring/contracts/keyword-policy';
 import { koreanDay, reviewState } from '@app/shared/monitoring/domain/model';
-import { Injectable, Logger, type OnModuleDestroy } from '@nestjs/common';
+import { Injectable, type OnModuleDestroy, Optional } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 import { and, asc, eq, gt, gte, inArray, isNotNull, lte, sql } from 'drizzle-orm';
 import {
@@ -14,9 +14,12 @@ import {
   monitoringSettings,
   nativeEpisodeReferences,
   nativeEvidenceReferences,
+  nativePhotoJobs,
   nativeWorkerOffsets,
 } from '../../db/schema.js';
 import { config } from '../../shared/config/index.js';
+import { matchingExclusions } from '../../shared/monitoring/exclusion-rules.js';
+import { SystemErrorService } from '../../shared/services/system-error.service.js';
 import { EvidenceRepository } from '../evidence/evidence.repository.js';
 import {
   nativeConversation,
@@ -39,11 +42,13 @@ const WINDOW = 15 * 60 * 1000;
 
 @Injectable()
 export class NativeContextPublisher implements OnModuleDestroy {
-  private readonly logger = new Logger(NativeContextPublisher.name);
   private flight?: Promise<void>;
   private stopping = false;
 
-  constructor(private readonly evidence: EvidenceRepository) {}
+  constructor(
+    private readonly evidence: EvidenceRepository,
+    @Optional() private readonly errors?: SystemErrorService,
+  ) {}
 
   @Interval('kakao-context-publish', 5_000)
   tick() {
@@ -55,13 +60,7 @@ export class NativeContextPublisher implements OnModuleDestroy {
       return;
     this.flight ??= this.processBatch()
       .then(() => undefined)
-      .catch((error: unknown) => {
-        const reason =
-          error instanceof Error && /^NATIVE_[A-Z_]+$/u.test(error.message)
-            ? error.message
-            : 'CONTEXT_PUBLICATION_FAILED';
-        this.logger.error({ event: 'native_context_publish_failed', reason });
-      })
+      .catch((error: unknown) => this.errors?.log('native_context_publish_failed', error))
       .finally(() => {
         this.flight = undefined;
       });
@@ -220,6 +219,23 @@ export class NativeContextPublisher implements OnModuleDestroy {
           .returning({ pk: evidenceConversations.pk });
         // Live replay must never overwrite evidence or human corrections.
         if (!added) continue;
+        const photos = new Map(
+          group
+            .flatMap(({ anchor, before, after }) => [anchor, ...before, ...after])
+            .filter(
+              (message) =>
+                [2, 27].includes(message.type) && !matchingExclusions(message.text, exclude).length,
+            )
+            .map((message) => [
+              message.logId,
+              { roomId: body.roomId, logId: message.logId, text: message.text },
+            ]),
+        );
+        if (photos.size)
+          await tx
+            .insert(nativePhotoJobs)
+            .values([...photos.values()])
+            .onConflictDoNothing();
         await tx.insert(nativeEvidenceReferences).values({
           conversationPk: added.pk,
           roomId: body.roomId,

@@ -24,6 +24,7 @@ const envSchema = z.object({
     .default('0')
     .transform((value) => value === '1'),
   KAKAO_CONNECTION_SOCKET: z.string().min(1).default('/run/mention/connection/connection.sock'),
+  KAKAO_NATIVE_MEDIA_DIRECTORY: z.string().startsWith('/').optional(),
   KAKAO_EVENTS_ENABLED: z
     .enum(['0', '1'])
     .default('0')
@@ -58,6 +59,7 @@ const envSchema = z.object({
     .default('http://127.0.0.1:8790'),
   MENTION_SOURCE_TIMEOUT_MS: z.coerce.number().int().min(100).max(30000).default(20000),
   NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
+  BIND_HOST: z.enum(['0.0.0.0', '127.0.0.1', '::1']).default('0.0.0.0'),
   PORT: z.coerce.number().int().min(1).max(65535).default(4200),
   // 빈 값 차단(min 1) — 빈 APP_ROLE 이 통과하면 역할 분기가 전부 false 가 되어 컨트롤러 없는 서버가 조용히 뜬다.
   APP_ROLE: z.string().min(1).default('all'),

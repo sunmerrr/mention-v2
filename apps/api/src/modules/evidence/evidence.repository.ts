@@ -19,6 +19,8 @@ import {
   evidenceLegacyAudit,
   evidenceMetadata,
   evidenceHistory as history,
+  nativeEvidenceReferences,
+  nativePhotoJobs,
   evidenceReceipts as receipts,
 } from '../../db/schema.js';
 import { config } from '../../shared/config/index.js';
@@ -206,13 +208,38 @@ export class EvidenceRepository {
     if (!detail.contextPaging) return detail;
     const before = Math.min(detail.before, window.before);
     const after = Math.min(detail.after, window.after);
+    const messages = detail.messages.slice(
+      detail.before - before,
+      detail.messages.length - (detail.after - after),
+    );
+    const [reference] = await this.db
+      .select({ roomId: nativeEvidenceReferences.roomId })
+      .from(nativeEvidenceReferences)
+      .innerJoin(conversations, eq(conversations.pk, nativeEvidenceReferences.conversationPk))
+      .where(eq(conversations.sourceId, id));
+    const photos =
+      reference && messages.length
+        ? await this.db
+            .select({ logId: nativePhotoJobs.logId, files: nativePhotoJobs.photos })
+            .from(nativePhotoJobs)
+            .where(
+              and(
+                eq(nativePhotoJobs.roomId, reference.roomId),
+                eq(nativePhotoJobs.state, 'ready'),
+                inArray(
+                  nativePhotoJobs.logId,
+                  messages.map((message) => message.id),
+                ),
+              ),
+            )
+        : [];
+    const byMessage = new Map(photos.map(({ logId, files }) => [logId, files]));
     return {
       ...detail,
       before,
       after,
-      messages: detail.messages.slice(
-        detail.before - before,
-        detail.messages.length - (detail.after - after),
+      messages: messages.map((message) =>
+        byMessage.has(message.id) ? { ...message, photos: byMessage.get(message.id) } : message,
       ),
     };
   }

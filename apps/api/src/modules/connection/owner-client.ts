@@ -31,10 +31,19 @@ export class OwnerClient {
     if (!cursor || cursor.length > 300) throw new Error('INVALID_OWNER_CURSOR');
     return this.call('events', { cursor, limit: 100, wait_seconds: 5 }, signal);
   }
+  async downloadPhoto(roomId: string, logId: string, root: string, signal?: AbortSignal) {
+    return this.call(
+      'download_photo',
+      { cid: BigInt(roomId), lid: BigInt(logId), root },
+      signal,
+      130_000,
+    );
+  }
   private call(
-    method: 'status' | 'events',
+    method: 'status' | 'events' | 'download_photo',
     params: Record<string, unknown>,
     signal?: AbortSignal,
+    timeoutMs = this.timeoutMs,
   ): Promise<OwnerReply> {
     const payload = Buffer.from(JSON.stringify(encodeOwnerValue({ method, params })));
     return new Promise((resolve, reject) => {
@@ -88,7 +97,7 @@ export class OwnerClient {
           });
         },
       );
-      const timer = setTimeout(() => req.destroy(new Error('OWNER_RPC_TIMEOUT')), this.timeoutMs);
+      const timer = setTimeout(() => req.destroy(new Error('OWNER_RPC_TIMEOUT')), timeoutMs);
       req.once('close', () => clearTimeout(timer));
       req.once('error', reject);
       req.end(payload);

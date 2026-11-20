@@ -295,7 +295,7 @@ async function bootstrap() {
   // 없는 경로 → NestJS 가 NotFoundException 을 던지고 GlobalExceptionFilter 가
   // envelope 404(code: NOT_FOUND)로 변환한다. 별도 핸들러 불필요.
 
-  await app.listen(config.PORT, '0.0.0.0');
+  await app.listen(config.PORT, config.BIND_HOST);
   app.get(Logger).log(`API server running on port ${config.PORT} (APP_ROLE=${config.APP_ROLE})`);
 }
 

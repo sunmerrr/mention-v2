@@ -1,4 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { eq } from 'drizzle-orm';
@@ -11,11 +13,13 @@ import {
   monitoringAssets,
   monitoringRooms,
   monitoringSettings,
+  nativePhotoJobs,
   nativeStateRecords,
   nativeStateSnapshots,
   nativeWorkerOffsets,
 } from '../../src/db/schema.js';
 import { AssetRepository } from '../../src/modules/assets/asset.repository.js';
+import { NativePhotoWorker } from '../../src/modules/assets/native-photo-worker.service.js';
 import { IntakeStore } from '../../src/modules/connection/intake-store.js';
 import type { OwnerReply } from '../../src/modules/connection/owner-client.js';
 import { importNativeMessages } from '../../src/modules/context/import-native-messages.js';
@@ -82,6 +86,57 @@ describe('native intake on disposable PostgreSQL', () => {
     await store?.close();
     config.DATABASE_URL = prior;
     await container?.stop();
+  });
+  it('fetches a live photo through the existing owner socket contract and saves a preview', async () => {
+    const assets = new AssetRepository();
+    const dir = await mkdtemp(path.join(await realpath(tmpdir()), 'mention-photo-'));
+    const root = path.join(dir, 'mention-native');
+    const roomId = '9787643';
+    const logId = '9787654';
+    try {
+      await assets.db
+        .insert(monitoringSettings)
+        .values({ key: 'keywords', value: { keywords: ['APL'], exclude_keywords: [] } });
+      await assets.db.insert(monitoringRooms).values({
+        roomId,
+        body: { name: 'Synthetic media room' },
+        joined: true,
+        excluded: false,
+        metrics: {},
+      });
+      await assets.db.insert(nativePhotoJobs).values({ roomId, logId, text: 'APL 사진 입력' });
+      const worker = new NativePhotoWorker(assets);
+      await worker.processOne(root, {
+        async downloadPhoto(room, id, folder) {
+          expect([room, id]).toEqual([roomId, logId]);
+          const file = path.join(folder, 'sample.png');
+          await writeFile(
+            file,
+            Buffer.from(
+              'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAC0lEQVR4nGNgQAYAAA4AAamRc7EAAAAASUVORK5CYII=',
+              'base64',
+            ),
+          );
+          return {
+            ...reply(),
+            result: { chat_id: roomId, log_id: logId, complete: true, paths: [file] },
+          };
+        },
+      });
+      const [job] = await assets.db
+        .select()
+        .from(nativePhotoJobs)
+        .where(eq(nativePhotoJobs.logId, logId));
+      expect(job).toMatchObject({ state: 'ready', attempts: 1 });
+      const url = `/photo/${roomId}/${logId}/0`;
+      expect(job?.photos).toEqual([{ url, thumbnail: `${url}?thumb=1` }]);
+      expect((await assets.nativePhoto(url)).contentType).toBe('image/png');
+      expect((await assets.nativePhoto(`${url}?thumb=1`)).contentType).toBe('image/jpeg');
+    } finally {
+      await assets.db.delete(monitoringSettings).where(eq(monitoringSettings.key, 'keywords'));
+      await assets.close();
+      await rm(dir, { recursive: true, force: true });
+    }
   });
   it('uses only the complete snapshot’s analytics cursor to verify a handoff', async () => {
     const c = createDatabase(config.DATABASE_URL ?? '');
