@@ -8,11 +8,15 @@ try{
  const result=spawnSync('docker',['compose','-f',`${root}/compose.yml`,'config','--format','json'],{encoding:'utf8'});
  if(result.status!==0)throw Error(result.stderr);
  const config=JSON.parse(result.stdout),services=config.services;
- for(const role of ['api','worker','ingest','migrate']){
+ for(const role of ['api','worker','ingest','migrate','backup-volume']){
   assert.equal(services[role].image,services.api.image);
   assert(!services[role].container_name);
  }
  assert.equal(services.migrate.environment.APP_ROLE,'migrate');
+ assert.equal(services.worker.depends_on['backup-volume'].condition,'service_completed_successfully');
+ assert.equal(services['backup-volume'].network_mode,'none');
+ assert.equal(services['backup-volume'].volumes.length,1);
+ assert.equal(services['backup-volume'].volumes[0].target,'/app/backup');
  assert.equal(services.api.depends_on.migrate.condition,'service_completed_successfully');
  for(const role of ['ingest','worker']){
   assert.equal(services[role].volumes[0].target,'/run/mention/connection');

@@ -407,3 +407,15 @@ reaction observations and comparisons. It also verifies the message CSV,
 context CSV, JSON and briefing PNG routes. A separate Compose rehearsal
 queued a backup through the API, used PostgreSQL 16 tools in the worker,
 successfully restored the dump, and removed the temporary verification database.
+
+The refreshed photo archive contains 43,195 routes and 6,703 unique objects.
+It reused 6,689 byte-identical objects without creating another physical copy.
+The 157 changed routes were imported into disposable PostgreSQL and matched
+all 147 referenced objects. The image count excludes zero missing assets and
+zero lost routes compared with the earlier archive.
+
+The local reverse SSH rehearsal mounted the forwarded connection socket in an
+isolated Docker container and completed a read-only owner status request.
+Rootless identity mapping was verified for that mount. A second backup rehearsal
+verified dump and restore with the actual guest's non-default user ID, after
+initializing the dedicated private backup volume with matching permissions.

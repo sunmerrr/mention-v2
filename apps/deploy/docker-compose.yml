@@ -65,6 +65,15 @@ services:
       - *connection-socket
     depends_on:
       migrate: {condition: service_completed_successfully}
+  backup-volume:
+    image: ${ECR_REPOSITORY}:${IMAGE_TAG_MENTION_SERVER}
+    user: "0:0"
+    network_mode: none
+    restart: "no"
+    environment: {APP_UID: "${APP_UID}", APP_GID: "${APP_GID}"}
+    command: ['sh', '-ec', 'chown "$$APP_UID:$$APP_GID" /app/backup && chmod 700 /app/backup']
+    volumes:
+      - mention-backups:/app/backup
   worker:
     <<: *app
     environment: {APP_ROLE: worker, PORT: "4201", MENTION_BACKUP_DIRECTORY: /app/backup}
@@ -73,6 +82,7 @@ services:
       - mention-backups:/app/backup
     depends_on:
       migrate: {condition: service_completed_successfully}
+      backup-volume: {condition: service_completed_successfully}
 networks:
   mention:
 volumes:
