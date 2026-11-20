@@ -26,7 +26,7 @@ const coreImports = [
         clientIp: (req as { ip?: string }).ip,
       }),
       serializers: {
-        req: (req: { method: string; url: string }) => ({ method: req.method, url: req.url }),
+        req: (req: { method: string; url: string }) => ({ method: req.method, url: req.url.split('?')[0] }),
         res: (res: { statusCode: number }) => ({ statusCode: res.statusCode }),
         err: errorDiagnostics,
       },

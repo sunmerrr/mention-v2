@@ -10,6 +10,7 @@ import type { FastifyRequest } from 'fastify';
 import { Logger } from 'nestjs-pino';
 import { cleanupOpenApiDoc, ZodValidationPipe } from 'nestjs-zod';
 import { loadEnv } from './shared/config/load-env.js';
+import { errorDiagnostics } from './shared/logging/error-diagnostics.js';
 
 async function bootstrap() {
   // 1) env 출처 폭포를 먼저 병합(Parameter Store → env → .env). → config/runtime-configuration.md
@@ -301,6 +302,6 @@ async function bootstrap() {
 
 bootstrap().catch((error) => {
   // 부팅 자체가 실패하면 최소한 stderr 로 남기고 죽는다.
-  console.error('Bootstrap failed:', error);
+  console.error(JSON.stringify({ event: 'bootstrap_failed', failure: errorDiagnostics(error) }));
   process.exit(1);
 });

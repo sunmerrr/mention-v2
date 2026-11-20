@@ -112,6 +112,19 @@ describe('PostgreSQL projection on a disposable real database', () => {
       await connection.pool.end();
     }
   });
+  it('handles idle pool errors without aborting other database work', async () => {
+    const connection = createDatabase(config.DATABASE_URL ?? '');
+    try {
+      expect(connection.pool.emit('error', new Error('synthetic idle connection failure'))).toBe(
+        true,
+      );
+      await expect(connection.pool.query('SELECT 1 AS ok')).resolves.toMatchObject({
+        rows: [{ ok: 1 }],
+      });
+    } finally {
+      await connection.pool.end();
+    }
+  });
   it('allows only one scheduled producer lease at a time', async () => {
     const first = await projection.producerSession();
     try {
