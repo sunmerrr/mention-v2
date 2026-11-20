@@ -134,8 +134,9 @@ export async function importNativeState(filename: string, target: Pick<EvidenceR
       if (!header) {
         header = headerSchema.parse(parseOwnerJson(line));
         if (
-          Object.keys(header.counts).length !== nativeStateTables.length ||
-          nativeStateTables.some((t) => header?.counts[t] === undefined) ||
+          nativeStateTables.some(
+            (t) => t !== 'confirmed_observations' && header?.counts[t] === undefined,
+          ) ||
           Object.keys(header.counts).some(
             (t) => !nativeStateTables.includes(t as (typeof nativeStateTables)[number]),
           )

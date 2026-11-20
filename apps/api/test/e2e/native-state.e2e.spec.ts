@@ -49,6 +49,7 @@ it('preserves inert uncertain receipts, supports exact replay and refuses change
       ordinal: 0,
       body: { request_id: 'kept', state: 'unknown', log_id: '3970073012646000642' },
     };
+  delete h.counts.confirmed_observations;
   const f = await file(h, [row]);
   expect((await importNativeState(f, client)).records).toBe(1);
   await importNativeState(f, client);
