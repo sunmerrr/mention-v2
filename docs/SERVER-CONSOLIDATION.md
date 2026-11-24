@@ -37,25 +37,21 @@
   are never replayed automatically. A separate configurable collector hostname
   exposes only the v1 prefix through lenkins. Actual DNS/ALB setup is pending.
 
-## Not yet migrated or deployed
+## Local production
 
-The public service still runs from /Users/we/mention. This workspace is NOT a
-completed independent replacement. The existing public projection importer still
-reads the transitional source API. Conversation grouping, complete native write/
-review/export parity and dialogue/receipt semantics must be ported and verified
-before cutover. The dialogue role is intentionally not an empty healthy service.
-Its implementation and Compose service are pending that migration.
+On 2026-11-24 the existing public URL cut over to the Node SSR/API in the
+`mention-live` Docker host. Its ingest and worker roles read the forwarded owner
+socket and share PostgreSQL with the API. The old Mention web, analysis worker
+and extension receiver processes were retired. See the [migration record](MIGRATION-STATUS.md)
+for the frozen data counts and live intake checks.
 
-No SSH tunnel was opened and no AWS server was provisioned. AWS destination,
-dedicated SSH user and absolute remote socket directory are required for a live
-connection. No owner, private assistant, dialogue schedule, production cursor,
-classification, outbox or connection token changed. No historical replay occurred.
+The OpenChat service, private assistant and Kakao connection owner remain
+independent. AWS still requires a destination host, a dedicated SSH identity
+and a remote socket directory. The owner durable buffer remains a separate task.
 
-User item7 is now included: minimum15 useful messages per direction, with15-message
-increments after noise/promotion/deduplication. The worker policy is being ported;
-production routes still await integration. Only local owner durable-buffer/database
-retention (item8-1) remains deferred. The owner memory buffer
-is unchanged. Server intake tests do not establish outage-loss recovery.
+The Mention worker skips duplicates, promotions, greetings and short reactions
+when selecting context. It seeks 15 useful messages per direction when enough
+are available. Further context is served from PostgreSQL in 15-message increments.
 
 ## Reverse SSH usage
 
@@ -74,6 +70,8 @@ SSH connection ended; never delete or replace the Mac owner's actual socket.
 
 ## lenkins setup
 
+The BuildConfig and Compose listener labels follow the [lenkins build guide](https://lenkins.teamlulu.ai/build-guide.md).
+
 Register the project repository and one custom BuildConfig using lenkins.yml:
 context root, Dockerfile apps/deploy/Dockerfile, target api, linux/arm64 and tag
 prefix mention-server. Select the actual administrator-provided ECR repository;
@@ -82,10 +80,9 @@ IMAGE_TAG_MENTION_SERVER -> mention-server. Inject ECR_REPOSITORY and other runt
 values through the private host-stack .env.
 
 The prepared Compose stack is apps/deploy/docker-compose.yml. It has PostgreSQL,
-one-shot migration and api/worker/ingest services sharing the app image. Keep live
-intake OFF until all migration gates pass. The API listener is runtime-configured;
-actual exposure, target port and ALB security groups remain operator configuration.
-Do not treat this preparation as authorization to deploy the incomplete stack.
+one-shot migration and api/worker/ingest services sharing the app image.
+The API listener is runtime-configured. AWS exposure, target ports and ALB
+security groups are configured when deploying that stack.
 
 ## Verification
 

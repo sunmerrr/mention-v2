@@ -436,3 +436,49 @@ Deploy the collector token through the host's private secret channel to
 identity. Compose mounts the directory read-only into ingest and photo worker.
 The API and database do not receive the token. The RPC listener accepts status,
 events and open-room photo downloads.
+
+## 2026-11-24 local production cutover
+
+The existing Cloudflare hostname and loopback port 8790 now serve the Node
+SSR/API in the dedicated `mention-live` Lima guest. Port 8791 keeps the
+installed browser extension's authenticated protocol and reaches the Node
+ingest role. The Node ingest and analysis roles share PostgreSQL 16 with the
+web role. The previous Mention web, analysis and forum receiver processes
+were drained for the handoff. The OpenChat service and the running Kakao
+connection owner stayed up.
+
+The final archived analysis snapshot contains 151,613 records across 42
+tables. It was captured after freezing writes on the previous web service.
+PostgreSQL admitted 1,491 canonical conversations, 3,153 historical aliases,
+1,864 saved classifications, 212 keyword exclusion rules and 49,539 photo
+routes backed by 7,968 unique photo objects. The last forum archive import
+contains 972 collected posts, 8,742 discovery records and 153 review receipts.
+
+The ingest role authenticated over the reverse SSH socket and verified a
+gap-free continuation from the final saved cursor before the old analysis
+worker stopped. By 14:28 KST it had retained 36 Kakao events with zero reported
+intake gaps. A previously saved real photo was downloaded into the dedicated
+shared spool and read from the worker container. Local and public health and a
+populated conversations API were checked on the production address. The
+original forum extension profile passed both receiver status paths. The final
+14:41 KST check recorded 75 Kakao intake events, zero reported intake gaps and
+24 processed forum inbox records. The original Kakao owner PID was unchanged.
+
+The homepage preserves the combined report. The separate Kakao overview,
+topic briefing, combined target reports and source-specific target reports run
+against PostgreSQL. The target reports include eight weekly buckets, subkeyword
+counts and related words. Archive-derived context CSV and image routes were
+checked during the handoff. The analysis worker prunes PostgreSQL error records
+older than 24 hours. The cutoff was verified using 23- and 25-hour-old fixture
+records in a disposable PostgreSQL container.
+
+`pnpm verify:full` passed after the final deployment build, including 58 unit
+and 67 integration tests. Browser and live HTTP checks covered the retained
+hostname and the source-specific target reports.
+
+The LaunchAgent `ai.teamlulu.mention-live-forwarding` starts the dedicated
+guest when needed and keeps both Unix socket forwards available. The private
+deployment directory is identified by `.dev/tmp/mention-prod-20261124-dir`.
+It holds the environment, Compose file, final snapshot and activation logs.
+The existing sources remain as recovery evidence. AWS and lenkins execution
+were outside this local cutover.

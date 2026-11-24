@@ -1,17 +1,20 @@
-# Mention internal migration
+# Mention
 
-Company-template workspace: `/Users/we/mention-internal`.
-The existing dashboard remains at `/Users/we/mention`; this workspace has not
-replaced it. See [migration status](docs/MIGRATION-STATUS.md),
-[decisions](DECISIONS.md) and [security baseline](docs/BOILERPLATE-BASELINE.md).
-Local verification uses Node24.14.0 and pnpm9.15.9. Prepare a private `.env`
-from `.env.example`, then use `scripts/dev.sh container-start`, `infra-up`,
-`pnpm --filter @app/api db:migrate` and `db:import-source`. Start the API,
-worker and SSR preview with `scripts/dev.sh start all`; stop with `stop all`.
-The loopback source on8790 must remain available during this transition.
-Preview writes default OFF. Run `pnpm verify:full` before deployment changes.
+카카오톡 오픈채팅과 포커고수의 대화를 수집하고 키워드별 여론을 보여주는 팀 대시보드입니다. 운영 환경은 NestJS·Fastify, React·Vite SSR, PostgreSQL 16·Drizzle을 사용합니다. API, 수집, 집계는 동일한 Docker 이미지에서 역할을 나눠 실행합니다. [운영 이전 기록](docs/MIGRATION-STATUS.md)
 
-The original boilerplate documentation is retained below as reference.
+```mermaid
+flowchart LR
+    Owner["Mac의 카카오톡 연결 프로세스"] -->|"역방향 SSH · connection.sock"| Ingest["Node 수집"]
+    Extension["포커고수 Chrome 확장"] -->|"인증된 수집 API"| Ingest
+    Ingest --> PG[("PostgreSQL")]
+    PG <-->|"맥락 저장 · 여론 집계"| Worker["Node 분석 워커"]
+    PG -->|"완료된 집계 조회"| API["NestJS API · React SSR"]
+    API --> Edge["Cloudflare · 대시보드"]
+```
+
+로컬 개발에는 Node 24.14.0과 pnpm 9.15.9를 사용합니다. 운영 구성은 `apps/deploy/docker-compose.yml`을 참고하세요. 배포 변경 전에는 `pnpm verify:full`을 실행합니다. [서버 구성과 lenkins 설정](docs/SERVER-CONSOLIDATION.md) · [개발 결정](DECISIONS.md) · [보안 기준](docs/BOILERPLATE-BASELINE.md)
+
+아래는 회사 템플릿의 원본 문서입니다.
 
 # project-boilerplate
 
