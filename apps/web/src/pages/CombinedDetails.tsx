@@ -4,6 +4,7 @@ import {
   opinionChartPopulation,
   opinionLabels,
 } from '@app/shared/monitoring/domain/source-opinions';
+import type { BriefingSource } from '../combined-query';
 import { labels } from '../components/ui';
 import {
   Box,
@@ -74,21 +75,40 @@ function Distribution({ counts, units }: { counts: OpinionCounts; units: number 
   return <CountBreakdown total={units} items={distributionItems(counts)} />;
 }
 
-export default function CombinedDetails({ data }: { data: CombinedPayload }) {
+const sourceNames = {
+  kakao: { short: '카톡', unit: '대화', collected: '수집된 카톡 대화' },
+  pokergosu: { short: '포커고수', unit: '게시글', collected: '포커고수 게시글' },
+} as const;
+
+export default function CombinedDetails({
+  data,
+  source,
+}: {
+  data: CombinedPayload;
+  source?: BriefingSource;
+}) {
   const selected = data.rows[0];
+  const sources: BriefingSource[] = source ? [source] : ['kakao', 'pokergosu'];
+  const available = (key: BriefingSource) => key === 'kakao' || data.pokergosu.available;
   return (
     <>
-      <Disclosure title="출처별 수치와 그래프">
-        <Disclosure title="건수 비교표">
+      <Disclosure title={source ? '대상별 수치와 그래프' : '출처별 수치와 그래프'}>
+        <Disclosure title={source ? '건수표' : '건수 비교표'}>
           <Text as="p" size="2" color="gray" mb="3">
-            수집된 카톡 대화 {data.kakao.units.toLocaleString('ko-KR')}건 · 포커고수 게시글{' '}
-            {data.pokergosu.units.toLocaleString('ko-KR')}건
+            {sources
+              .map(
+                (key) =>
+                  `${sourceNames[key].collected} ${data[key].units.toLocaleString('ko-KR')}건`,
+              )
+              .join(' · ')}
           </Text>
-          <Box display={{ initial: 'block', sm: 'none' }} mb="2">
-            <Text size="1" color="gray">
-              표를 좌우로 움직여 두 출처를 비교할 수 있습니다.
-            </Text>
-          </Box>
+          {sources.length > 1 && (
+            <Box display={{ initial: 'block', sm: 'none' }} mb="2">
+              <Text size="1" color="gray">
+                표를 좌우로 움직여 두 출처를 비교할 수 있습니다.
+              </Text>
+            </Box>
+          )}
           <Table.Root style={{ whiteSpace: 'nowrap' }}>
             <caption>
               <VisuallyHidden>전체 건수 비교</VisuallyHidden>
@@ -96,15 +116,14 @@ export default function CombinedDetails({ data }: { data: CombinedPayload }) {
             <Table.Header>
               <Table.Row>
                 <Table.ColumnHeaderCell rowSpan={2}>대상</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell colSpan={3} align="center" scope="colgroup">
-                  카톡 · 대화
-                </Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell colSpan={3} align="center" scope="colgroup">
-                  포커고수 · 게시글
-                </Table.ColumnHeaderCell>
+                {sources.map((key) => (
+                  <Table.ColumnHeaderCell key={key} colSpan={3} align="center" scope="colgroup">
+                    {sourceNames[key].short} · {sourceNames[key].unit}
+                  </Table.ColumnHeaderCell>
+                ))}
               </Table.Row>
               <Table.Row>
-                {(['kakao', 'pokergosu'] as const).flatMap((source) => [
+                {sources.flatMap((source) => [
                   <Table.ColumnHeaderCell key={`${source}-total`} align="center">
                     전체
                   </Table.ColumnHeaderCell>,
@@ -121,22 +140,22 @@ export default function CombinedDetails({ data }: { data: CombinedPayload }) {
               {data.rows.map((row) => (
                 <Table.Row key={row.id}>
                   <Table.RowHeaderCell>{row.name}</Table.RowHeaderCell>
-                  {(['kakao', 'pokergosu'] as const).flatMap((source) => {
-                    const available = source === 'kakao' || data.pokergosu.available;
+                  {sources.flatMap((source) => {
+                    const shown = available(source);
                     return [
                       <Table.Cell key={`${source}-total`} align="center">
                         <Text color="gray">
-                          {available ? row[source].units.toLocaleString('ko-KR') : '—'}
+                          {shown ? row[source].units.toLocaleString('ko-KR') : '—'}
                         </Text>
                       </Table.Cell>,
                       <Table.Cell key={`${source}-positive`} align="center">
                         <Text weight="medium" color={sentimentColors.positive}>
-                          {available ? row[source].counts.positive.toLocaleString('ko-KR') : '—'}
+                          {shown ? row[source].counts.positive.toLocaleString('ko-KR') : '—'}
                         </Text>
                       </Table.Cell>,
                       <Table.Cell key={`${source}-negative`} align="center">
                         <Text weight="medium" color={sentimentColors.negative}>
-                          {available ? row[source].counts.negative.toLocaleString('ko-KR') : '—'}
+                          {shown ? row[source].counts.negative.toLocaleString('ko-KR') : '—'}
                         </Text>
                       </Table.Cell>,
                     ];
@@ -151,20 +170,22 @@ export default function CombinedDetails({ data }: { data: CombinedPayload }) {
                 <Table.Header>
                   <Table.Row>
                     <Table.ColumnHeaderCell>대상</Table.ColumnHeaderCell>
-                    <Table.ColumnHeaderCell>카톡</Table.ColumnHeaderCell>
-                    <Table.ColumnHeaderCell>포커고수</Table.ColumnHeaderCell>
+                    {sources.map((key) => (
+                      <Table.ColumnHeaderCell key={key}>
+                        {sourceNames[key].short}
+                      </Table.ColumnHeaderCell>
+                    ))}
                   </Table.Row>
                 </Table.Header>
                 <Table.Body>
                   {data.rows.map((row) => (
                     <Table.Row key={row.id}>
                       <Table.RowHeaderCell>{row.name}</Table.RowHeaderCell>
-                      <Table.Cell>
-                        <Distribution {...row.kakao} />
-                      </Table.Cell>
-                      <Table.Cell>
-                        <Distribution {...row.pokergosu} />
-                      </Table.Cell>
+                      {sources.map((key) => (
+                        <Table.Cell key={key}>
+                          <Distribution {...row[key]} />
+                        </Table.Cell>
+                      ))}
                     </Table.Row>
                   ))}
                 </Table.Body>
@@ -178,25 +199,22 @@ export default function CombinedDetails({ data }: { data: CombinedPayload }) {
               title={`${selected.name} 상세 분포`}
               description="선택한 대상만 표시합니다. 판단 제외는 그래프와 비율에서 제외합니다."
             >
-              <Grid columns={{ initial: '1', md: '2' }} gap="5">
-                <OpinionChart
-                  label="카톡 · 대화"
-                  ariaLabel={`${selected.name} 카톡 분류 분포`}
-                  units={selected.kakao.units}
-                  counts={selected.kakao.counts}
-                />
-                <OpinionChart
-                  label="포커고수 · 게시글"
-                  ariaLabel={`${selected.name} 포커고수 분류 분포`}
-                  units={selected.pokergosu.units}
-                  counts={selected.pokergosu.counts}
-                />
+              <Grid columns={{ initial: '1', md: sources.length > 1 ? '2' : '1' }} gap="5">
+                {sources.map((key) => (
+                  <OpinionChart
+                    key={key}
+                    label={`${sourceNames[key].short} · ${sourceNames[key].unit}`}
+                    ariaLabel={`${selected.name} ${sourceNames[key].short} 분류 분포`}
+                    units={selected[key].units}
+                    counts={selected[key].counts}
+                  />
+                ))}
               </Grid>
             </Section>
           </Box>
         )}
       </Disclosure>{' '}
-      {data.pokergosu.undated > 0 && (
+      {source !== 'kakao' && data.pokergosu.undated > 0 && (
         <Text as="p" size="1" color="gray" mb="4">
           작성 시각 미확인 {data.pokergosu.undated}개 글은 날짜 지정 조회에서 제외합니다.
         </Text>

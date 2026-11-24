@@ -25,29 +25,23 @@ import { routeFeature } from './workspace-query';
 const imports = {
   designSystem: () => import('./design-system/Catalog'),
   pokergosu: () => import('./pages/Pokergosu'),
-  combined: () => import('./pages/Combined'),
   opinionBriefing: () => import('./pages/OpinionBriefing'),
   topics: () => import('./pages/TopicBriefing'),
-  overview: () => import('./pages/Overview'),
   conversations: () => import('./pages/Conversations'),
   reviews: () => import('./pages/Reviews'),
   detail: () => import('./pages/Detail'),
   workspace: () => import('./pages/Workspace'),
 };
 const DesignSystemCatalog = lazy(imports.designSystem),
-  Combined = lazy(imports.combined),
   OpinionBriefing = lazy(imports.opinionBriefing),
   TopicBriefing = lazy(imports.topics),
-  Overview = lazy(imports.overview),
   Pokergosu = lazy(imports.pokergosu),
   Conversations = lazy(imports.conversations),
   Reviews = lazy(imports.reviews),
   Detail = lazy(imports.detail),
   Workspace = lazy(imports.workspace);
 export async function preloadRoute(path: string) {
-  if (path === '/' || path === '/combined' || path.startsWith('/combined/'))
-    await imports.opinionBriefing();
-  else if (isCombinedPath(path)) await imports.combined();
+  if (isCombinedPath(path)) await imports.opinionBriefing();
   else if (path === '/trending') await imports.topics();
   else if (path === '/design-system') await imports.designSystem();
   else if (
@@ -61,7 +55,6 @@ export async function preloadRoute(path: string) {
   else if (path.startsWith('/conversations/')) await imports.detail();
   else if (path === '/reviews') await imports.reviews();
   else if (path === '/conversations') await imports.conversations();
-  else await imports.overview();
 }
 const navGroups: { label: string; Icon: typeof BarChart3; links: [string, string][] }[] = [
   {
@@ -157,8 +150,7 @@ function Refresh() {
       variant="ghost"
       onClick={async () => {
         if (
-          pathname === '/pokergosu' ||
-          pathname.startsWith('/pokergosu/') ||
+          (pathname.startsWith('/pokergosu/') && !pathname.startsWith('/pokergosu/keywords/')) ||
           pathname === '/posts' ||
           pathname.startsWith('/posts/')
         ) {
@@ -264,15 +256,15 @@ function WorkspaceApp() {
               <Routes>
                 <Route path="/design-system" element={<DesignSystemCatalog />} />
                 <Route path="/" element={<OpinionBriefing />} />
-                <Route path="/kakao" element={<Overview />} />
+                <Route path="/kakao" element={<OpinionBriefing />} />
                 <Route path="/combined" element={<OpinionBriefing />} />
                 <Route path="/combined/:target" element={<OpinionBriefing />} />
-                <Route path="/kakao/keywords/:target" element={<Combined />} />
-                <Route path="/pokergosu/keywords/:target" element={<Combined />} />
+                <Route path="/kakao/keywords/:target" element={<OpinionBriefing />} />
+                <Route path="/pokergosu/keywords/:target" element={<OpinionBriefing />} />
                 <Route path="/trending" element={<TopicBriefing />} />
                 <Route path="/conversations" element={<Conversations />} />
                 <Route path="/conversations/:id" element={<Detail />} />
-                <Route path="/pokergosu" element={<Pokergosu />} />
+                <Route path="/pokergosu" element={<OpinionBriefing />} />
                 <Route path="/posts" element={<Pokergosu />} />
                 <Route path="/posts/:id" element={<Pokergosu />} />
                 <Route path="/pokergosu/:id" element={<Pokergosu />} />

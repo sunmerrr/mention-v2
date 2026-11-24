@@ -27,9 +27,12 @@ export function KeywordMentionRanking({
   relatedRows = [],
   mentionHref,
   sourceHref,
+  sources = sourceKeys,
 }: {
   rows: KeywordMentionRow[];
   relatedRows?: KeywordMentionRow[];
+  /** Columns to show; a single source hides the combined total. */
+  sources?: readonly (typeof sourceKeys)[number][];
   mentionHref?: (row: KeywordMentionRow) => string;
   sourceHref?: (row: KeywordMentionRow, source: keyof typeof sourceLabels) => string;
 }) {
@@ -62,9 +65,14 @@ export function KeywordMentionRanking({
           <Table.Row>
             <Table.ColumnHeaderCell>순위</Table.ColumnHeaderCell>
             <Table.ColumnHeaderCell>{hasRelated ? '키워드' : '하위 키워드'}</Table.ColumnHeaderCell>
-            <Table.ColumnHeaderCell justify="end">합계</Table.ColumnHeaderCell>
-            <Table.ColumnHeaderCell justify="end">카톡</Table.ColumnHeaderCell>
-            <Table.ColumnHeaderCell justify="end">포커고수</Table.ColumnHeaderCell>
+            {sources.length > 1 && (
+              <Table.ColumnHeaderCell justify="end">합계</Table.ColumnHeaderCell>
+            )}
+            {sources.map((source) => (
+              <Table.ColumnHeaderCell key={source} justify="end">
+                {sourceLabels[source]}
+              </Table.ColumnHeaderCell>
+            ))}
           </Table.Row>
         </Table.Header>
         <Table.Body>
@@ -94,10 +102,12 @@ export function KeywordMentionRanking({
                     </Text>
                   )}
                 </Table.RowHeaderCell>
-                <Table.Cell justify="end">
-                  <Text weight="bold">{number.format(total)}</Text>
-                </Table.Cell>
-                {sourceKeys.map((source) => {
+                {sources.length > 1 && (
+                  <Table.Cell justify="end">
+                    <Text weight="bold">{number.format(total)}</Text>
+                  </Table.Cell>
+                )}
+                {sources.map((source) => {
                   const count = row[source];
                   const value = count === null ? '–' : number.format(count);
                   const url = !related && count && sourceHref?.(row, source);

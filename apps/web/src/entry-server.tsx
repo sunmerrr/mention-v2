@@ -92,7 +92,7 @@ export async function render(
       ...detailQuery(detail[1] ?? ''),
       queryFn: () => queries.detail(detail[1] ?? ''),
     });
-  else if (['/', '/kakao', '/conversations', '/reviews'].includes(requestUrl.pathname)) {
+  else if (['/conversations', '/reviews'].includes(requestUrl.pathname)) {
     const listInput = listSchema.parse({
       ...scope,
       mention: requestUrl.searchParams.get('mention') || undefined,
@@ -104,22 +104,15 @@ export async function render(
         ...overviewQuery(scope),
         queryFn: () => queries.overview(scope),
       }),
-      requestUrl.pathname === '/' || requestUrl.pathname === '/kakao'
-        ? Promise.resolve()
-        : requestUrl.pathname === '/reviews'
-          ? client.fetchInfiniteQuery({
-              ...classificationQuery(scope, label),
-              queryFn: () => queries.classifications(listInput),
-            })
-          : client.fetchInfiniteQuery({
-              ...conversationsQuery(
-                scope,
-                conversationLabel,
-                conversationStatus,
-                listInput.mention,
-              ),
-              queryFn: () => queries.conversations(listInput),
-            }),
+      requestUrl.pathname === '/reviews'
+        ? client.fetchInfiniteQuery({
+            ...classificationQuery(scope, label),
+            queryFn: () => queries.classifications(listInput),
+          })
+        : client.fetchInfiniteQuery({
+            ...conversationsQuery(scope, conversationLabel, conversationStatus, listInput.mention),
+            queryFn: () => queries.conversations(listInput),
+          }),
     ]);
   }
   if (workspace) {

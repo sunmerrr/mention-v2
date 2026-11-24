@@ -4,6 +4,8 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { ArrowUpRight, RefreshCw } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import {
+  type BriefingSource,
+  briefingHomeHref,
   combinedKeywordHref,
   combinedQuery,
   combinedScope,
@@ -35,12 +37,14 @@ function KeywordNavigation({
   data,
   day,
   target,
+  source,
 }: {
   data: CombinedPayload;
   day: string;
   target: string;
+  source?: BriefingSource;
 }) {
-  const home = day ? `/?${new URLSearchParams({ day })}` : '/';
+  const home = briefingHomeHref(day, source);
   return (
     <RouteTabs label="키워드 브리핑 이동" segmented>
       <TabNav.Link active={!target} asChild>
@@ -48,7 +52,7 @@ function KeywordNavigation({
       </TabNav.Link>
       {data.metadata.targets.map(({ name }) => (
         <TabNav.Link key={name} active={name === target} asChild>
-          <Link to={combinedKeywordHref(name, day)}>{name}</Link>
+          <Link to={combinedKeywordHref(name, day, source)}>{name}</Link>
         </TabNav.Link>
       ))}
     </RouteTabs>
@@ -63,14 +67,14 @@ const formatShare = (count: number, total: number) =>
     maximumFractionDigits: 1,
   });
 
-function WeeklyScope({ data }: { data: CombinedPayload }) {
+function WeeklyScope({ data, source }: { data: CombinedPayload; source?: BriefingSource }) {
   const { weeks } = data.weekly;
   const last = weeks.at(-1);
   return (
     <Text as="p" size="2" color="gray" mb="4">
       {weeks[0]?.start} ~ {last?.through} · 월요일 시작
       {last?.partial && ' · * 부분 집계'}
-      {!data.pokergosu.available && ' · 포커고수 데이터 조회 불가'}
+      {source !== 'kakao' && !data.pokergosu.available && ' · 포커고수 데이터 조회 불가'}
     </Text>
   );
 }
@@ -100,6 +104,12 @@ function difference(result: KeywordResult) {
 }
 
 const sourceLabels = { kakao: '카톡', pokergosu: '포커고수' } as const;
+const unitNote = (source?: BriefingSource) =>
+  source === 'kakao'
+    ? '카톡 대화 1개를 1건으로 셉니다.'
+    : source === 'pokergosu'
+      ? '포커고수 게시글 1개를 1건으로 셉니다.'
+      : '카톡 대화와 포커고수 게시글은 각각 1건으로 셉니다.';
 
 function SourceComparison({ result, data }: { result: KeywordResult; data: CombinedPayload }) {
   return (
@@ -142,8 +152,15 @@ function SourceComparison({ result, data }: { result: KeywordResult; data: Combi
   );
 }
 
-function KeywordMentionsSection({ data }: { data: CombinedPayload }) {
+function KeywordMentionsSection({
+  data,
+  source,
+}: {
+  data: CombinedPayload;
+  source?: BriefingSource;
+}) {
   const related = data.relatedKeywords ?? [];
+  const origin = source ? `/${source}` : '/';
   return (
     <ReportSection
       card
@@ -159,24 +176,31 @@ function KeywordMentionsSection({ data }: { data: CombinedPayload }) {
       <KeywordMentionRanking
         rows={data.keywordMentions}
         relatedRows={related}
+        sources={source ? [source] : undefined}
         mentionHref={({ name, pokergosu }) =>
-          mentionListHref(name, data.scope, pokergosu ? 'pokergosu' : 'kakao')
+          mentionListHref(name, data.scope, source ?? (pokergosu ? 'pokergosu' : 'kakao'), origin)
         }
-        sourceHref={({ name }, source) => mentionListHref(name, data.scope, source)}
+        sourceHref={({ name }, listSource) => mentionListHref(name, data.scope, listSource, origin)}
       />
       {(data.keywordMentions.length > 0 || related.length > 0) && (
         <Text as="p" size="1" color="gray" mt="3">
-          카톡 대화와 포커고수 게시글·댓글을 확인해 키워드별로 대화 또는 게시글당 1건을 셉니다. 한
-          기록이 여러 키워드에 잡힐 수 있고, 띄어쓰기·기호만 다른 표기는 묶었습니다.
+          {source === 'kakao'
+            ? '카톡 대화를 확인해 키워드별로 대화당 1건을 셉니다.'
+            : source === 'pokergosu'
+              ? '포커고수 게시글·댓글을 확인해 키워드별로 게시글당 1건을 셉니다.'
+              : '카톡 대화와 포커고수 게시글·댓글을 확인해 키워드별로 대화 또는 게시글당 1건을 셉니다.'}{' '}
+          한 기록이 여러 키워드에 잡힐 수 있고, 띄어쓰기·기호만 다른 표기는 묶었습니다.
           {related.length > 0 && ' 연관어는 이 대상이 언급된 기록 중 2건 이상에 등장한 단어입니다.'}
-          {!data.pokergosu.available && ' 포커고수 집계는 현재 확인할 수 없습니다.'}
+          {source !== 'kakao' &&
+            !data.pokergosu.available &&
+            ' 포커고수 집계는 현재 확인할 수 없습니다.'}
         </Text>
       )}
     </ReportSection>
   );
 }
 
-function KeywordDetail({ data }: { data: CombinedPayload }) {
+function KeywordDetail({ data, source }: { data: CombinedPayload; source?: BriefingSource }) {
   const row = data.rows[0];
   if (!row) return <Empty>등록된 키워드를 찾을 수 없습니다.</Empty>;
   const result = keywordResult(row.kakao.counts, row.pokergosu.counts);
@@ -187,17 +211,17 @@ function KeywordDetail({ data }: { data: CombinedPayload }) {
     (leader.label === 'positive' || leader.label === 'negative');
   const headline = directionalLeader ? difference(result) : resultHeadline(result);
   const sourceSplit =
-    result.leaders.length === 1 && leader && data.pokergosu.available
+    !source && result.leaders.length === 1 && leader && data.pokergosu.available
       ? result.sources.kakao.distribution.find((item) => item.label === leader.label)?.count
       : undefined;
   const weekly = data.weekly.rows.find(({ id }) => id === row.id);
   return (
     <>
-      <ReportSheet dashboard label={`${row.name} 종합 결과`}>
+      <ReportSheet dashboard label={`${row.name} ${source ? sourceLabels[source] : '종합'} 결과`}>
         <div className="ds-keyword-overview">
           <ReportSection
             card
-            title="종합 분류"
+            title={source ? '분류 결과' : '종합 분류'}
             description={headline}
             actions={
               result.reviewable > 0 && (
@@ -218,7 +242,7 @@ function KeywordDetail({ data }: { data: CombinedPayload }) {
             {result.classified > 0 ? (
               <>
                 <ReportDistribution
-                  label="종합 분류 분포"
+                  label={source ? '분류 분포' : '종합 분류 분포'}
                   items={result.distribution.map(({ label, count }) => ({
                     label: labels[label],
                     tone: label,
@@ -239,18 +263,21 @@ function KeywordDetail({ data }: { data: CombinedPayload }) {
                 )}
               </>
             ) : (
-              <figure className="ds-analysis-chart" aria-label="종합 분류 분포">
+              <figure
+                className="ds-analysis-chart"
+                aria-label={source ? '분류 분포' : '종합 분류 분포'}
+              >
                 <Empty>선택한 기간에 분류를 마친 반응이 없습니다.</Empty>
               </figure>
             )}
           </ReportSection>
-          {result.classified > 0 && <SourceComparison result={result} data={data} />}
+          {!source && result.classified > 0 && <SourceComparison result={result} data={data} />}
         </div>
-        <KeywordMentionsSection data={data} />
+        <KeywordMentionsSection data={data} source={source} />
         {weekly && (
           <>
             <ReportSection card title="주간 긍정·부정 비율">
-              <WeeklyScope data={data} />
+              <WeeklyScope data={data} source={source} />
               <WeeklyPlot
                 label="주간 긍정·부정 비율"
                 weeks={data.weekly.weeks}
@@ -275,12 +302,20 @@ function KeywordDetail({ data }: { data: CombinedPayload }) {
           </>
         )}
       </ReportSheet>
-      <CombinedDetails data={data} />
+      <CombinedDetails data={data} source={source} />
     </>
   );
 }
 
-function BriefingIndex({ data, day }: { data: CombinedPayload; day: string }) {
+function BriefingIndex({
+  data,
+  day,
+  source,
+}: {
+  data: CombinedPayload;
+  day: string;
+  source?: BriefingSource;
+}) {
   const results = data.rows
     .map((row) => ({
       row,
@@ -313,14 +348,14 @@ function BriefingIndex({ data, day }: { data: CombinedPayload; day: string }) {
   const highlights = [positive, negative].filter((entry) => entry !== undefined);
   const keywordLink = (name: string) => (
     <Button intent="quiet" size="2" asChild>
-      <Link to={combinedKeywordHref(name, day)} aria-label={`${name} 상세 브리핑`}>
+      <Link to={combinedKeywordHref(name, day, source)} aria-label={`${name} 상세 브리핑`}>
         <strong>{name}</strong>
         <ArrowUpRight size={12} />
       </Link>
     </Button>
   );
   return (
-    <ReportSheet dashboard label="종합 여론 보고서">
+    <ReportSheet dashboard label={`${source ? sourceLabels[source] : '종합'} 여론 보고서`}>
       <div className="ds-overview-comparisons">
         {(plotted.length > 0 || waiting.length > 0) && (
           <ReportSection card title="키워드별 긍정·부정 비교">
@@ -346,7 +381,7 @@ function BriefingIndex({ data, day }: { data: CombinedPayload; day: string }) {
                   classified: result.classified,
                   negative: result.negative,
                   positive: result.positive,
-                  href: combinedKeywordHref(row.name, day),
+                  href: combinedKeywordHref(row.name, day, source),
                   note: result.leaders.some(({ label }) => label === 'neutral' || label === 'mixed')
                     ? `${result.leaders.map(({ label }) => labels[label]).join('·')} ${result.leaders.length > 1 ? '동률' : '최다'}`
                     : undefined,
@@ -369,23 +404,25 @@ function BriefingIndex({ data, day }: { data: CombinedPayload; day: string }) {
             )}
             {plotted.length > 0 && (
               <Text as="p" size="1" color="gray" mt="4">
-                분모에 중립과 혼합을 포함합니다. 카톡 대화와 포커고수 게시글은 각각 1건으로 셉니다.
+                분모에 중립과 혼합을 포함합니다. {unitNote(source)}
               </Text>
             )}
           </ReportSection>
         )}
-        <ReportSection card title="카톡·포커고수의 부정 비율 차이">
-          <SourceGapPlot label="카톡·포커고수의 부정 비율 차이" rows={gaps} showValues={false} />
-          {!data.pokergosu.available && (
-            <Text as="p" size="2" color="gray" mt="3">
-              포커고수 데이터 조회 불가
-            </Text>
-          )}
-        </ReportSection>
+        {!source && (
+          <ReportSection card title="카톡·포커고수의 부정 비율 차이">
+            <SourceGapPlot label="카톡·포커고수의 부정 비율 차이" rows={gaps} showValues={false} />
+            {!data.pokergosu.available && (
+              <Text as="p" size="2" color="gray" mt="3">
+                포커고수 데이터 조회 불가
+              </Text>
+            )}
+          </ReportSection>
+        )}
       </div>
-      <KeywordMentionsSection data={data} />
+      <KeywordMentionsSection data={data} source={source} />
       <ReportSection card title="키워드별 주간 언급량">
-        <WeeklyScope data={data} />
+        <WeeklyScope data={data} source={source} />
         <WeeklyHeatmap
           label="키워드별 주간 언급량"
           weeks={data.weekly.weeks}
@@ -396,8 +433,8 @@ function BriefingIndex({ data, day }: { data: CombinedPayload; day: string }) {
           }))}
         />
         <Text as="p" size="1" color="gray" mt="3">
-          단위 건. 카톡 대화와 포커고수 게시글을 각각 1건으로 셉니다. 판단 제외 건은 뺐습니다. ‘–’는
-          이 키워드의 날짜가 확인된 기록이 없는 주입니다.
+          단위 건. {unitNote(source)} 판단 제외 건은 뺐습니다. ‘–’는 이 키워드의 날짜가 확인된
+          기록이 없는 주입니다.
         </Text>
       </ReportSection>
     </ReportSheet>
@@ -429,6 +466,8 @@ export default function Combined() {
   const { pathname, search } = useLocation();
   const scope = combinedScope(pathname, search);
   const detail = Boolean(scope.target);
+  const { source } = scope;
+  const pageTitle = source ? `${sourceLabels[source]} 여론` : '종합 여론';
   const query = useQuery({
     ...combinedQuery(scope),
     placeholderData: keepPreviousData,
@@ -437,11 +476,16 @@ export default function Combined() {
   return (
     <>
       {data && (
-        <KeywordNavigation data={data} day={scope.day} target={detail ? scope.target : ''} />
+        <KeywordNavigation
+          data={data}
+          day={scope.day}
+          target={detail ? scope.target : ''}
+          source={source}
+        />
       )}
       <PageHeader
         className="ds-briefing-page-heading"
-        title={detail ? `${scope.target} 여론` : '종합 여론'}
+        title={detail ? `${scope.target} 여론` : pageTitle}
         actions={<Filters showTarget={false} />}
       >
         {data && !query.isPlaceholderData && (
@@ -455,9 +499,11 @@ export default function Combined() {
               <Text as="span" size="1" color="gray">
                 집계 기준 <BriefingTime at={data.briefing.generatedAt} />
               </Text>
-              <Text as="span" size="1" color="gray">
-                포커고수 마지막 수집 <BriefingTime at={data.briefing.pokergosuCollectedAt} />
-              </Text>
+              {source !== 'kakao' && (
+                <Text as="span" size="1" color="gray">
+                  포커고수 마지막 수집 <BriefingTime at={data.briefing.pokergosuCollectedAt} />
+                </Text>
+              )}
             </div>
             <Button
               intent="quiet"
@@ -483,9 +529,9 @@ export default function Combined() {
       ) : !data ? (
         <Failure error={query.error} retry={query.refetch} />
       ) : detail ? (
-        <KeywordDetail data={data} />
+        <KeywordDetail data={data} source={source} />
       ) : (
-        <BriefingIndex data={data} day={scope.day} />
+        <BriefingIndex data={data} day={scope.day} source={source} />
       )}
     </>
   );
