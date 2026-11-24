@@ -369,10 +369,8 @@ function BriefingIndex({
   );
   return (
     <ReportSheet dashboard label={`${source ? sourceLabels[source] : '종합'} 여론 보고서`}>
-      <div className="ds-briefing-pair">
-        <WeeklyChangesCard insights={data.insights} day={day} source={source} />
-        <EmergingCard insights={data.insights} />
-      </div>
+      <WeeklyChangesCard insights={data.insights} weekly={data.weekly} day={day} source={source} />
+      <EmergingCard insights={data.insights} />
       <div className="ds-overview-comparisons">
         {(plotted.length > 0 || waiting.length > 0) && (
           <ReportSection card title="키워드별 긍정·부정 비교">
