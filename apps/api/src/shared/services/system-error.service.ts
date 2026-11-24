@@ -1,6 +1,9 @@
 import { Injectable, Logger, type OnApplicationShutdown } from '@nestjs/common';
+import { Interval } from '@nestjs/schedule';
+import { sql } from 'drizzle-orm';
 import { createDatabase } from '../../db/client.js';
 import { systemErrorLogs } from '../../db/schema.js';
+import { hasRole } from '../config/app-role.js';
 import { config } from '../config/index.js';
 import { errorDiagnostics } from '../logging/error-diagnostics.js';
 
@@ -12,6 +15,7 @@ export class SystemErrorService implements OnApplicationShutdown {
     : undefined;
   private readonly pending = new Set<Promise<unknown>>();
   private readonly logger = new Logger(SystemErrorService.name);
+  private pruning = false;
 
   log(source: string, error: unknown, metadata?: Record<string, unknown>): void {
     const err = errorDiagnostics(error);
@@ -55,6 +59,22 @@ export class SystemErrorService implements OnApplicationShutdown {
     }
     this.logger.error({ source, failure: err, metadata: safe }, `system_error:${source}`);
   }
+
+  @Interval('system-error-retention', 60_000)
+  async pruneExpired(): Promise<void> {
+    if (!this.connection || !hasRole('worker') || this.pruning) return;
+    this.pruning = true;
+    try {
+      await this.connection.db
+        .delete(systemErrorLogs)
+        .where(sql`${systemErrorLogs.createdAt} < now() - interval '24 hours'`);
+    } catch (error) {
+      this.log('system_error_retention_failed', error);
+    } finally {
+      this.pruning = false;
+    }
+  }
+
   async onApplicationShutdown() {
     await Promise.allSettled([...this.pending]);
     await this.connection?.pool.end();
