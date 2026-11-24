@@ -37,6 +37,7 @@ import {
   KeywordEmergingCard,
   KeywordReasonsCard,
   RepresentativesCard,
+  WeeklyChangesCard,
 } from './BriefingInsights';
 import CombinedDetails from './CombinedDetails';
 
@@ -368,6 +369,7 @@ function BriefingIndex({
   );
   return (
     <ReportSheet dashboard label={`${source ? sourceLabels[source] : '종합'} 여론 보고서`}>
+      <WeeklyChangesCard insights={data.insights} weekly={data.weekly} day={day} source={source} />
       <div className="ds-overview-comparisons">
         {(plotted.length > 0 || waiting.length > 0) && (
           <ReportSection card title="키워드별 긍정·부정 비교">
