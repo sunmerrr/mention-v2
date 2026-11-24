@@ -160,7 +160,7 @@ export class ForumRepository {
           .where(
             and(
               eq(forumPosts.matched, true),
-              sql`coalesce(${forumPosts.card},${forumPosts.detail}->'post')->>'publishedAt' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}'`,
+              sql`coalesce(${forumPosts.card},${forumPosts.detail}->'post')->>'publishedAt' ~ '^[0-9]{4}[-.][0-9]{2}[-.][0-9]{2}'`,
             ),
           )
       : [];
@@ -168,7 +168,10 @@ export class ForumRepository {
       mentions,
       related,
       weekly,
-      windows: periods && { ...periods, firstDay: first?.at ? first.at.slice(0, 10) : null },
+      windows: periods && {
+        ...periods,
+        firstDay: first?.at ? first.at.slice(0, 10).replaceAll('.', '-') : null,
+      },
     };
   }
   async aggregateSession(): Promise<import('pg').PoolClient> {
