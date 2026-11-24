@@ -7,6 +7,7 @@ import {
   pickRepresentatives,
   priorWeeksCovered,
   type RepresentativeOpinion,
+  weekRepresentatives,
   windowOf,
 } from '@app/shared/monitoring/domain/briefing-insights';
 import { reportingWeeks } from '@app/shared/monitoring/domain/weekly-opinions';
@@ -45,6 +46,21 @@ describe('briefing insights', () => {
     );
     expect(row?.negative.map(({ id }) => id)).toEqual(['new', 'old']);
     expect(row?.positive.map(({ id }) => id)).toEqual(['good']);
+  });
+
+  it('keeps only reasons recorded within the compared week in Korean time', () => {
+    const [row] = weekRepresentatives(
+      ['합성'],
+      [
+        // 2026-11-22 23:30 KST is still inside the 11/16 week.
+        opinion({ id: 'late', at: Date.parse('2026-11-22T14:30:00Z'), summary: '주말 불만' }),
+        // 2026-11-23 00:30 KST belongs to the next week.
+        opinion({ id: 'next', at: Date.parse('2026-11-22T15:30:00Z'), summary: '다음 주 불만' }),
+        opinion({ id: 'undated', at: 0, summary: '날짜 없음' }),
+      ],
+      { start: '2026-11-16', through: '2026-11-22' },
+    );
+    expect(row?.negative.map(({ id }) => id)).toEqual(['late']);
   });
 
   it('compares the last complete week with the week before', () => {

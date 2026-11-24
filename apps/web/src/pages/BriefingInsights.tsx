@@ -197,7 +197,89 @@ function niceTop(value: number) {
   return Math.ceil(value / step) * step;
 }
 
-/** Index card: every material week-over-week move as an arrow on a shared axis. */
+interface Mix {
+  positive: number;
+  other: number;
+  negative: number;
+  classified: number;
+}
+
+function mixOf(value: WeekValue | null | undefined): Mix | null {
+  if (!value?.classified) return null;
+  const positive = value.positive / value.classified;
+  const negative = value.negative / value.classified;
+  return { positive, negative, other: 1 - positive - negative, classified: value.classified };
+}
+
+const points = (share: number) => Math.round(share * 100);
+
+/** One sentence naming which stance moved more, so two rising shares never read as a contradiction. */
+function mixSentence(from: Mix, to: Mix) {
+  const positive = points(to.positive) - points(from.positive);
+  const negative = points(to.negative) - points(from.negative);
+  if (positive > 0 && negative > 0)
+    return `중립·혼합이 줄면서 긍정과 부정이 함께 늘었고, ${negative > positive ? '부정' : '긍정'} 쪽이 더 많이 늘었습니다.`;
+  if (positive < 0 && negative < 0)
+    return `중립·혼합이 늘면서 긍정과 부정이 함께 줄었고, ${negative < positive ? '부정' : '긍정'} 쪽이 더 많이 줄었습니다.`;
+  if (negative > 0) return positive < 0 ? '부정이 늘고 긍정이 줄었습니다.' : '부정이 늘었습니다.';
+  if (positive > 0) return negative < 0 ? '긍정이 늘고 부정이 줄었습니다.' : '긍정이 늘었습니다.';
+  if (negative < 0) return '부정이 줄었습니다.';
+  if (positive < 0) return '긍정이 줄었습니다.';
+  return '긍정·부정 비율이 거의 그대로입니다.';
+}
+
+function MixBar({ label, mix }: { label: string; mix: Mix }) {
+  const segments = [
+    { key: 'positive', share: mix.positive, name: '긍정' },
+    { key: 'other', share: mix.other, name: '중립·혼합' },
+    { key: 'negative', share: mix.negative, name: '부정' },
+  ];
+  return (
+    <div className="ds-briefing-mix">
+      <span className="ds-briefing-mix-label">{label}</span>
+      <span
+        className="ds-briefing-mix-bar"
+        role="img"
+        aria-label={`${label} ${segments.map(({ name, share }) => `${name} ${percent(share)}`).join(', ')}`}
+      >
+        {segments.map(({ key, share }) =>
+          share > 0 ? (
+            <span
+              key={key}
+              className="ds-briefing-mix-segment"
+              data-stance={key}
+              style={{ flexGrow: share }}
+            >
+              {share >= 0.12 && percent(share)}
+            </span>
+          ) : null,
+        )}
+      </span>
+      <span className="ds-briefing-mix-sample">분류 {count(mix.classified)}건</span>
+    </div>
+  );
+}
+
+function StanceDelta({
+  stance,
+  from,
+  to,
+}: {
+  stance: 'positive' | 'negative';
+  from: number;
+  to: number;
+}) {
+  return (
+    <span className="ds-briefing-stance-delta">
+      <span className="ds-briefing-stance" data-tone={stance}>
+        {stance === 'positive' ? '긍정' : '부정'}
+      </span>{' '}
+      {percent(from)} → <b>{percent(to)}</b> <DeltaChip metric={stance} from={from} to={to} />
+    </span>
+  );
+}
+
+/** Index card: one row per keyword whose stance mix moved, then mention counts on their own axis. */
 export function WeeklyChangesCard({
   insights,
   weekly,
@@ -212,27 +294,90 @@ export function WeeklyChangesCard({
   const pair = insights.comparison;
   if (!pair) return null;
   const current = weekly.weeks.findIndex(({ start }) => start === pair.current.start);
-  const shares = insights.notable.filter(({ kind }) => kind !== 'mentions');
+  const previous = weekly.weeks.findIndex(({ start }) => start === pair.previous.start);
+  const moved = new Set(
+    insights.notable.filter(({ kind }) => kind !== 'mentions').map(({ target }) => target),
+  );
+  const keywords = weekly.rows
+    .filter(({ name }) => moved.has(name))
+    .flatMap(({ name, values }) => {
+      const from = mixOf(values[previous]);
+      const to = mixOf(values[current]);
+      if (!from || !to) return [];
+      // Net sentiment (positive minus negative) decides whether the keyword got better or worse.
+      const net = to.positive - to.negative - (from.positive - from.negative);
+      return [{ name, from, to, net }];
+    })
+    .sort((a, b) => a.net - b.net);
   const mentions = insights.notable.filter(({ kind }) => kind === 'mentions');
   const mentionTop = niceTop(Math.max(1, ...mentions.flatMap(({ from, to }) => [from, to])));
-  const shared = { weekly, current, day, source };
+  const reasonOf = (target: string) =>
+    insights.weekReasons.find((row) => row.target === target)?.negative[0];
+  const origin = source ? `/${source}` : '/';
   return (
     <ReportSection card title="지난주 달라진 점" description={comparisonLabel(insights)}>
-      {insights.notable.length ? (
+      {keywords.length || mentions.length ? (
         <div className="ds-briefing-arrows">
-          <ArrowGroup
-            title="긍정·부정 비율"
-            changes={shares}
-            top={1}
-            ticks={[0, 0.25, 0.5, 0.75, 1].map((at) => ({ at, label: percent(at) }))}
-            {...shared}
-          />
+          {keywords.length > 0 && (
+            <section className="ds-briefing-arrow-group" aria-label="긍정·부정 구성 변화">
+              <Text as="p" size="1" weight="bold" color="gray">
+                긍정·부정 구성 변화
+              </Text>
+              <ul className="ds-briefing-mix-list">
+                {keywords.map(({ name, from, to, net }) => {
+                  const reason = to.negative > from.negative ? reasonOf(name) : undefined;
+                  return (
+                    <li
+                      key={name}
+                      className="ds-briefing-mix-row"
+                      data-signal={net < 0 ? 'bad' : net > 0 ? 'good' : 'neutral'}
+                    >
+                      <div className="ds-briefing-mix-summary">
+                        <TextLink asChild weight="bold" size="3">
+                          <Link to={combinedKeywordHref(name, day, source)}>{name}</Link>
+                        </TextLink>
+                        <span className="ds-briefing-mix-deltas">
+                          <StanceDelta stance="negative" from={from.negative} to={to.negative} />
+                          <StanceDelta stance="positive" from={from.positive} to={to.positive} />
+                        </span>
+                        <Text as="p" size="2" weight="medium">
+                          {mixSentence(from, to)}
+                        </Text>
+                        {reason && (
+                          <p className="ds-briefing-mix-reason">
+                            <span className="ds-briefing-mix-reason-label">지난주 부정 의견</span>
+                            <span className="ds-briefing-reason-summary">{reason.summary}</span>
+                            <TextLink asChild size="1">
+                              <Link
+                                to={relatedHref(reason.href, origin)}
+                                aria-label={`${name} 부정 의견 원문 보기`}
+                              >
+                                원문
+                                <ArrowUpRight size={11} aria-hidden="true" />
+                              </Link>
+                            </TextLink>
+                          </p>
+                        )}
+                      </div>
+                      <div className="ds-briefing-mix-bars">
+                        <MixBar label={`전주 ${shortDay(pair.previous.start)}`} mix={from} />
+                        <MixBar label={`지난주 ${shortDay(pair.current.start)}`} mix={to} />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
           <ArrowGroup
             title="언급 수"
             changes={mentions}
             top={mentionTop}
             ticks={[0, 0.5, 1].map((at) => ({ at, label: `${count(mentionTop * at)}건` }))}
-            {...shared}
+            weekly={weekly}
+            current={current}
+            day={day}
+            source={source}
           />
         </div>
       ) : (
@@ -241,9 +386,9 @@ export function WeeklyChangesCard({
         </Text>
       )}
       <Text as="p" size="1" color="gray" mt="3">
-        ○ 전주 → ▶ 지난주. 빨강은 나빠진 변화(부정↑·긍정↓), 파랑은 좋아진 변화입니다. 언급 10건
-        이상에서 ±30%, 비율 ±10%p 이상 움직인 경우를 모두 보여주며, 비율은 두 주 모두 분류{' '}
-        {shareSampleMinimum}건 이상일 때만 비교합니다.
+        긍정·부정 비율이 10%p 이상, 또는 언급이 10건 이상에서 30% 넘게 움직인 키워드를 보여줍니다.
+        비율은 두 주 모두 분류 {shareSampleMinimum}건 이상일 때만 비교합니다. 막대는 분류된 의견의
+        구성이고, 빨간 테두리는 긍정에서 부정을 뺀 값이 나빠진 키워드입니다.
       </Text>
     </ReportSection>
   );

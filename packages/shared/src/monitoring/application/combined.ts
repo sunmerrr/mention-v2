@@ -10,6 +10,7 @@ import {
   pickRepresentatives,
   priorWeeksCovered,
   type RepresentativeOpinion,
+  weekRepresentatives,
 } from '../domain/briefing-insights.js';
 import { forumKeywordIdentity } from '../domain/forum-topics.js';
 import { type MentionGroups, rankKeywordMentions } from '../domain/keyword-mentions.js';
@@ -261,13 +262,16 @@ export class CombinedQueries {
               : [],
           }
         : null;
+    const reasons = [...kakaoReasons, ...pokergosuReasons];
     return {
       scope,
       insights: {
         comparison: pair ? { current: pair.currentWeek, previous: pair.previousWeek } : null,
         changes,
         notable: notableChanges(changes),
-        representatives: pickRepresentatives(names, [...kakaoReasons, ...pokergosuReasons]),
+        representatives: pickRepresentatives(names, reasons),
+        /** One reason per stance from the latest complete week, shown beside its changes. */
+        weekReasons: pair ? weekRepresentatives(names, reasons, pair.currentWeek) : [],
         emerging,
       },
       metadata: {

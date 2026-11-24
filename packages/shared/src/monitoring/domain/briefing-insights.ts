@@ -1,3 +1,4 @@
+import { koreanDay } from './time.js';
 import type { ReportingWeeks } from './weekly-opinions.js';
 
 const dayMs = 86400000;
@@ -48,6 +49,24 @@ export function pickRepresentatives(
     };
     return { target, positive: pick('positive'), negative: pick('negative') };
   });
+}
+
+/** Reasons recorded during one reporting week, Korean calendar days inclusive. */
+export function weekRepresentatives(
+  targets: readonly string[],
+  candidates: readonly RepresentativeOpinion[],
+  week: { start: string; through: string },
+  limit = 1,
+) {
+  return pickRepresentatives(
+    targets,
+    candidates.filter(({ at }) => {
+      if (!at) return false;
+      const day = koreanDay(at);
+      return week.start <= day && day <= week.through;
+    }),
+    limit,
+  );
 }
 
 export interface WeeklyValue {
