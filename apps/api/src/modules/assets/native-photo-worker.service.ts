@@ -81,7 +81,10 @@ export class NativePhotoWorker implements OnModuleDestroy {
       !config.KAKAO_CONTEXT_ENABLED
     )
       return;
-    this.flight ??= this.processOne(root, new OwnerClient(config.KAKAO_CONNECTION_SOCKET))
+    this.flight ??= this.processOne(
+      root,
+      new OwnerClient(config.KAKAO_CONNECTION_SOCKET, 10000, config.KAKAO_COLLECTOR_TOKEN_FILE),
+    )
       .catch((error: unknown) => this.errors?.log('native_photo_worker_failed', error))
       .finally(() => {
         this.flight = undefined;

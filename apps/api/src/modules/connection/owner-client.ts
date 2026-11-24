@@ -1,3 +1,5 @@
+import { constants } from 'node:fs';
+import { open } from 'node:fs/promises';
 import { request } from 'node:http';
 import { isAbsolute } from 'node:path';
 import { decodeOwnerValue, encodeOwnerValue, parseOwnerJson } from './owner-wire.js';
@@ -21,6 +23,7 @@ export class OwnerClient {
   constructor(
     private readonly socketPath: string,
     private readonly timeoutMs = 10000,
+    private readonly tokenFile?: string,
   ) {
     if (!isAbsolute(socketPath)) throw new Error('ABSOLUTE_OWNER_SOCKET_REQUIRED');
   }
@@ -39,13 +42,32 @@ export class OwnerClient {
       130_000,
     );
   }
-  private call(
+  private async authorization() {
+    if (!this.tokenFile) return {};
+    const file = await open(
+      this.tokenFile,
+      constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
+    );
+    try {
+      const stat = await file.stat();
+      if (!stat.isFile() || stat.mode & 0o077 || stat.size < 52 || stat.size > 53)
+        throw new Error('INVALID_KAKAO_COLLECTOR_TOKEN_FILE');
+      const token = (await file.readFile('utf8')).replace(/\n$/u, '');
+      if (!/^mention1_[A-Za-z0-9_-]{43}$/u.test(token))
+        throw new Error('INVALID_KAKAO_COLLECTOR_TOKEN');
+      return { Authorization: `Bearer ${token}` };
+    } finally {
+      await file.close();
+    }
+  }
+  private async call(
     method: 'status' | 'events' | 'download_photo',
     params: Record<string, unknown>,
     signal?: AbortSignal,
     timeoutMs = this.timeoutMs,
   ): Promise<OwnerReply> {
     const payload = Buffer.from(JSON.stringify(encodeOwnerValue({ method, params })));
+    const authorization = await this.authorization();
     return new Promise((resolve, reject) => {
       const req = request(
         {
@@ -59,6 +81,7 @@ export class OwnerClient {
             'Content-Type': 'application/json',
             'Content-Length': payload.length,
             Connection: 'close',
+            ...authorization,
           },
         },
         (response) => {
@@ -75,6 +98,8 @@ export class OwnerClient {
           response.once('error', reject);
           response.once('end', () => {
             try {
+              if (response.statusCode === 401 || response.statusCode === 403)
+                throw new Error('OWNER_COLLECTOR_AUTH_REJECTED');
               if (response.statusCode !== 200) throw new Error('OWNER_RPC_UNAVAILABLE');
               const decoded = decodeOwnerValue(
                 parseOwnerJson(Buffer.concat(chunks).toString('utf8')),

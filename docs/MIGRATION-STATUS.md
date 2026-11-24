@@ -419,3 +419,20 @@ isolated Docker container and completed a read-only owner status request.
 Rootless identity mapping was verified for that mount. A second backup rehearsal
 verified dump and restore with the actual guest's non-default user ID, after
 initializing the dedicated private backup volume with matching permissions.
+
+### Mention collector authentication
+
+Kakao access and refresh tokens remain in the Mac Keychain service
+`local.kakao-chat.session`, used by the connection owner. The Mention collector
+has a separately generated random token. On the owner host the provision command
+`python -m monitor.mention_auth /absolute/private/path/collector.token` creates
+the collector's 0600 file and stores only its SHA-256 in the owner's monitor state
+directory. Provisioning validates an existing pair without replacing it.
+
+The owner must load the dedicated `mention.sock` listener at its next controlled
+start. Reverse SSH forwards that listener to the remote `connection.sock`.
+Deploy the collector token through the host's private secret channel to
+`CONNECTION_SOCKET_DIRECTORY/collector.token`, readable only by the runtime
+identity. Compose mounts the directory read-only into ingest and photo worker.
+The API and database do not receive the token. The RPC listener accepts status,
+events and open-room photo downloads.

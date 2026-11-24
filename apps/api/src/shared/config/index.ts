@@ -24,6 +24,7 @@ const envSchema = z.object({
     .default('0')
     .transform((value) => value === '1'),
   KAKAO_CONNECTION_SOCKET: z.string().min(1).default('/run/mention/connection/connection.sock'),
+  KAKAO_COLLECTOR_TOKEN_FILE: z.string().startsWith('/').optional(),
   KAKAO_OBSERVATION_SOCKET: z.string().startsWith('/').optional(),
   KAKAO_NATIVE_MEDIA_DIRECTORY: z.string().startsWith('/').optional(),
   KAKAO_EVENTS_ENABLED: z
@@ -39,6 +40,8 @@ const envSchema = z.object({
     .enum(['0', '1'])
     .default('0')
     .transform((value) => value === '1'),
+  // Only set for a dedicated container network with loopback-only host publishing.
+  MENTION_LOOPBACK_GATEWAY_IP: z.ipv4().optional(),
   DATABASE_URL: z.string().url().optional(),
   MONITORING_EVIDENCE_BACKEND: z.enum(['source', 'postgres']).default('source'),
   MONITORING_READ_BACKEND: z.enum(['source', 'postgres']).default('source'),

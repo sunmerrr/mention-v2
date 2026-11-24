@@ -12,6 +12,7 @@ export function tunnelArguments(env) {
     if (!value || !value.startsWith('/') || /[\s:\0]/.test(value)) throw new Error('ABSOLUTE_SOCKET_PATH_REQUIRED');
   }
   if (!remote.endsWith('/connection.sock')) throw new Error('DEDICATED_REMOTE_SOCKET_REQUIRED');
+  if (!local.endsWith('/mention.sock')) throw new Error('SCOPED_LOCAL_OWNER_SOCKET_REQUIRED');
   return ['-NT', '-o', 'BatchMode=yes', '-o', 'ExitOnForwardFailure=yes', '-o', 'ServerAliveInterval=15', '-o', 'ServerAliveCountMax=3', '-o', 'ControlMaster=no', '-R', `${remote}:${local}`, target];
 }
 async function main() {

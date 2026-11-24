@@ -94,7 +94,7 @@ FROM node:24.14.0-slim AS api
 WORKDIR /app
 ENV NODE_ENV=production MENTION_WEB_ROOT=/app/web
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends fonts-noto-cjk libpq5 liblz4-1 libzstd1 zlib1g \
+    && apt-get install -y --no-install-recommends fontconfig fonts-noto-cjk libpq5 liblz4-1 libzstd1 zlib1g \
     && rm -rf /var/lib/apt/lists/* \
     && install -d -m 700 -o node -g node /app/backup
 COPY --from=postgres-tools /usr/lib/postgresql/16/bin/pg_dump /usr/lib/postgresql/16/bin/pg_restore /usr/local/bin/

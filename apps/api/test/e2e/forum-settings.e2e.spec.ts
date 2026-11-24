@@ -17,6 +17,10 @@ const policy = {
   keyword_groups: [{ id: 'apl', name: 'APL', kind: 'event', keywords: ['APL', '에이피엘'] }],
   sources: { kakao: { disabled: [] }, pokergosu: { disabled: [] } },
 };
+const migratedExclusions = [
+  '정모 [숫자]회차',
+  ...Array.from({ length: 211 }, (_, index) => `기존 광고 제외 ${index}`),
+];
 const post = (id: string, title = '합성 APL 대회 후기') => ({
   post: {
     id,
@@ -79,7 +83,7 @@ describe('PostgreSQL source policies and prepared forum reads', () => {
     await settings.importSnapshot({
       keyword_policy: policy,
       keyword_policy_token: 'legacy-token',
-      exclude_keywords: ['정모 [숫자]회차'],
+      exclude_keywords: migratedExclusions,
       keyword_policy_supported: true,
     });
   }, 120000);
@@ -91,6 +95,7 @@ describe('PostgreSQL source policies and prepared forum reads', () => {
     await container?.stop();
   });
   it('keeps alias scopes independent and validates the Korean-suffixed APL example', async () => {
+    expect((await settings.read()).exclude_keywords).toEqual(migratedExclusions);
     expect((await settings.policy()).policy.sources.pokergosu.disabled).toEqual([]);
     expect(
       await settings.check({

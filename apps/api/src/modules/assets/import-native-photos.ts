@@ -27,6 +27,8 @@ export async function importNativePhotos(root: string, assets: AssetRepository) 
   const lines = createInterface({ input: createReadStream(manifest), crlfDelay: Infinity });
   const seen = new Set<string>();
   const objects = new Set<string>();
+  let batch: Parameters<AssetRepository['importNativePhotoBatch']>[0][number][] = [];
+  let bufferedBytes = 0;
   let routes = 0;
   for await (const line of lines) {
     const { digest, ...photo } = record.parse(JSON.parse(line));
@@ -46,9 +48,19 @@ export async function importNativePhotos(root: string, assets: AssetRepository) 
         throw Error('INVALID_NATIVE_PHOTO_OBJECT');
       bytes = await readFile(path);
     }
-    await assets.importNativePhoto(photo, bytes, digest);
+    if (
+      batch.length >= 64 ||
+      (batch.length && bufferedBytes + (bytes?.length ?? 0) > 8 * 1024 * 1024)
+    ) {
+      await assets.importNativePhotoBatch(batch);
+      batch = [];
+      bufferedBytes = 0;
+    }
+    batch.push({ photo, bytes, digest });
+    bufferedBytes += bytes?.length ?? 0;
     objects.add(digest);
     routes++;
   }
+  await assets.importNativePhotoBatch(batch);
   return { routes, objects: objects.size };
 }

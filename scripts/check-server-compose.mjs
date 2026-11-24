@@ -22,6 +22,7 @@ try{
   assert.equal(services[role].volumes[0].target,'/run/mention/connection');
   assert.equal(services[role].volumes[0].read_only,true);
   assert.equal(services[role].volumes[0].bind.create_host_path,false);
+  assert.equal(services[role].environment.KAKAO_COLLECTOR_TOKEN_FILE,'/run/mention/connection/collector.token');
  }
  assert.equal(services.ingest.environment.KAKAO_EVENTS_ENABLED,'0');
  assert(!services.api.volumes?.length);assert(!services.postgres.ports?.length);

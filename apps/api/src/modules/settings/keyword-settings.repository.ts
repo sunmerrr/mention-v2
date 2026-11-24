@@ -19,7 +19,7 @@ const hash = (value: unknown) => createHash('sha256').update(stableJson(value)).
 type SettingsTransaction = Parameters<
   Parameters<ReturnType<typeof createDatabase>['db']['transaction']>[0]
 >[0];
-const exclusions = z.array(z.string().trim().min(1).max(200)).max(100);
+const exclusions = z.array(z.string().trim().min(1).max(200)).max(500);
 @Injectable()
 export class KeywordSettingsRepository {
   private connection?: ReturnType<typeof createDatabase>;

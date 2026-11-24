@@ -9,8 +9,8 @@ import {
 } from '../../db/schema.js';
 import { AppError } from '../../shared/errors/app-error.js';
 import { stableJson } from '../connection/stable-json.js';
-import { EvidenceRepository } from '../evidence/evidence.repository.js';
-import { CampaignView, historyBase } from './campaign-view.js';
+import { contextHistoryBase, EvidenceRepository } from '../evidence/evidence.repository.js';
+import { CampaignView } from './campaign-view.js';
 
 const episodeId = z.string().regex(/^[a-f0-9]{32}$/u);
 const logId = z.string().regex(/^[1-9][0-9]{0,18}$/u);
@@ -54,7 +54,8 @@ type Transaction = Parameters<Parameters<EvidenceRepository['db']['transaction']
 @Injectable()
 export class EpisodeEdits {
   constructor(
-    @Inject(EvidenceRepository) private readonly evidence: Pick<EvidenceRepository, 'db'>,
+    @Inject(EvidenceRepository)
+    private readonly evidence: Pick<EvidenceRepository, 'db' | 'undoContext'>,
     private readonly view: CampaignView,
   ) {}
   private async detail(id: string, local: boolean, transaction?: Transaction) {
@@ -119,7 +120,7 @@ export class EpisodeEdits {
             .returning({ id: monitoringContextHistory.pk });
           if (message.relation === 'related' || input.relation === 'related')
             await this.setEpisode(tx, input.id, { verdict: 'unreviewed' });
-          return { ok: true, undo_ids: history ? [historyBase + history.id] : [] };
+          return { ok: true, undo_ids: history ? [contextHistoryBase + history.id] : [] };
         }
       }
       if (input.verdict !== undefined || input.note !== undefined)
@@ -212,12 +213,15 @@ export class EpisodeEdits {
     };
   }
   async undo(value: unknown, local: boolean) {
-    const id = z.number().int().gt(historyBase).parse(value) - historyBase;
+    const selected = z.number().int().positive().parse(value);
+    if (selected <= contextHistoryBase) return this.undoLegacy(selected, local);
+    const id = selected - contextHistoryBase;
     const [previous] = await this.evidence.db
       .select()
       .from(monitoringContextHistory)
       .where(eq(monitoringContextHistory.pk, id));
     if (!previous) throw unavailable();
+    if (previous.next.kind === 'conversation') return this.evidence.undoContext(id, previous);
     return this.locked(previous.episodeId, async (tx) => {
       await this.detail(previous.episodeId, local, tx);
       const [row] = await tx
@@ -236,6 +240,38 @@ export class EpisodeEdits {
         .set({ undone: true })
         .where(eq(monitoringContextHistory.pk, id));
       return { ok: true, id: row.episodeId };
+    });
+  }
+
+  private async undoLegacy(id: number, local: boolean) {
+    const initial = await this.view.legacyReview(id);
+    if (!initial) throw unavailable();
+    const episode = episodeId.parse(initial.episode_id);
+    return this.locked(episode, async (tx) => {
+      const detail = await this.detail(episode, local, tx);
+      const original = await this.view.legacyReview(id, tx);
+      if (!original || original.episode_id !== episode) throw txConflict();
+      const log = logId.parse(original.log_id);
+      const [patch] = await tx
+        .select({ body: monitoringEpisodeEdits.body })
+        .from(monitoringEpisodeEdits)
+        .where(eq(monitoringEpisodeEdits.episodeId, episode));
+      const decoded = z.array(z.number().int().positive()).safeParse(patch?.body.legacy_undo_ids);
+      const undone = decoded.success ? decoded.data : [];
+      if (original.undone === 1 || undone.includes(id)) return { ok: true, id: episode };
+      const linked = detail.messages.find((message) => message.log_id === log);
+      if (!linked || linked.role === 'anchor' || linked.relation !== original.next_relation)
+        throw txConflict();
+      const previous = relation.parse(original.previous_relation);
+      await this.setContext(tx, episode, log, {
+        ...(await this.context(tx, episode, log)),
+        relation: previous,
+      });
+      await this.setEpisode(tx, episode, {
+        verdict: 'unreviewed',
+        legacy_undo_ids: [...undone, id],
+      });
+      return { ok: true, id: episode };
     });
   }
 }

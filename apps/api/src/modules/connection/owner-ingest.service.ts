@@ -37,7 +37,11 @@ export class OwnerIngest implements OnModuleInit, OnModuleDestroy {
     if (!config.KAKAO_EVENTS_ENABLED) {
       return;
     }
-    const owner = new OwnerClient(config.KAKAO_CONNECTION_SOCKET);
+    const owner = new OwnerClient(
+      config.KAKAO_CONNECTION_SOCKET,
+      10000,
+      config.KAKAO_COLLECTOR_TOKEN_FILE,
+    );
     try {
       await this.store.acquire('kakao-live-ingest');
       const status = await owner.status(this.stop.signal);

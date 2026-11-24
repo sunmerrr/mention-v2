@@ -2,9 +2,10 @@ import type { FastifyRequest } from 'fastify';
 import { config } from '../../shared/config/index.js';
 import { AppError } from '../../shared/errors/app-error.js';
 
-export function isLocalRequest(request: FastifyRequest) {
+export function isLocalRequest(request: Pick<FastifyRequest, 'ip' | 'headers'>) {
+  const caller = request.ip.replace(/^::ffff:/u, '');
   return (
-    ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(request.ip) &&
+    (['127.0.0.1', '::1'].includes(caller) || caller === config.MENTION_LOOPBACK_GATEWAY_IP) &&
     !['cf-ray', 'cf-connecting-ip', 'x-forwarded-for', 'forwarded', 'x-monitor-public'].some(
       (key) => request.headers[key] !== undefined,
     )

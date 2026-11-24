@@ -7,7 +7,7 @@ import type { CollectorPrincipal } from './forum-auth.js';
 import { ForumControl } from './forum-control.js';
 import { ForumStore } from './forum-store.js';
 /** Dedicated extension protocol: explicit replies bypass the web API envelope. */
-@Controller('collector/pokergosu/v1')
+@Controller(['collector/pokergosu/v1', ''])
 export class ForumController {
   private readonly logger = new Logger(ForumController.name);
   private readonly control: ForumControl;

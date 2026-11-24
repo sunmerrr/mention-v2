@@ -1,10 +1,15 @@
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { eq } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDatabase } from '../../src/db/client.js';
-import { EvidenceRepository } from '../../src/modules/evidence/evidence.repository.js';
+import { monitoringContextHistory } from '../../src/db/schema.js';
+import {
+  contextHistoryBase,
+  EvidenceRepository,
+} from '../../src/modules/evidence/evidence.repository.js';
 import { importNativeReference } from '../../src/modules/evidence/native-reference.js';
 import { BookmarksRepository } from '../../src/modules/monitoring/bookmarks.repository.js';
 import { config } from '../../src/shared/config/index.js';
@@ -287,5 +292,41 @@ describe('authoritative PostgreSQL evidence and classifications', () => {
     expect((await store.dataset()).conversations.map((c) => c.id)).toEqual(['synthetic-second']);
     expect((await store.list({ day: '', target: '', label: '', limit: 12 })).total).toBe(1);
     await expect(store.detail('synthetic-first')).rejects.toThrow('찾을 수');
+  });
+  it('allows contextual relevance edits and undo while retaining the human verdict and note', async () => {
+    const id = 'synthetic-relevance';
+    const logId = '3970073012646000643';
+    const fixture = bundle(id);
+    fixture.detail.messages.push({
+      ...fixture.detail.messages[0],
+      id: logId,
+      anchor: false,
+      text: '근처 메시지',
+    });
+    await store.importBundle(fixture);
+    await store.publishMetadata(metadata([id]));
+    await store.correct({
+      id,
+      service: 'APL',
+      verdict: 'neutral',
+      expected: 'baseline-token',
+      summary: '기존 판단',
+      request_id: randomUUID(),
+    });
+    const result = await store.reviewContext({ id, log_id: logId, relation: 'unrelated' });
+    expect((await store.detail(id)).messages.at(-1)?.relation).toBe('unrelated');
+    expect((await store.options(id))[0]).toMatchObject({
+      label: 'neutral',
+      summary: '기존 판단',
+      origin: 'human',
+      stale: true,
+    });
+    const historyId = result.undo_ids[0] - contextHistoryBase;
+    const [change] = await store.db
+      .select()
+      .from(monitoringContextHistory)
+      .where(eq(monitoringContextHistory.pk, historyId));
+    await store.undoContext(historyId, change);
+    expect((await store.detail(id)).messages.at(-1)?.relation).toBe('pending');
   });
 });

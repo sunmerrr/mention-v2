@@ -56,6 +56,9 @@ export class ContextExport {
           throw new AppError('CONTEXT_EXPORT_NOT_READY', '저장 맥락이 준비 중입니다.', 503);
         const policy = timelinePolicy(settings.value);
         const allowed = (text: string) => !matchingExclusions(text, policy.exclude).length;
+        // Correlated JSON keys are underestimated on larger archives. Prefer
+        // hashing those keys to scanning the same archive rows for each message.
+        await tx.execute(sql`set local enable_nestloop=off`);
         const archived = await tx.execute<{
           episode: Record<string, unknown>;
           message: Record<string, unknown>;
@@ -82,6 +85,7 @@ export class ContextExport {
           and p.body->>'room_id'=m.body->>'room_id' and p.body->>'log_id'=m.body->>'log_id'
         left join ${nativeEpisodeReferences} ref on ref.source_id=e.body->>'id'
       `);
+        await tx.execute(sql`set local enable_nestloop=default`);
         const output: Row[] = [];
         for (const { episode, message, link, room, photos, eligible } of archived.rows) {
           const text = String(message.text ?? ''),

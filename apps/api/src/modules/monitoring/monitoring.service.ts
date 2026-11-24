@@ -88,11 +88,11 @@ export class MonitoringService {
         };
       }
       if (action === 'episode-review') return this.episodeEdits.review(input, scope.local);
+      if (action === 'conversation-message-review') return this.evidence.reviewContext(input);
       if (action === 'episode-quality') return this.episodeEdits.quality(input, scope.local);
       if (action === 'mention-correction') return this.episodeEdits.correction(input, scope.local);
       if (action === 'feedback-review') return this.episodeEdits.annotate(input, scope.local);
-      if (action === 'review-undo' && Number(input.history_id) > 1_000_000_000)
-        return this.episodeEdits.undo(input.history_id, scope.local);
+      if (action === 'review-undo') return this.episodeEdits.undo(input.history_id, scope.local);
       if (action === 'context-expand' && input.conversation !== true)
         return this.episodeEdits.expand(input, scope.local);
       if (action === 'alias-decision') return this.aliases.decide(input);

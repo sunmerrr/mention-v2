@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { sharedPolicy, sourceKeywords } from '@app/shared/monitoring/contracts/keyword-policy';
 import { keywordMatches } from '@app/shared/monitoring/domain/keyword-rules';
 import { Injectable } from '@nestjs/common';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { createDatabase } from '../../db/client.js';
 import { monitoringAssets, monitoringSettings, nativePhotoAssets } from '../../db/schema.js';
 import { config } from '../../shared/config/index.js';
@@ -14,6 +14,7 @@ type NativePhoto = Pick<
   typeof nativePhotoAssets.$inferInsert,
   'route' | 'messageText' | 'contextText' | 'filename'
 >;
+type NativePhotoImport = { photo: NativePhoto; digest: string; bytes: Buffer | null };
 export const boardMediaPath = (key: string) => `/api/v1/monitoring/pokergosu/media/${key}`;
 export function imageMime(bytes: Buffer) {
   if (bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])))
@@ -76,43 +77,61 @@ export class AssetRepository {
   }
 
   async importNativePhoto(photo: NativePhoto, bytes: Buffer | null, digest: string) {
-    if (
-      !/^[a-f0-9]{64}$/u.test(digest) ||
-      (bytes &&
-        (!bytes.length ||
-          bytes.length > 32 * 1024 * 1024 ||
-          createHash('sha256').update(bytes).digest('hex') !== digest))
-    )
-      throw Error('INVALID_NATIVE_PHOTO_BYTES');
-    const path = `/internal/native-photo/${digest}`;
+    await this.importNativePhotoBatch([{ photo, bytes, digest }]);
+  }
+
+  async importNativePhotoBatch(batch: readonly NativePhotoImport[]) {
+    if (!batch.length) return;
+    const path = (digest: string) => `/internal/native-photo/${digest}`;
+    const objects = new Map<
+      string,
+      { path: string; mime: string; bytes: Buffer; digest: string }
+    >();
+    for (const { bytes, digest } of batch) {
+      if (
+        !/^[a-f0-9]{64}$/u.test(digest) ||
+        (bytes &&
+          (!bytes.length ||
+            bytes.length > 32 * 1024 * 1024 ||
+            createHash('sha256').update(bytes).digest('hex') !== digest))
+      )
+        throw Error('INVALID_NATIVE_PHOTO_BYTES');
+      if (!bytes) continue;
+      let mime = 'application/octet-stream';
+      try {
+        mime = imageMime(bytes);
+      } catch {
+        // Unrecognized legacy formats remain downloadable as opaque attachments.
+      }
+      objects.set(digest, { path: path(digest), mime, bytes, digest });
+    }
     await this.db.transaction(async (tx) => {
-      if (bytes) {
-        let mime = 'application/octet-stream';
-        try {
-          mime = imageMime(bytes);
-        } catch {
-          // Unrecognized legacy formats remain downloadable as opaque attachments.
-        }
+      if (objects.size)
         await tx
           .insert(monitoringAssets)
-          .values({ path, mime, bytes, digest })
+          .values([...objects.values()])
           .onConflictDoNothing();
-      }
-      const [asset] = await tx
-        .select({ pk: monitoringAssets.pk })
+      const keys = [...new Set(batch.map(({ digest }) => path(digest)))];
+      const assets = await tx
+        .select({ pk: monitoringAssets.pk, path: monitoringAssets.path })
         .from(monitoringAssets)
-        .where(eq(monitoringAssets.path, path));
-      if (!asset) throw Error('NATIVE_PHOTO_STORAGE_FAILED');
+        .where(inArray(monitoringAssets.path, keys));
+      const identifiers = new Map(assets.map((asset) => [asset.path, asset.pk]));
+      const links = batch.map(({ photo, digest }) => {
+        const assetPk = identifiers.get(path(digest));
+        if (!assetPk) throw Error('NATIVE_PHOTO_STORAGE_FAILED');
+        return { ...photo, assetPk };
+      });
       await tx
         .insert(nativePhotoAssets)
-        .values({ ...photo, assetPk: asset.pk })
+        .values(links)
         .onConflictDoUpdate({
           target: nativePhotoAssets.route,
           set: {
-            assetPk: asset.pk,
-            messageText: photo.messageText,
-            contextText: photo.contextText,
-            filename: photo.filename,
+            assetPk: sql`excluded.asset_pk`,
+            messageText: sql`excluded.message_text`,
+            contextText: sql`excluded.context_text`,
+            filename: sql`excluded.filename`,
           },
         });
     });

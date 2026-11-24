@@ -17,10 +17,9 @@ import {
 import { AppError } from '../../shared/errors/app-error.js';
 import { matchingExclusions } from '../../shared/monitoring/exclusion-rules.js';
 import { exclusion } from '../context/useful-context.js';
-import { EvidenceRepository } from '../evidence/evidence.repository.js';
+import { contextHistoryBase, EvidenceRepository } from '../evidence/evidence.repository.js';
 import { timelinePolicy } from './message-timeline.js';
 
-export const historyBase = 1_000_000_000;
 type Row = Record<string, unknown>;
 type Reader = Pick<EvidenceRepository['db'], 'select' | 'execute'>;
 const topics = {
@@ -55,6 +54,21 @@ export class CampaignView {
     if (!snapshot)
       throw new AppError('CAMPAIGNS_NOT_READY', '반응 관찰 기록이 준비 중입니다.', 503);
     return snapshot.pk;
+  }
+
+  async legacyReview(id: number, reader: Reader = this.evidence.db) {
+    const snapshot = await this.archive(reader);
+    const [row] = await reader
+      .select({ body: nativeStateRecords.body })
+      .from(nativeStateRecords)
+      .where(
+        and(
+          eq(nativeStateRecords.snapshotPk, snapshot),
+          eq(nativeStateRecords.tableName, 'review_history'),
+          sql`${nativeStateRecords.body}->>'id'=${String(id)}`,
+        ),
+      );
+    return row?.body;
   }
 
   private async campaigns(reader: Reader, snapshot: number, local: boolean) {
@@ -231,11 +245,28 @@ export class CampaignView {
         and(
           eq(monitoringContextHistory.episodeId, String(episode.id)),
           eq(monitoringContextHistory.undone, false),
+          sql`(${monitoringContextHistory.next}->>'kind') is distinct from 'conversation'`,
         ),
       )
       .orderBy(desc(monitoringContextHistory.pk))
       .limit(1);
     const saved = { ...episode, ...patch?.body };
+    const [archivedReview] = review
+      ? []
+      : await reader
+          .select({ body: nativeStateRecords.body })
+          .from(nativeStateRecords)
+          .where(
+            and(
+              eq(nativeStateRecords.snapshotPk, snapshot),
+              eq(nativeStateRecords.tableName, 'review_history'),
+              sql`${nativeStateRecords.body}->>'episode_id'=${String(episode.id)}`,
+              sql`${nativeStateRecords.body}->>'undone'='0'`,
+              sql`not ((${JSON.stringify(saved.legacy_undo_ids ?? [])}::jsonb) @> jsonb_build_array(${nativeStateRecords.body}->'id'))`,
+            ),
+          )
+          .orderBy(sql`(${nativeStateRecords.body}->>'id')::bigint desc`)
+          .limit(1);
     const messages = await this.messages(reader, snapshot, episode, exclude);
     const elapsed = number(saved.anchor_ms);
     const before = messages.filter((m) => m.role === 'before' && m.relation !== 'unrelated');
@@ -244,7 +275,11 @@ export class CampaignView {
     const candidates = after.filter((m) => !m.own);
     return {
       ...saved,
-      last_review: review ? { id: historyBase + review.id } : null,
+      last_review: review
+        ? { id: contextHistoryBase + review.id }
+        : archivedReview
+          ? { id: archivedReview.body.id }
+          : null,
       messages,
       before_count: before.length,
       after_count: after.length,

@@ -11,6 +11,7 @@ import {
 import { koreanDay, reviewState } from '@app/shared/monitoring/domain/model';
 import { Injectable } from '@nestjs/common';
 import { and, count, desc, eq, inArray, lt, or, sql } from 'drizzle-orm';
+import { z } from 'zod';
 import { createDatabase } from '../../db/client.js';
 import {
   evidenceClassifications as classifications,
@@ -19,6 +20,7 @@ import {
   evidenceLegacyAudit,
   evidenceMetadata,
   evidenceHistory as history,
+  monitoringContextHistory,
   nativeEvidenceReferences,
   nativePhotoJobs,
   evidenceReceipts as receipts,
@@ -28,6 +30,12 @@ import { AppError } from '../../shared/errors/app-error.js';
 import { stableJson } from '../connection/stable-json.js';
 
 const digest = (v: unknown) => createHash('sha256').update(stableJson(v)).digest('hex');
+export const contextHistoryBase = 1_000_000_000;
+const contextReview = z.object({
+  id: z.string().min(1).max(100),
+  log_id: z.string().regex(/^[1-9][0-9]{0,18}$/u),
+  relation: z.enum(['related', 'unrelated', 'pending']),
+});
 @Injectable()
 export class EvidenceRepository {
   private connection?: ReturnType<typeof createDatabase>;
@@ -263,6 +271,96 @@ export class EvidenceRepository {
       },
       { isolationLevel: 'repeatable read', accessMode: 'read only' },
     );
+  }
+  async reviewContext(value: unknown) {
+    return this.applyContextReview(contextReview.parse(value));
+  }
+  async undoContext(historyId: number, previous: typeof monitoringContextHistory.$inferSelect) {
+    return this.applyContextReview(
+      contextReview.parse({
+        id: previous.episodeId,
+        log_id: previous.logId,
+        relation: previous.previous.relation,
+      }),
+      historyId,
+    );
+  }
+  private async applyContextReview(input: z.infer<typeof contextReview>, undo?: number) {
+    const id = await this.canonicalId(input.id);
+    return this.db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(271814,hashtext(${id}))`);
+      const [row] = await tx
+        .select()
+        .from(conversations)
+        .where(and(eq(conversations.sourceId, id), eq(conversations.active, true)))
+        .for('update');
+      if (!row) throw new AppError('NOT_FOUND', '저장된 대화를 찾을 수 없습니다.', 404);
+      const detail = structuredClone(row.detail);
+      const message = detail.messages.find((m) => m.id === input.log_id);
+      if (!message || message.anchor)
+        throw new AppError('INVALID_CONTEXT_REVIEW', '검토할 맥락 메시지를 확인해 주세요.', 400);
+      const previous = message.relation ?? 'pending';
+      if (undo !== undefined) {
+        const [change] = await tx
+          .select()
+          .from(monitoringContextHistory)
+          .where(eq(monitoringContextHistory.pk, undo))
+          .for('update');
+        if (!change || change.episodeId !== id || change.next.kind !== 'conversation')
+          throw new AppError('NOT_FOUND', '변경 이력을 찾을 수 없습니다.', 404);
+        if (change.undone) return { ok: true, id, undo_ids: [] };
+        if (previous !== change.next.relation)
+          throw new AppError('CONTEXT_REVIEW_CHANGED', '다른 곳에서 검토가 변경됐습니다.', 409);
+        await tx
+          .update(monitoringContextHistory)
+          .set({ undone: true })
+          .where(eq(monitoringContextHistory.pk, undo));
+      } else if (previous === input.relation) {
+        return { ok: true, id, undo_ids: [] };
+      }
+      const revision = row.revision + 1;
+      message.relation = input.relation;
+      const evaluations = await tx
+        .select()
+        .from(classifications)
+        .where(eq(classifications.conversationPk, row.pk));
+      for (const evaluation of evaluations) {
+        const body = {
+          ...evaluation.body,
+          stale: evaluation.body.label !== 'unreviewed' || evaluation.body.stale,
+          expected: digest([evaluation.body.expected, revision, input.log_id, input.relation]),
+        };
+        detail.conversation.evaluations[body.target] = {
+          label: body.label,
+          summary: body.summary,
+          origin: body.origin,
+          stale: body.stale,
+          expected: body.expected,
+        };
+        await tx
+          .update(classifications)
+          .set({ body, reviewState: reviewState(body) })
+          .where(eq(classifications.pk, evaluation.pk));
+      }
+      await tx
+        .update(conversations)
+        .set({ detail, revision, updatedAt: new Date() })
+        .where(eq(conversations.pk, row.pk));
+      const entries =
+        undo === undefined
+          ? await tx
+              .insert(monitoringContextHistory)
+              .values({
+                episodeId: id,
+                logId: input.log_id,
+                previous: { relation: previous },
+                next: { relation: input.relation, kind: 'conversation' },
+              })
+              .returning({ pk: monitoringContextHistory.pk })
+          : [];
+      await tx.execute(sql`select pg_notify('mention_projection_refresh','')`);
+      return { ok: true, id, undo_ids: entries.map(({ pk }) => contextHistoryBase + pk) };
+    });
   }
   async list(input: ListInput) {
     return this.db.transaction(

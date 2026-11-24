@@ -52,7 +52,7 @@ services:
           healthCheckPath: /health
   ingest:
     <<: *app
-    environment: {APP_ROLE: ingest, PORT: "4202"}
+    environment: {APP_ROLE: ingest, PORT: "4202", KAKAO_COLLECTOR_TOKEN_FILE: /run/mention/connection/collector.token}
     ports: ["4202:4202"]
     labels:
       lenkins.listener.rules: |
@@ -76,7 +76,7 @@ services:
       - mention-backups:/app/backup
   worker:
     <<: *app
-    environment: {APP_ROLE: worker, PORT: "4201", MENTION_BACKUP_DIRECTORY: /app/backup}
+    environment: {APP_ROLE: worker, PORT: "4201", MENTION_BACKUP_DIRECTORY: /app/backup, KAKAO_COLLECTOR_TOKEN_FILE: /run/mention/connection/collector.token}
     volumes:
       - *connection-socket
       - mention-backups:/app/backup
