@@ -108,6 +108,12 @@ export class ProjectionRepository implements OnApplicationShutdown, OnModuleInit
     return this.db.transaction(
       async (tx) => {
         const { pk } = await this.active(tx);
+        const [collected] = scope.day
+          ? []
+          : await tx
+              .select({ day: sql<string | null>`min(${conversations.day})` })
+              .from(conversations)
+              .where(eq(conversations.generationPk, pk));
         const mentions = conversationKeywordCounts(groups);
         const related = new Map<string, number>();
         const weekly = new WeeklyOpinions(weeks);
@@ -190,6 +196,7 @@ export class ProjectionRepository implements OnApplicationShutdown, OnModuleInit
                   related: periods.recent.related,
                 },
                 prior: { mentions: periods.prior.mentions.counts, related: periods.prior.related },
+                firstDay: collected?.day ?? null,
               }
             : undefined,
         };

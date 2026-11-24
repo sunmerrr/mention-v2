@@ -149,7 +149,27 @@ export class ForumRepository {
           countRelatedKeywordRecord(periods[period].related, [row.post.title, row.post.excerpt]);
       }
     }
-    return { mentions, related, weekly, windows: periods };
+    const [first] = periods
+      ? await this.db
+          .select({
+            at: sql<
+              string | null
+            >`min(coalesce(${forumPosts.card},${forumPosts.detail}->'post')->>'publishedAt')`,
+          })
+          .from(forumPosts)
+          .where(
+            and(
+              eq(forumPosts.matched, true),
+              sql`coalesce(${forumPosts.card},${forumPosts.detail}->'post')->>'publishedAt' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}'`,
+            ),
+          )
+      : [];
+    return {
+      mentions,
+      related,
+      weekly,
+      windows: periods && { ...periods, firstDay: first?.at ? first.at.slice(0, 10) : null },
+    };
   }
   async aggregateSession(): Promise<import('pg').PoolClient> {
     void this.db;

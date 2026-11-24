@@ -289,7 +289,15 @@ function TermList({ terms, showTarget }: { terms: EmergingTerm[]; showTarget: bo
 }
 
 const emergingNote =
-  '최근 7일을 그 전 4주와 비교합니다. 새로 등장은 이전 4주 0건에서 2건 이상, 급증은 4건 이상이면서 이전 주 평균의 2배 이상입니다.';
+  '최근 7일을 그 전 4주와 비교합니다. 새로 등장은 이전 4주 0건에서 2건 이상, 급증은 4건 이상이면서 이전 주 평균의 2배 이상입니다. 평균은 수집 기록이 있는 기간으로만 냅니다.';
+
+function EmptyTerms({ priorWeeks, children }: { priorWeeks: number; children: string }) {
+  return (
+    <Text as="p" size="2">
+      {priorWeeks < 1 ? '비교할 이전 기록이 1주 미만이라 아직 판단하지 않습니다.' : children}
+    </Text>
+  );
+}
 
 /** Index card: subkeywords that started or surged in the last seven days. */
 export function EmergingCard({ insights }: { insights: Insights }) {
@@ -304,9 +312,9 @@ export function EmergingCard({ insights }: { insights: Insights }) {
       {emerging.subkeywords.length ? (
         <TermList terms={emerging.subkeywords} showTarget />
       ) : (
-        <Text as="p" size="2">
+        <EmptyTerms priorWeeks={emerging.priorWeeks}>
           최근 7일에 새로 등장하거나 급증한 하위 키워드가 없습니다.
-        </Text>
+        </EmptyTerms>
       )}
       <Text as="p" size="1" color="gray" mt="3">
         {emergingNote}
@@ -329,9 +337,9 @@ export function KeywordEmergingCard({ insights }: { insights: Insights }) {
       {terms.length ? (
         <TermList terms={terms} showTarget={false} />
       ) : (
-        <Text as="p" size="2">
+        <EmptyTerms priorWeeks={emerging.priorWeeks}>
           최근 7일에 새로 등장하거나 급증한 단어가 없습니다.
-        </Text>
+        </EmptyTerms>
       )}
       <Text as="p" size="1" color="gray" mt="3">
         {emergingNote}

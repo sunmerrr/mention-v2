@@ -148,6 +148,14 @@ export function windowOf(window: EmergingWindow, day: string) {
   return null;
 }
 
+/** Weeks of the prior window that fall on or after the first collected day. */
+export function priorWeeksCovered(window: EmergingWindow, firstDay: string | null) {
+  if (!firstDay) return 0;
+  const start = firstDay > window.prior.from ? firstDay : window.prior.from;
+  if (start > window.prior.through) return 0;
+  return ((dayMsOf(window.prior.through) - dayMsOf(start)) / dayMs + 1) / 7;
+}
+
 export interface EmergingTerm {
   name: string;
   target: string | null;
@@ -158,20 +166,23 @@ export interface EmergingTerm {
 
 /**
  * New: two or more records this week and none in the previous four weeks.
- * Rising: four or more records and at least double the previous weekly average.
+ * Rising: four or more records and at least double the previous weekly average,
+ * averaged only over the weeks that had collected data.
  */
 export function emergingTerms(
   recent: readonly { name: string; total: number }[],
   prior: (name: string) => number,
   targetOf: (name: string) => string | null,
+  priorWeeks: number,
   limit = 8,
 ): EmergingTerm[] {
+  if (priorWeeks < 1) return [];
   const terms: EmergingTerm[] = [];
   for (const { name, total } of recent) {
     const before = prior(name);
     if (before === 0 && total >= 2)
       terms.push({ name, target: targetOf(name), recent: total, prior: 0, kind: 'new' });
-    else if (before > 0 && total >= 4 && total >= (2 * before) / 4)
+    else if (before > 0 && total >= 4 && total >= (2 * before) / priorWeeks)
       terms.push({ name, target: targetOf(name), recent: total, prior: before, kind: 'rising' });
   }
   return terms

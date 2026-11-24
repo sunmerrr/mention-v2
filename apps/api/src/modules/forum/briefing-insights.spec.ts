@@ -5,6 +5,7 @@ import {
   keywordWeekChanges,
   notableChanges,
   pickRepresentatives,
+  priorWeeksCovered,
   type RepresentativeOpinion,
   windowOf,
 } from '@app/shared/monitoring/domain/briefing-insights';
@@ -108,7 +109,43 @@ describe('briefing insights', () => {
       ],
       (name) => prior.get(name) ?? 0,
       () => '합성',
+      4,
     );
     expect(terms.map(({ name, kind }) => `${name}:${kind}`)).toEqual(['새말:new', '급증:rising']);
+  });
+
+  it('averages prior counts only over weeks with collected data', () => {
+    const window = emergingWindow(weeks);
+    if (!window) throw Error('window');
+    expect(priorWeeksCovered(window, '2026-01-01')).toBe(4);
+    expect(priorWeeksCovered(window, '2026-11-04')).toBe(2);
+    expect(priorWeeksCovered(window, '2026-11-20')).toBe(0);
+    expect(priorWeeksCovered(window, null)).toBe(0);
+    const recent = [{ name: '꾸준', total: 6 }];
+    // 8 records over two covered weeks is 4 a week, so 6 is not double.
+    expect(
+      emergingTerms(
+        recent,
+        () => 8,
+        () => null,
+        2,
+      ),
+    ).toEqual([]);
+    expect(
+      emergingTerms(
+        recent,
+        () => 8,
+        () => null,
+        4,
+      ).map(({ kind }) => kind),
+    ).toEqual(['rising']);
+    expect(
+      emergingTerms(
+        [{ name: '새말', total: 3 }],
+        () => 0,
+        () => null,
+        0.5,
+      ),
+    ).toEqual([]);
   });
 });

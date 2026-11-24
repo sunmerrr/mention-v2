@@ -8,6 +8,7 @@ import {
   keywordWeekChanges,
   notableChanges,
   pickRepresentatives,
+  priorWeeksCovered,
   type RepresentativeOpinion,
 } from '../domain/briefing-insights.js';
 import { forumKeywordIdentity } from '../domain/forum-topics.js';
@@ -34,7 +35,7 @@ interface KeywordReport {
   related: ReadonlyMap<string, number>;
   weekly: WeeklyOpinions;
   /** Present only for undated scopes: the last seven days and the four weeks before. */
-  windows?: { recent: WindowCounts; prior: WindowCounts };
+  windows?: { recent: WindowCounts; prior: WindowCounts; firstDay: string | null };
 }
 
 interface Ports {
@@ -213,16 +214,23 @@ export class CombinedQueries {
         forum.available,
       );
     const relatedGroup = scope.target ? groups[0] : undefined;
+    const firstDays = [chatWindows?.firstDay, forumWindows?.firstDay].filter((day): day is string =>
+      Boolean(day),
+    );
+    const firstDay = firstDays.length ? firstDays.reduce((a, b) => (a < b ? a : b)) : null;
+    const priorWeeks = window ? priorWeeksCovered(window, firstDay) : 0;
     const emerging =
       window && (chatWindows || forumWindows)
         ? {
             window,
+            priorWeeks,
             subkeywords: (() => {
               const prior = new Map(mentionTotals('prior').map(({ name, total }) => [name, total]));
               return emergingTerms(
                 mentionTotals('recent'),
                 (name) => prior.get(name) ?? 0,
                 targetOf,
+                priorWeeks,
               );
             })(),
             related: relatedGroup
@@ -242,6 +250,7 @@ export class CombinedQueries {
                     );
                   },
                   () => relatedGroup.name,
+                  priorWeeks,
                 )
               : [],
           }
