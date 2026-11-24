@@ -1,6 +1,15 @@
 import type { OverviewPayload } from '../contracts/api.js';
 import type { CombinedScope } from '../contracts/combined.js';
 import { type KeywordPolicy, sourceKeywords } from '../contracts/keyword-policy.js';
+import {
+  comparisonWeeks,
+  emergingTerms,
+  emergingWindow,
+  keywordWeekChanges,
+  notableChanges,
+  pickRepresentatives,
+  type RepresentativeOpinion,
+} from '../domain/briefing-insights.js';
 import { forumKeywordIdentity } from '../domain/forum-topics.js';
 import { type MentionGroups, rankKeywordMentions } from '../domain/keyword-mentions.js';
 import type { Scope } from '../domain/model.js';
@@ -16,10 +25,16 @@ import {
   type WeeklyOpinions,
 } from '../domain/weekly-opinions.js';
 
+interface WindowCounts {
+  mentions: ReadonlyMap<string, number>;
+  related: ReadonlyMap<string, number>;
+}
 interface KeywordReport {
   mentions: ReadonlyMap<string, number>;
   related: ReadonlyMap<string, number>;
   weekly: WeeklyOpinions;
+  /** Present only for undated scopes: the last seven days and the four weeks before. */
+  windows?: { recent: WindowCounts; prior: WindowCounts };
 }
 
 interface Ports {
@@ -29,6 +44,7 @@ interface Ports {
   lastForumCollection?(): Promise<number | null>;
   kakaoKeywords(scope: Scope, groups: MentionGroups, weeks: ReportingWeeks): Promise<KeywordReport>;
   forumKeywords(scope: Scope, weeks: ReportingWeeks): Promise<KeywordReport>;
+  kakaoRepresentatives?(scope: Scope, targets: string[]): Promise<RepresentativeOpinion[]>;
 }
 const emptySource: SourceOpinion = {
   available: false,
@@ -102,6 +118,37 @@ export class CombinedQueries {
           })),
         }
       : emptySource;
+    const names = groups.map(({ name }) => name);
+    const forumReasons = async () => {
+      const models = scope.target
+        ? [forum]
+        : await Promise.all(names.map((target) => this.ports.forum({ ...filters, target })));
+      return models.flatMap(({ evidence }) =>
+        evidence.flatMap((item): RepresentativeOpinion[] =>
+          item.label === 'positive' || item.label === 'negative'
+            ? [
+                {
+                  id: item.id,
+                  source: 'pokergosu',
+                  target: item.target,
+                  label: item.label,
+                  summary: item.summary,
+                  title: item.title,
+                  href: item.href,
+                  at: item.at,
+                  substantive: true,
+                },
+              ]
+            : [],
+        ),
+      );
+    };
+    const [kakaoReasons, pokergosuReasons] = await Promise.all([
+      useKakao && this.ports.kakaoRepresentatives
+        ? this.ports.kakaoRepresentatives(filters, names)
+        : [],
+      useForum && forum.available ? forumReasons() : [],
+    ]);
     const rows = groups.map((g) => ({
       id: g.id,
       name: g.name,
@@ -118,8 +165,96 @@ export class CombinedQueries {
         units: 0,
       },
     }));
+    const weeklyRows = rows.map(({ id, name }) => ({
+      id,
+      name,
+      values: weeks.map(({ start }) => {
+        const chat = kakaoKeywords?.weekly.get(start, name);
+        const forum = forumKeywords?.weekly.get(start, name);
+        if (!chat && !forum) return null;
+        const positive = (chat?.positive ?? 0) + (forum?.positive ?? 0);
+        const negative = (chat?.negative ?? 0) + (forum?.negative ?? 0);
+        const classified =
+          positive +
+          negative +
+          (chat?.neutral ?? 0) +
+          (forum?.neutral ?? 0) +
+          (chat?.mixed ?? 0) +
+          (forum?.mixed ?? 0);
+        const mentions =
+          classified +
+          (chat?.uncertain ?? 0) +
+          (forum?.uncertain ?? 0) +
+          (chat?.unreviewed ?? 0) +
+          (forum?.unreviewed ?? 0);
+        return { positive, negative, classified, mentions };
+      }),
+    }));
+    const changes = keywordWeekChanges(weeks, weeklyRows);
+    const pair = comparisonWeeks(weeks);
+    const window = scope.day ? null : emergingWindow(weeks);
+    const chatWindows = kakaoKeywords?.windows;
+    const forumWindows = forumKeywords?.windows;
+    const emptyCounts = new Map<string, number>();
+    const targetOf = (word: string) => {
+      const identity = forumKeywordIdentity(word);
+      return (
+        groups.find(({ name, keywords }) =>
+          [name, ...keywords].some((alias) => forumKeywordIdentity(alias) === identity),
+        )?.name ?? null
+      );
+    };
+    const mentionTotals = (period: 'recent' | 'prior') =>
+      rankKeywordMentions(
+        groups,
+        policy,
+        chatWindows?.[period].mentions ?? emptyCounts,
+        forumWindows?.[period].mentions ?? emptyCounts,
+        forum.available,
+      );
+    const relatedGroup = scope.target ? groups[0] : undefined;
+    const emerging =
+      window && (chatWindows || forumWindows)
+        ? {
+            window,
+            subkeywords: (() => {
+              const prior = new Map(mentionTotals('prior').map(({ name, total }) => [name, total]));
+              return emergingTerms(
+                mentionTotals('recent'),
+                (name) => prior.get(name) ?? 0,
+                targetOf,
+              );
+            })(),
+            related: relatedGroup
+              ? emergingTerms(
+                  rankRelatedKeywords(
+                    relatedGroup,
+                    configuredGroups,
+                    chatWindows?.recent.related ?? emptyCounts,
+                    forumWindows?.recent.related ?? emptyCounts,
+                    forum.available,
+                  ),
+                  (name) => {
+                    const key = forumKeywordIdentity(name);
+                    return (
+                      (chatWindows?.prior.related.get(key) ?? 0) +
+                      (forumWindows?.prior.related.get(key) ?? 0)
+                    );
+                  },
+                  () => relatedGroup.name,
+                )
+              : [],
+          }
+        : null;
     return {
       scope,
+      insights: {
+        comparison: pair ? { current: pair.currentWeek, previous: pair.previousWeek } : null,
+        changes,
+        notable: notableChanges(changes),
+        representatives: pickRepresentatives(names, [...kakaoReasons, ...pokergosuReasons]),
+        emerging,
+      },
       metadata: {
         days: chat?.metadata.days ?? [],
         source: chat?.metadata.source ?? ('legacy' as const),
@@ -148,34 +283,7 @@ export class CombinedQueries {
               forum.available,
             )
           : [],
-      weekly: {
-        weeks,
-        rows: rows.map(({ id, name }) => ({
-          id,
-          name,
-          values: weeks.map(({ start }) => {
-            const chat = kakaoKeywords?.weekly.get(start, name);
-            const forum = forumKeywords?.weekly.get(start, name);
-            if (!chat && !forum) return null;
-            const positive = (chat?.positive ?? 0) + (forum?.positive ?? 0);
-            const negative = (chat?.negative ?? 0) + (forum?.negative ?? 0);
-            const classified =
-              positive +
-              negative +
-              (chat?.neutral ?? 0) +
-              (forum?.neutral ?? 0) +
-              (chat?.mixed ?? 0) +
-              (forum?.mixed ?? 0);
-            const mentions =
-              classified +
-              (chat?.uncertain ?? 0) +
-              (forum?.uncertain ?? 0) +
-              (chat?.unreviewed ?? 0) +
-              (forum?.unreviewed ?? 0);
-            return { positive, negative, classified, mentions };
-          }),
-        })),
-      },
+      weekly: { weeks, rows: weeklyRows },
       topics: sharedOpinionTopics(kakao.evidence, forum.evidence),
       collectionState: chat?.overview.collectionState ?? 'snapshot',
       briefing: { generatedAt: Date.now(), pokergosuCollectedAt: lastForumCollection ?? null },

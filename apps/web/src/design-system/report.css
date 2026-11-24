@@ -843,3 +843,101 @@
     display: none;
   }
 }
+/* Briefing insights: week-over-week changes, representative reasons, emerging terms. */
+.ds-briefing-change-list,
+.ds-briefing-reason-list,
+.ds-briefing-term-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ds-briefing-change-list {
+  display: grid;
+  gap: var(--mention-space-2);
+}
+.ds-briefing-change-list > li {
+  font-size: var(--font-size-3);
+  line-height: 1.6;
+}
+.ds-briefing-change-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--mention-space-4);
+}
+.ds-briefing-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--mention-space-4);
+}
+.ds-briefing-reason-rows {
+  display: grid;
+}
+.ds-briefing-reason-row {
+  display: grid;
+  grid-template-columns: minmax(6rem, 0.6fr) minmax(0, 2fr) minmax(0, 2fr);
+  gap: var(--mention-space-4);
+  padding-block: var(--mention-space-3);
+  border-top: 1px solid var(--gray-a4);
+}
+.ds-briefing-reason-row:first-child {
+  border-top: 0;
+  padding-block-start: 0;
+}
+.ds-briefing-reason-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mention-space-5);
+}
+.ds-briefing-reason-list {
+  display: grid;
+  gap: var(--mention-space-3);
+}
+.ds-briefing-reason {
+  padding-inline-start: var(--mention-space-3);
+  border-inline-start: 3px solid var(--mention-chart-positive);
+}
+.ds-briefing-reason[data-tone="negative"] {
+  border-inline-start-color: var(--mention-chart-negative);
+}
+.ds-briefing-reason-summary {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow-wrap: anywhere;
+}
+.ds-briefing-term-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mention-space-2) var(--mention-space-3);
+}
+.ds-briefing-term-list > li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mention-space-2);
+  padding: var(--mention-space-2) var(--mention-space-3);
+  border: 1px solid var(--gray-a5);
+  border-radius: var(--mention-radius-control);
+}
+@media (min-width: 1180px) {
+  .ds-briefing-pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ds-briefing-pair > :only-child {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 720px) {
+  .ds-briefing-reason-row,
+  .ds-briefing-reason-columns {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--mention-space-3);
+  }
+  .ds-briefing-change-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--mention-space-3);
+  }
+  .ds-briefing-term-list > li {
+    flex-wrap: wrap;
+  }
+}

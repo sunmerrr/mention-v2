@@ -1,6 +1,11 @@
 import { createHash } from 'node:crypto';
 import { cursorKey } from '@app/shared/monitoring/application/queries';
 import type { ListInput, OverviewPayload, Page } from '@app/shared/monitoring/contracts/api';
+import {
+  emergingWindow,
+  type RepresentativeOpinion,
+  windowOf,
+} from '@app/shared/monitoring/domain/briefing-insights';
 import { forumKeywordIdentity } from '@app/shared/monitoring/domain/forum-topics';
 import {
   conversationKeywordCounts,
@@ -106,6 +111,19 @@ export class ProjectionRepository implements OnApplicationShutdown, OnModuleInit
         const mentions = conversationKeywordCounts(groups);
         const related = new Map<string, number>();
         const weekly = new WeeklyOpinions(weeks);
+        const window = scope.day ? null : emergingWindow(weeks);
+        const periods = window
+          ? {
+              recent: {
+                mentions: conversationKeywordCounts(groups),
+                related: new Map<string, number>(),
+              },
+              prior: {
+                mentions: conversationKeywordCounts(groups),
+                related: new Map<string, number>(),
+              },
+            }
+          : null;
         const days = [eq(conversations.generationPk, pk)];
         if (scope.day) days.push(eq(conversations.day, scope.day));
         if (scope.target) {
@@ -116,6 +134,7 @@ export class ProjectionRepository implements OnApplicationShutdown, OnModuleInit
         }
         const rows = await tx
           .select({
+            day: conversations.day,
             keywords: sql<Conversation['keywords']>`${conversations.body}->'keywords'`,
             targets: sql<Conversation['targets']>`${conversations.body}->'targets'`,
             body: scope.target ? conversations.body : sql<null>`null`,
@@ -123,10 +142,16 @@ export class ProjectionRepository implements OnApplicationShutdown, OnModuleInit
           .from(conversations)
           .where(and(...days));
         for (const row of rows) {
-          mentions.add(Object.keys(row.keywords ?? {}), row.targets);
+          const words = Object.keys(row.keywords ?? {});
+          mentions.add(words, row.targets);
+          const period = window && periods ? windowOf(window, row.day) : null;
+          const bucket = period && periods ? periods[period] : null;
+          bucket?.mentions.add(words, row.targets);
           if (row.body) {
-            for (const word of conversationRelatedKeywords(row.body))
+            for (const word of conversationRelatedKeywords(row.body)) {
               related.set(word, (related.get(word) ?? 0) + 1);
+              bucket?.related.set(word, (bucket.related.get(word) ?? 0) + 1);
+            }
           }
         }
         const first = weeks.at(0),
@@ -154,7 +179,72 @@ export class ProjectionRepository implements OnApplicationShutdown, OnModuleInit
             if (label) weekly.count(row.day, row.target, label, row.n);
           }
         }
-        return { mentions: mentions.counts, related, weekly };
+        return {
+          mentions: mentions.counts,
+          related,
+          weekly,
+          windows: periods
+            ? {
+                recent: {
+                  mentions: periods.recent.mentions.counts,
+                  related: periods.recent.related,
+                },
+                prior: { mentions: periods.prior.mentions.counts, related: periods.prior.related },
+              }
+            : undefined,
+        };
+      },
+      { isolationLevel: 'repeatable read', accessMode: 'read only' },
+    );
+  }
+  /** Saved positive/negative summaries for the briefing; newest first within the scope. */
+  async representatives(scope: Scope, targets: string[]): Promise<RepresentativeOpinion[]> {
+    if (!targets.length) return [];
+    return this.db.transaction(
+      async (tx) => {
+        const { pk } = await this.active(tx);
+        const evaluation = sql`${conversations.body}->'evaluations'->${labels.target}`;
+        const rows = await tx
+          .select({
+            id: sql<string>`${conversations.body}->>'id'`,
+            room: sql<string>`coalesce(${conversations.body}->>'room', '')`,
+            at: conversations.occurredAt,
+            target: labels.target,
+            label: labels.label,
+            summary: sql<string>`coalesce(${evaluation}->>'summary', '')`,
+            stale: sql<boolean>`coalesce((${evaluation}->>'stale')::boolean, false)`,
+            messages: sql<number>`coalesce((${conversations.body}->>'messageCount')::int, 0)`,
+          })
+          .from(labels)
+          .innerJoin(conversations, eq(conversations.pk, labels.conversationPk))
+          .where(
+            and(
+              eq(conversations.generationPk, pk),
+              inArray(labels.target, targets),
+              inArray(labels.label, ['positive', 'negative']),
+              scope.day ? eq(conversations.day, scope.day) : undefined,
+              sql`length(trim(coalesce(${evaluation}->>'summary', ''))) > 0`,
+            ),
+          )
+          .orderBy(desc(conversations.occurredAt))
+          .limit(600);
+        return rows.flatMap((row): RepresentativeOpinion[] =>
+          !row.stale && (row.label === 'positive' || row.label === 'negative')
+            ? [
+                {
+                  id: row.id,
+                  source: 'kakao',
+                  target: row.target,
+                  label: row.label,
+                  summary: row.summary,
+                  title: row.room,
+                  href: `/conversations/${encodeURIComponent(row.id)}`,
+                  at: row.at.getTime(),
+                  substantive: row.messages >= 3,
+                },
+              ]
+            : [],
+        );
       },
       { isolationLevel: 'repeatable read', accessMode: 'read only' },
     );

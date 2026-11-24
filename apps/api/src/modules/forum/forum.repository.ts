@@ -21,6 +21,7 @@ import {
   pokergosuDetailSchema,
   pokergosuSummarySchema,
 } from '@app/shared/monitoring/contracts/pokergosu';
+import { emergingWindow, windowOf } from '@app/shared/monitoring/domain/briefing-insights';
 import { forumKeywordIdentity } from '@app/shared/monitoring/domain/forum-topics';
 import { countKeywordRecord } from '@app/shared/monitoring/domain/keyword-mentions';
 import type { Scope } from '@app/shared/monitoring/domain/model';
@@ -93,6 +94,13 @@ export class ForumRepository {
     const mentions = new Map<string, number>();
     const related = new Map<string, number>();
     const weekly = new WeeklyOpinions(weeks);
+    const window = scope.day ? null : emergingWindow(weeks);
+    const periods = window
+      ? {
+          recent: { mentions: new Map<string, number>(), related: new Map<string, number>() },
+          prior: { mentions: new Map<string, number>(), related: new Map<string, number>() },
+        }
+      : undefined;
     const evaluation = sql<
       ForumEvaluation[]
     >`coalesce(${forumPosts.evaluations},${forumPosts.detail}->'evaluations','[]'::jsonb)`;
@@ -134,8 +142,14 @@ export class ForumRepository {
         continue;
       countKeywordRecord(mentions, row.keywords);
       if (scope.target) countRelatedKeywordRecord(related, [row.post.title, row.post.excerpt]);
+      const period = window && day ? windowOf(window, day) : null;
+      if (period && periods) {
+        countKeywordRecord(periods[period].mentions, row.keywords);
+        if (scope.target)
+          countRelatedKeywordRecord(periods[period].related, [row.post.title, row.post.excerpt]);
+      }
     }
-    return { mentions, related, weekly };
+    return { mentions, related, weekly, windows: periods };
   }
   async aggregateSession(): Promise<import('pg').PoolClient> {
     void this.db;

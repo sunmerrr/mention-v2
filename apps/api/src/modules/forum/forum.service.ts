@@ -32,6 +32,7 @@ export class ForumService {
       policy: () => settings.policy(),
       kakaoKeywords: (scope, groups, weeks) => projection.keywordReport(scope, groups, weeks),
       forumKeywords: (scope, weeks) => repository.keywordReport(scope, weeks),
+      kakaoRepresentatives: (scope, targets) => projection.representatives(scope, targets),
     });
     this.topics = new TopicBriefingQueries({
       kakao: (from, through) => projection.topicActivity(from, through),

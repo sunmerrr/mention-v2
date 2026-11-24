@@ -31,6 +31,14 @@ import {
   WeeklyHeatmap,
   WeeklyPlot,
 } from '../design-system';
+import {
+  EmergingCard,
+  KeywordChangeCard,
+  KeywordEmergingCard,
+  KeywordReasonsCard,
+  RepresentativesCard,
+  WeeklyChangesCard,
+} from './BriefingInsights';
 import CombinedDetails from './CombinedDetails';
 
 function KeywordNavigation({
@@ -273,6 +281,11 @@ function KeywordDetail({ data, source }: { data: CombinedPayload; source?: Brief
           </ReportSection>
           {!source && result.classified > 0 && <SourceComparison result={result} data={data} />}
         </div>
+        <KeywordReasonsCard insights={data.insights} target={row.name} source={source} />
+        <div className="ds-briefing-pair">
+          <KeywordChangeCard insights={data.insights} target={row.name} />
+          <KeywordEmergingCard insights={data.insights} />
+        </div>
         <KeywordMentionsSection data={data} source={source} />
         {weekly && (
           <>
@@ -356,6 +369,7 @@ function BriefingIndex({
   );
   return (
     <ReportSheet dashboard label={`${source ? sourceLabels[source] : '종합'} 여론 보고서`}>
+      <WeeklyChangesCard insights={data.insights} day={day} source={source} />
       <div className="ds-overview-comparisons">
         {(plotted.length > 0 || waiting.length > 0) && (
           <ReportSection card title="키워드별 긍정·부정 비교">
@@ -420,7 +434,9 @@ function BriefingIndex({
           </ReportSection>
         )}
       </div>
+      <RepresentativesCard insights={data.insights} day={day} source={source} />
       <KeywordMentionsSection data={data} source={source} />
+      <EmergingCard insights={data.insights} />
       <ReportSection card title="키워드별 주간 언급량">
         <WeeklyScope data={data} source={source} />
         <WeeklyHeatmap
