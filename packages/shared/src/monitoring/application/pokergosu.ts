@@ -22,7 +22,10 @@ export interface PokergosuReader {
   detail(id: string): Promise<PokergosuDetail | null>;
 }
 export function pokergosuScope(input: PokergosuListInput) {
-  return JSON.stringify([input.q, input.keyword, input.day, input.match]);
+  const base = [input.q, input.keyword, input.day, input.match];
+  return JSON.stringify(
+    input.mention || input.target ? [...base, input.mention || '', input.target || ''] : base,
+  );
 }
 export function encodePokergosuCursor(cursor: PokergosuCursor) {
   return Buffer.from(JSON.stringify(cursor)).toString('base64url');

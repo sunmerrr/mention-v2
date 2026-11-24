@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { cursorKey } from '@app/shared/monitoring/application/queries';
 import type { ListInput, OverviewPayload, Page } from '@app/shared/monitoring/contracts/api';
+import { forumKeywordIdentity } from '@app/shared/monitoring/domain/forum-topics';
 import {
   conversationKeywordCounts,
   type MentionGroups,
@@ -288,6 +289,13 @@ export class ProjectionRepository implements OnApplicationShutdown, OnModuleInit
         const generation = await this.active(tx);
         const conditions = [eq(conversations.generationPk, generation.pk)];
         if (input.day) conditions.push(eq(conversations.day, input.day));
+        if (input.mention) {
+          const mention = forumKeywordIdentity(input.mention);
+          conditions.push(sql`exists (
+            select 1 from jsonb_object_keys(coalesce(${conversations.body}->'keywords', '{}'::jsonb)) as keyword(word)
+            where regexp_replace(lower(normalize(keyword.word, NFKC)), '[[:space:]._\-]+', '', 'g') = ${mention}
+          )`);
+        }
         if (input.target || input.label || input.status) {
           const filters = [eq(labels.conversationPk, conversations.pk)];
           if (input.target) filters.push(eq(labels.target, input.target));

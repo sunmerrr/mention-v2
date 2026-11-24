@@ -482,3 +482,47 @@ deployment directory is identified by `.dev/tmp/mention-prod-20261124-dir`.
 It holds the environment, Compose file, final snapshot and activation logs.
 The existing sources remain as recovery evidence. AWS and lenkins execution
 were outside this local cutover.
+
+## 2026-11-24 opinion briefing restoration
+
+The pre-cutover combined opinion briefing is the visual reference. Its
+implementation remains in the previous workspace under
+`apps/web/src/pages/Combined.tsx` and `CombinedDetails.tsx`. The initial attempt
+connected both source menu items to that view in the previous workspace.
+It included source-only aggregate queries, separate source keyword paths,
+and source-specific drilldown links. The attempt was never released to the
+production service. Those changes were reversed in 23 files using the
+recorded changes and pre-edit source, preserving the pre-existing combined
+briefing. The rollback passed TypeScript, diff checks and 18 focused tests.
+
+The live regression was separate from that attempt. The active
+`mention-internal` deployment had the PostgreSQL-backed aggregate and an older
+presentation. The restoration brings the former dashboard layout, keyword tabs,
+percent labels, source comparison, weekly charts, word cloud, related words and
+date navigation to `/`, `/combined` and the combined keyword paths. It keeps the
+existing source menu routes on their prior components. The rendering uses
+the current PostgreSQL reports and keeps keyword drilldowns filtered. No schema
+migration or changes to the collector or ingest processes were required.
+
+- Implemented. The route is `apps/web/src/pages/OpinionBriefing.tsx`; the
+  underlying aggregate is `packages/shared/src/monitoring/application/combined.ts`.
+  The tab list uses all-time eligible counts so a date filter does not change
+  its membership. The retired source-only redesign is outside this release.
+- Tested. The production Docker image built with API TypeScript checking,
+  client and SSR builds. `pnpm verify` passed with 58 unit tests and 67
+  integration tests on disposable PostgreSQL. The read-only candidate rendered
+  live aggregates and both keyword list filters at 1440px and 375px.
+- Deployed at 14:59 KST. Only the API service was recreated with
+  `mention-local:live-20261124-briefing-restore-r2`. Ingest, analysis worker
+  and PostgreSQL container IDs and start times were checked before and
+  after the update. The production Compose file retains the prior API
+  configuration in `compose.before-briefing-restore.yml`.
+- Live-verified. The public hostname returned populated SSR for the combined
+  page and HTTP 200 for both source pages. Browser checks against the
+  production origin confirmed responsive chart widths, word cloud rendering,
+  keyword navigation and both filtered source lists. The restored dashboard
+  showed five targets and 28 subkeywords with a roughly 94 KB uncompressed
+  SSR response. First useful content took 0.90s at 1440px and 0.51s at 375px
+  on loopback. Returning from a keyword tab made no extra aggregate request
+  in those checks. The Gatsby detail contained related words and all eight
+  weekly buckets. The read-only candidate was removed after validation.

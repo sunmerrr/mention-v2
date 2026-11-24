@@ -1,5 +1,6 @@
 import type { CombinedPayload } from '@app/shared/monitoring/application/combined';
 import type { CombinedScope } from '@app/shared/monitoring/contracts/combined';
+import type { Scope } from '@app/shared/monitoring/domain/model';
 import { queryOptions } from '@tanstack/react-query';
 import { api, params, scopeFrom } from './queries';
 export function combinedScope(path: string, search: string): CombinedScope {
@@ -32,3 +33,14 @@ export const combinedQuery = ({ source, ...scope }: CombinedScope) =>
     queryKey: ['combined', scope, source],
     queryFn: () => api<CombinedPayload>(`/api/combined?${params(scope, source ? { source } : {})}`),
   });
+
+export function combinedKeywordHref(target: string, day = '') {
+  return `/combined/${encodeURIComponent(target)}${day ? `?${new URLSearchParams({ day })}` : ''}`;
+}
+
+export function mentionListHref(mention: string, scope: Scope, source: 'pokergosu' | 'kakao') {
+  const query = new URLSearchParams({ mention, nav: '/' });
+  if (scope.day) query.set('day', scope.day);
+  if (scope.target) query.set('target', scope.target);
+  return `${source === 'pokergosu' ? '/posts' : '/conversations'}?${query}`;
+}

@@ -44,9 +44,10 @@ export default function Conversations({ embedded = false }: { embedded?: boolean
     scope = scopeFrom(search),
     [params, setParams] = useSearchParams(),
     label = params.get('label') || '',
+    mention = params.get('mention') || '',
     status = params.get('status') || (label === 'unreviewed' ? 'pending' : '');
   const query = useInfiniteQuery(
-      conversationsQuery(scope, label === 'unreviewed' ? '' : label, status),
+      conversationsQuery(scope, label === 'unreviewed' ? '' : label, status, mention),
     ),
     metadata = useQuery({ ...overviewQuery(scope), enabled: !embedded });
   const items = query.data?.pages.flatMap((p) => p.items) || [],
@@ -119,7 +120,7 @@ export default function Conversations({ embedded = false }: { embedded?: boolean
     <>
       {!embedded && (
         <PageHeader
-          title="대화 목록"
+          title={mention ? `${mention} 언급 대화` : '대화 목록'}
           description="기준 발언과 앞뒤 맥락을 한 대화로 읽습니다."
           actions={<Filters metadata={metadata.data?.metadata}>{classificationFilters}</Filters>}
         />

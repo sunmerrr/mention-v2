@@ -8,6 +8,7 @@ export const scopeSchema = z.object({
   target: z.string().max(100).default(''),
 });
 export const listSchema = scopeSchema.extend({
+  mention: z.string().trim().max(200).optional(),
   status: z.enum(['', 'pending', 'unclassified', 'recheck', 'classified', 'excluded']).optional(),
   label: z
     .enum(['', 'positive', 'negative', 'neutral', 'mixed', 'uncertain', 'unreviewed', 'excluded'])

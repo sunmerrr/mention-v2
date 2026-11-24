@@ -87,3 +87,13 @@ export function sharedOpinionTopics(kakao: SourceEvidence[], forum: SourceEviden
     });
   });
 }
+
+/** Excluded judgements are retained in totals, but do not belong to the opinion plot. */
+export function opinionChartPopulation(counts: OpinionCounts, units: number) {
+  return {
+    total: Math.max(0, units - counts.excluded),
+    items: opinionLabels
+      .filter((label) => label !== 'excluded')
+      .map((label) => ({ label, count: counts[label] })),
+  };
+}

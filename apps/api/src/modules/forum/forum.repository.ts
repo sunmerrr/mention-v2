@@ -21,6 +21,7 @@ import {
   pokergosuDetailSchema,
   pokergosuSummarySchema,
 } from '@app/shared/monitoring/contracts/pokergosu';
+import { forumKeywordIdentity } from '@app/shared/monitoring/domain/forum-topics';
 import { countKeywordRecord } from '@app/shared/monitoring/domain/keyword-mentions';
 import type { Scope } from '@app/shared/monitoring/domain/model';
 import { countRelatedKeywordRecord } from '@app/shared/monitoring/domain/related-keywords';
@@ -392,7 +393,27 @@ export class ForumRepository {
       async (tx) => {
         const conditions = [];
         if (input.match === 'matched') conditions.push(eq(forumPosts.matched, true));
-        if (input.day) conditions.push(eq(forumPosts.checkedDay, input.day));
+        if (input.mention) {
+          const mention = forumKeywordIdentity(input.mention);
+          conditions.push(eq(forumPosts.matched, true));
+          conditions.push(sql`exists (
+            select 1 from jsonb_array_elements_text(${forumPosts.keywords}) as keyword(word)
+            where regexp_replace(lower(normalize(keyword.word, NFKC)), '[[:space:]._\-]+', '', 'g') = ${mention}
+          )`);
+        }
+        if (input.target) {
+          conditions.push(sql`coalesce(${forumPosts.evaluations}, ${forumPosts.detail}->'evaluations', '[]'::jsonb)
+            @> ${JSON.stringify([{ target: input.target }])}::jsonb`);
+        }
+        if (input.day) {
+          if (input.mention) {
+            conditions.push(
+              sql`left(coalesce(${forumPosts.card}->>'publishedAt', ${forumPosts.detail}->'post'->>'publishedAt'), 10) = ${input.day}`,
+            );
+          } else {
+            conditions.push(eq(forumPosts.checkedDay, input.day));
+          }
+        }
         if (input.q)
           conditions.push(sql`position(lower(${input.q}) in lower(${forumPosts.searchText}))>0`);
         if (input.keyword)

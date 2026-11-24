@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { KeywordMentionRanking } from './charts';
 import {
   DetailLayout,
   DialogContent,
@@ -22,11 +24,13 @@ import {
   RadioCards,
   Select,
   Table,
+  TabNav,
   Tabs,
   Text,
   TextArea,
   TextField,
 } from './primitives';
+import { ReportSection, ReportSheet, RouteTabs } from './report-patterns';
 import { sentimentColors } from './theme';
 
 const swatches = [
@@ -70,6 +74,18 @@ export default function Catalog() {
           </Tabs.Content>
         </Tabs.Root>
       </Section>
+      <ReportSheet dashboard label="합성 여론 브리핑">
+        <ReportSection card title="여론 브리핑 예시">
+          <RouteTabs label="합성 키워드 탭" segmented>
+            <TabNav.Link active asChild>
+              <Link to="/design-system">전체 브리핑</Link>
+            </TabNav.Link>
+          </RouteTabs>
+          <KeywordMentionRanking
+            rows={[{ name: '합성 키워드', variants: [], kakao: 8, pokergosu: 4, total: 12 }]}
+          />
+        </ReportSection>
+      </ReportSheet>
       <Section
         title="색상 토큰"
         description="용도에 따라 이름을 정하고, 실제 색상은 한곳에서 관리합니다."

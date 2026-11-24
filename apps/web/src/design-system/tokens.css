@@ -1,5 +1,32 @@
 /* Semantic aliases are the public token API. Radix owns primitive scales. */
 .radix-themes {
+  --mention-tab-active-bg: var(--accent-9);
+  --mention-tab-active-text: var(--accent-contrast);
+  --mention-chart-positive: #548dff;
+  --mention-chart-negative: #ed6085;
+  --mention-chart-neutral: #bccce3;
+  --mention-chart-mixed: #a180f1;
+  --mention-chart-uncertain: #ffbd57;
+  --mention-chart-excluded: #cdd9ed;
+  --mention-chart-unreviewed: #e5edf9;
+  --mention-chart-kakao: #8060ed;
+  --mention-chart-pokergosu: #089580;
+  --mention-chart-density-1: #eaf3ff;
+  --mention-chart-density-2: #cbe2ff;
+  --mention-chart-density-3: #98c2ff;
+  --mention-chart-density-4: #2166d7;
+  --mention-chart-density-ink: var(--color-panel-solid);
+  --mention-chart-bar-ink: #17253f;
+  --mention-chart-volume: #75aaff;
+  --mention-chart-surface: #f4f8ff;
+  --mention-chart-selected: #e3efff;
+  --mention-chart-positive-text: #2166d7;
+  --mention-chart-negative-text: #b93362;
+  --mention-chart-mixed-text: #6946c5;
+  --mention-chart-word-mint: #00766d;
+  --mention-chart-word-amber: #925900;
+  --mention-font-chart-tick: calc(var(--font-size-1) * 0.92);
+  --mention-weight-bold: var(--font-weight-bold);
   --mention-font-family:
     Inter, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   --default-font-family: var(--mention-font-family);

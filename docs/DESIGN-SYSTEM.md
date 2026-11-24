@@ -110,3 +110,9 @@ scrolling. Header associations remain in the DOM; controls keep native semantics
 Its shared styles live in `patterns.css` and use existing semantic tokens. Both
 conversation and review lists use it, with a synthetic example in the catalog.
 This is a narrow migration readability correction, not a new product visual style.
+
+The opinion briefing uses shared report patterns and chart tokens in
+`report-patterns.tsx`, `report.css`, and `tokens.css`. Recharts 2.15.4 and d3-cloud
+2.0.0 match the pre-cutover briefing. Data and links are rendered on the server;
+chart animation and word placement are loaded by the client. The catalog
+contains a synthetic briefing and the reports respect reduced-motion settings.

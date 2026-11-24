@@ -10,6 +10,8 @@ export function pokergosuFilters(search: string) {
   const p = new URLSearchParams(search);
   return {
     q: p.get('q') || '',
+    ...(p.get('mention') ? { mention: p.get('mention') ?? '' } : {}),
+    ...(p.get('target') ? { target: p.get('target') ?? '' } : {}),
     keyword: p.get('keyword') || '',
     day: p.get('day') || '',
     match: p.get('match') || 'all',

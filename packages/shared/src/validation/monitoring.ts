@@ -8,6 +8,7 @@ export const monitoringScopeSchema = z.object({
   target: z.string().max(100).default(''),
 });
 export const monitoringListSchema = monitoringScopeSchema.extend({
+  mention: z.string().trim().max(200).optional(),
   label: z
     .enum(['', 'positive', 'negative', 'neutral', 'mixed', 'uncertain', 'unreviewed', 'excluded'])
     .default(''),

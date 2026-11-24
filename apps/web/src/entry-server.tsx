@@ -95,6 +95,7 @@ export async function render(
   else if (['/', '/kakao', '/conversations', '/reviews'].includes(requestUrl.pathname)) {
     const listInput = listSchema.parse({
       ...scope,
+      mention: requestUrl.searchParams.get('mention') || undefined,
       label: requestUrl.pathname === '/conversations' ? conversationLabel : label,
       status: requestUrl.pathname === '/conversations' ? conversationStatus : '',
     });
@@ -111,7 +112,12 @@ export async function render(
               queryFn: () => queries.classifications(listInput),
             })
           : client.fetchInfiniteQuery({
-              ...conversationsQuery(scope, conversationLabel, conversationStatus),
+              ...conversationsQuery(
+                scope,
+                conversationLabel,
+                conversationStatus,
+                listInput.mention,
+              ),
               queryFn: () => queries.conversations(listInput),
             }),
     ]);

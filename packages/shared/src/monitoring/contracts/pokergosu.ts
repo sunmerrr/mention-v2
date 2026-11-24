@@ -4,6 +4,8 @@ import type { ForumEvaluation } from './forum-opinions';
 
 export const pokergosuId = z.string().regex(/^[1-9][0-9]{0,18}$/);
 export const pokergosuListSchema = z.object({
+  mention: z.string().trim().max(200).optional(),
+  target: z.string().max(100).optional(),
   q: z.string().trim().max(100).default(''),
   keyword: z.string().max(100).default(''),
   day: z

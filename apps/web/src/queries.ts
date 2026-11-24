@@ -61,11 +61,11 @@ export const overviewQuery = (scope: Scope) =>
     queryKey: ['overview', scope],
     queryFn: () => api<OverviewPayload>(`/api/overview?${params(scope)}`),
   });
-export const conversationsQuery = (scope: Scope, label = '', status = '') => ({
-  queryKey: ['conversations', scope, label, status],
+export const conversationsQuery = (scope: Scope, label = '', status = '', mention = '') => ({
+  queryKey: ['conversations', scope, label, status, ...(mention ? [mention] : [])],
   queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
     api<Page<Conversation>>(
-      `/api/conversations?${params(scope, { label, status, ...(pageParam ? { cursor: pageParam } : {}) })}`,
+      `/api/conversations?${params(scope, { label, status, ...(mention ? { mention } : {}), ...(pageParam ? { cursor: pageParam } : {}) })}`,
     ),
   initialPageParam: undefined as string | undefined,
   getNextPageParam: (last: Page<Conversation>) => last.nextCursor || undefined,

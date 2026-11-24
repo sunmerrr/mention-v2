@@ -1,12 +1,21 @@
 import { createHash } from 'node:crypto';
 import type { Classification, ListInput, Metadata, Page } from '../contracts/api';
+import { forumKeywordIdentity } from '../domain/forum-topics';
 import type { Conversation, Dataset, Scope } from '../domain/model';
 import { koreanDay, matchesReviewState, scopedConversations, summarize } from '../domain/model';
 import type { MonitoringProjection, MonitoringReader } from './ports';
 export class InvalidCursor extends Error {}
 export function cursorKey(input: ListInput): string {
   return createHash('sha256')
-    .update(JSON.stringify([input.day, input.target, input.label, input.status || '']))
+    .update(
+      JSON.stringify([
+        input.day,
+        input.target,
+        input.label,
+        input.status || '',
+        ...(input.mention ? [input.mention] : []),
+      ]),
+    )
     .digest('hex')
     .slice(0, 16);
 }
@@ -61,7 +70,13 @@ export class MonitoringQueries {
   async conversations(input: ListInput): Promise<Page<Conversation>> {
     if (this.projection) return this.projection.conversations(input);
     const data = await this.reader.read();
+    const mention = input.mention ? forumKeywordIdentity(input.mention) : undefined;
     const items = scopedConversations(data, input).filter((conversation) => {
+      if (
+        mention &&
+        !Object.keys(conversation.keywords).some((word) => forumKeywordIdentity(word) === mention)
+      )
+        return false;
       if (!input.label && !input.status) return true;
       return conversation.targets.some((target) => {
         const evaluation = conversation.evaluations[target];

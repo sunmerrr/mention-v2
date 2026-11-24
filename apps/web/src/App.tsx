@@ -26,6 +26,7 @@ const imports = {
   designSystem: () => import('./design-system/Catalog'),
   pokergosu: () => import('./pages/Pokergosu'),
   combined: () => import('./pages/Combined'),
+  opinionBriefing: () => import('./pages/OpinionBriefing'),
   topics: () => import('./pages/TopicBriefing'),
   overview: () => import('./pages/Overview'),
   conversations: () => import('./pages/Conversations'),
@@ -35,6 +36,7 @@ const imports = {
 };
 const DesignSystemCatalog = lazy(imports.designSystem),
   Combined = lazy(imports.combined),
+  OpinionBriefing = lazy(imports.opinionBriefing),
   TopicBriefing = lazy(imports.topics),
   Overview = lazy(imports.overview),
   Pokergosu = lazy(imports.pokergosu),
@@ -43,7 +45,9 @@ const DesignSystemCatalog = lazy(imports.designSystem),
   Detail = lazy(imports.detail),
   Workspace = lazy(imports.workspace);
 export async function preloadRoute(path: string) {
-  if (isCombinedPath(path)) await imports.combined();
+  if (path === '/' || path === '/combined' || path.startsWith('/combined/'))
+    await imports.opinionBriefing();
+  else if (isCombinedPath(path)) await imports.combined();
   else if (path === '/trending') await imports.topics();
   else if (path === '/design-system') await imports.designSystem();
   else if (
@@ -259,10 +263,10 @@ function WorkspaceApp() {
             <Suspense fallback={<Pending />}>
               <Routes>
                 <Route path="/design-system" element={<DesignSystemCatalog />} />
-                <Route path="/" element={<Combined />} />
+                <Route path="/" element={<OpinionBriefing />} />
                 <Route path="/kakao" element={<Overview />} />
-                <Route path="/combined" element={<Combined />} />
-                <Route path="/combined/:target" element={<Combined />} />
+                <Route path="/combined" element={<OpinionBriefing />} />
+                <Route path="/combined/:target" element={<OpinionBriefing />} />
                 <Route path="/kakao/keywords/:target" element={<Combined />} />
                 <Route path="/pokergosu/keywords/:target" element={<Combined />} />
                 <Route path="/trending" element={<TopicBriefing />} />

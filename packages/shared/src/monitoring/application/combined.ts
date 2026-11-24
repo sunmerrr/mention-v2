@@ -26,6 +26,7 @@ interface Ports {
   kakao(scope: Scope): Promise<OverviewPayload>;
   forum(scope: Scope): Promise<SourceOpinion>;
   policy(): Promise<{ policy: KeywordPolicy }>;
+  lastForumCollection?(): Promise<number | null>;
   kakaoKeywords(scope: Scope, groups: MentionGroups, weeks: ReportingWeeks): Promise<KeywordReport>;
   forumKeywords(scope: Scope, weeks: ReportingWeeks): Promise<KeywordReport>;
 }
@@ -48,16 +49,37 @@ export class CombinedQueries {
       ({ keywords }) =>
         !enabled || keywords.some((word) => enabled.has(forumKeywordIdentity(word))),
     );
-    const groups = configuredGroups.filter((g) => !scope.target || g.name === scope.target);
     const weeks = reportingWeeks(scope.day);
     const useKakao = source !== 'pokergosu',
       useForum = source !== 'kakao';
-    const [chat, forum, kakaoKeywords, forumKeywords] = await Promise.all([
-      useKakao ? this.ports.kakao(filters) : undefined,
-      useForum ? this.ports.forum(filters) : emptySource,
-      useKakao ? this.ports.kakaoKeywords(filters, groups, weeks) : undefined,
+    const chatRead = useKakao ? this.ports.kakao(filters) : undefined;
+    const forumRead = useForum ? this.ports.forum(filters) : emptySource;
+    const allTime = { day: '', target: '' };
+    const scopedCombined = !source && (scope.day || scope.target);
+    const [chat, forum, allChat, allForum, forumKeywords, lastForumCollection] = await Promise.all([
+      chatRead,
+      forumRead,
+      scopedCombined ? this.ports.kakao(allTime) : chatRead,
+      scopedCombined ? this.ports.forum(allTime) : forumRead,
       useForum ? this.ports.forumKeywords(filters, weeks) : undefined,
+      useForum ? this.ports.lastForumCollection?.() : undefined,
     ]);
+    const reportable = source
+      ? configuredGroups
+      : configuredGroups.filter((group) => {
+          const kakao = allChat?.overview.targets.find(({ name }) => name === group.name);
+          const forum = allForum.targets.find(({ id }) => id === group.id);
+          return (
+            (kakao && kakao.conversations > kakao.counts.excluded) ||
+            (forum && forum.units > forum.counts.excluded)
+          );
+        });
+    const groups = scope.target
+      ? configuredGroups.filter(({ name }) => name === scope.target)
+      : reportable;
+    const kakaoKeywords = useKakao
+      ? await this.ports.kakaoKeywords(filters, groups, weeks)
+      : undefined;
     const kakao: SourceOpinion = chat
       ? {
           units: chat.overview.conversations,
@@ -101,7 +123,7 @@ export class CombinedQueries {
       metadata: {
         days: chat?.metadata.days ?? [],
         source: chat?.metadata.source ?? ('legacy' as const),
-        targets: configuredGroups.map((g) => ({
+        targets: reportable.map((g) => ({
           name: g.name,
           aliases: g.keywords,
         })),
@@ -156,6 +178,7 @@ export class CombinedQueries {
       },
       topics: sharedOpinionTopics(kakao.evidence, forum.evidence),
       collectionState: chat?.overview.collectionState ?? 'snapshot',
+      briefing: { generatedAt: Date.now(), pokergosuCollectedAt: lastForumCollection ?? null },
     };
   }
 }

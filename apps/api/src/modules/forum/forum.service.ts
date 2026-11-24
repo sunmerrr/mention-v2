@@ -28,6 +28,7 @@ export class ForumService {
     this.pgCombined = new CombinedQueries({
       kakao: (scope) => projection.overview(scope),
       forum: (scope) => repository.opinions(scope),
+      lastForumCollection: async () => (await repository.summary()).lastCheckedAt,
       policy: () => settings.policy(),
       kakaoKeywords: (scope, groups, weeks) => projection.keywordReport(scope, groups, weeks),
       forumKeywords: (scope, weeks) => repository.keywordReport(scope, weeks),
