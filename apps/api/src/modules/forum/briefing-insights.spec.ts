@@ -95,10 +95,10 @@ describe('briefing insights', () => {
     expect(windowOf(window, '2026-10-20')).toBeNull();
   });
 
-  it('finds new and rising terms', () => {
+  it('finds new and rising terms against weekly averages', () => {
     const prior = new Map([
-      ['급증', 4],
-      ['평소', 8],
+      ['급증', { count: 4, weekly: 1 }],
+      ['평소', { count: 8, weekly: 2 }],
     ]);
     const terms = emergingTerms(
       [
@@ -107,44 +107,25 @@ describe('briefing insights', () => {
         { name: '한번', total: 1 },
         { name: '평소', total: 3 },
       ],
-      (name) => prior.get(name) ?? 0,
+      (name) => prior.get(name) ?? { count: 0, weekly: 0 },
       () => '합성',
-      4,
     );
     expect(terms.map(({ name, kind }) => `${name}:${kind}`)).toEqual(['새말:new', '급증:rising']);
   });
 
-  it('averages prior counts only over weeks with collected data', () => {
+  it('counts prior weeks only from the first collected day', () => {
     const window = emergingWindow(weeks);
     if (!window) throw Error('window');
     expect(priorWeeksCovered(window, '2026-01-01')).toBe(4);
     expect(priorWeeksCovered(window, '2026-11-04')).toBe(2);
     expect(priorWeeksCovered(window, '2026-11-20')).toBe(0);
     expect(priorWeeksCovered(window, null)).toBe(0);
-    const recent = [{ name: '꾸준', total: 6 }];
-    // 8 records over two covered weeks is 4 a week, so 6 is not double.
+    // 8 records over two covered weeks average 4 a week, so 6 is not double.
     expect(
       emergingTerms(
-        recent,
-        () => 8,
+        [{ name: '꾸준', total: 6 }],
+        () => ({ count: 8, weekly: 4 }),
         () => null,
-        2,
-      ),
-    ).toEqual([]);
-    expect(
-      emergingTerms(
-        recent,
-        () => 8,
-        () => null,
-        4,
-      ).map(({ kind }) => kind),
-    ).toEqual(['rising']);
-    expect(
-      emergingTerms(
-        [{ name: '새말', total: 3 }],
-        () => 0,
-        () => null,
-        0.5,
       ),
     ).toEqual([]);
   });

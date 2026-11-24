@@ -171,18 +171,17 @@ export interface EmergingTerm {
  */
 export function emergingTerms(
   recent: readonly { name: string; total: number }[],
-  prior: (name: string) => number,
+  /** Prior-window count and its weekly average, each source averaged over its own coverage. */
+  prior: (name: string) => { count: number; weekly: number },
   targetOf: (name: string) => string | null,
-  priorWeeks: number,
   limit = 8,
 ): EmergingTerm[] {
-  if (priorWeeks < 1) return [];
   const terms: EmergingTerm[] = [];
   for (const { name, total } of recent) {
-    const before = prior(name);
+    const { count: before, weekly } = prior(name);
     if (before === 0 && total >= 2)
       terms.push({ name, target: targetOf(name), recent: total, prior: 0, kind: 'new' });
-    else if (before > 0 && total >= 4 && total >= (2 * before) / priorWeeks)
+    else if (before > 0 && total >= 4 && total >= 2 * weekly)
       terms.push({ name, target: targetOf(name), recent: total, prior: before, kind: 'rising' });
   }
   return terms

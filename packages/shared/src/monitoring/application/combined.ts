@@ -205,32 +205,40 @@ export class CombinedQueries {
         )?.name ?? null
       );
     };
+    // A source joins the comparison only with at least one week of earlier collection.
+    const chatWeeks = window ? priorWeeksCovered(window, chatWindows?.firstDay ?? null) : 0;
+    const forumWeeks = window ? priorWeeksCovered(window, forumWindows?.firstDay ?? null) : 0;
+    const chatPeriods = chatWeeks >= 1 ? chatWindows : undefined;
+    const forumPeriods = forumWeeks >= 1 && forum.available ? forumWindows : undefined;
+    const weeklyAverage = (chat: number, forumCount: number) =>
+      (chatPeriods ? chat / chatWeeks : 0) + (forumPeriods ? forumCount / forumWeeks : 0);
     const mentionTotals = (period: 'recent' | 'prior') =>
       rankKeywordMentions(
         groups,
         policy,
-        chatWindows?.[period].mentions ?? emptyCounts,
-        forumWindows?.[period].mentions ?? emptyCounts,
-        forum.available,
+        chatPeriods?.[period].mentions ?? emptyCounts,
+        forumPeriods?.[period].mentions ?? emptyCounts,
+        Boolean(forumPeriods),
       );
     const relatedGroup = scope.target ? groups[0] : undefined;
-    const firstDays = [chatWindows?.firstDay, forumWindows?.firstDay].filter((day): day is string =>
-      Boolean(day),
-    );
-    const firstDay = firstDays.length ? firstDays.reduce((a, b) => (a < b ? a : b)) : null;
-    const priorWeeks = window ? priorWeeksCovered(window, firstDay) : 0;
+    const priorWeeks = Math.max(chatPeriods ? chatWeeks : 0, forumPeriods ? forumWeeks : 0);
     const emerging =
       window && (chatWindows || forumWindows)
         ? {
             window,
             priorWeeks,
             subkeywords: (() => {
-              const prior = new Map(mentionTotals('prior').map(({ name, total }) => [name, total]));
+              const prior = new Map(mentionTotals('prior').map((row) => [row.name, row]));
               return emergingTerms(
                 mentionTotals('recent'),
-                (name) => prior.get(name) ?? 0,
+                (name) => {
+                  const row = prior.get(name);
+                  return {
+                    count: row?.total ?? 0,
+                    weekly: weeklyAverage(row?.kakao ?? 0, row?.pokergosu ?? 0),
+                  };
+                },
                 targetOf,
-                priorWeeks,
               );
             })(),
             related: relatedGroup
@@ -238,19 +246,17 @@ export class CombinedQueries {
                   rankRelatedKeywords(
                     relatedGroup,
                     configuredGroups,
-                    chatWindows?.recent.related ?? emptyCounts,
-                    forumWindows?.recent.related ?? emptyCounts,
-                    forum.available,
+                    chatPeriods?.recent.related ?? emptyCounts,
+                    forumPeriods?.recent.related ?? emptyCounts,
+                    Boolean(forumPeriods),
                   ),
                   (name) => {
                     const key = forumKeywordIdentity(name);
-                    return (
-                      (chatWindows?.prior.related.get(key) ?? 0) +
-                      (forumWindows?.prior.related.get(key) ?? 0)
-                    );
+                    const chat = chatPeriods?.prior.related.get(key) ?? 0;
+                    const forumCount = forumPeriods?.prior.related.get(key) ?? 0;
+                    return { count: chat + forumCount, weekly: weeklyAverage(chat, forumCount) };
                   },
                   () => relatedGroup.name,
-                  priorWeeks,
                 )
               : [],
           }
