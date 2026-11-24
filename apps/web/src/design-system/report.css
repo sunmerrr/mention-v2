@@ -83,6 +83,7 @@
 .ds-route-tabs-segmented .rt-TabNavLink[data-active] {
   background: var(--mention-tab-active-bg);
   color: var(--mention-tab-active-text);
+  font-weight: 600;
 }
 .ds-route-tabs-segmented .rt-TabNavLink[data-active] .rt-TabNavLinkInner {
   background: transparent;

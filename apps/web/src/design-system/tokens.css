@@ -1,7 +1,7 @@
 /* Semantic aliases are the public token API. Radix owns primitive scales. */
 .radix-themes {
-  --mention-tab-active-bg: var(--accent-9);
-  --mention-tab-active-text: var(--accent-contrast);
+  --mention-tab-active-bg: var(--accent-3);
+  --mention-tab-active-text: var(--accent-11);
   --mention-chart-positive: #548dff;
   --mention-chart-negative: #ed6085;
   --mention-chart-neutral: #bccce3;
