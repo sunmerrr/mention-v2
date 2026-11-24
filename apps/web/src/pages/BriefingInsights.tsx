@@ -228,34 +228,50 @@ function mixSentence(from: Mix, to: Mix) {
   return '긍정·부정 비율이 거의 그대로입니다.';
 }
 
-function MixBar({ label, mix }: { label: string; mix: Mix }) {
-  const segments = [
-    { key: 'positive', share: mix.positive, name: '긍정' },
-    { key: 'other', share: mix.other, name: '중립·혼합' },
-    { key: 'negative', share: mix.negative, name: '부정' },
-  ];
+/** Side-by-side columns per stance: the lighter column is two weeks ago, the solid one last week. */
+function StanceColumns({ from, to }: { from: Mix; to: Mix }) {
+  const stances = [
+    { key: 'negative', name: '부정' },
+    { key: 'positive', name: '긍정' },
+  ] as const;
   return (
-    <div className="ds-briefing-mix">
-      <span className="ds-briefing-mix-label">{label}</span>
-      <span
-        className="ds-briefing-mix-bar"
-        role="img"
-        aria-label={`${label} ${segments.map(({ name, share }) => `${name} ${percent(share)}`).join(', ')}`}
-      >
-        {segments.map(({ key, share }) =>
-          share > 0 ? (
-            <span
-              key={key}
-              className="ds-briefing-mix-segment"
-              data-stance={key}
-              style={{ flexGrow: share }}
-            >
-              {share >= 0.12 && percent(share)}
-            </span>
-          ) : null,
-        )}
-      </span>
-      <span className="ds-briefing-mix-sample">분류 {count(mix.classified)}건</span>
+    <div className="ds-briefing-columns">
+      <div className="ds-briefing-column-plot">
+        {stances.map(({ key, name }) => (
+          <div key={key} className="ds-briefing-column-group" data-stance={key}>
+            {[
+              { week: 'previous', label: '2주 전', share: from[key] },
+              { week: 'current', label: '지난주', share: to[key] },
+            ].map(({ week, label, share }) => (
+              <div
+                key={week}
+                className="ds-briefing-column"
+                data-week={week}
+                role="img"
+                aria-label={`${name} ${label} ${percent(share)}`}
+              >
+                <span className="ds-briefing-column-track">
+                  <span className="ds-briefing-column-value">{percent(share)}</span>
+                  <span
+                    className="ds-briefing-column-fill"
+                    style={{ blockSize: `${Math.max(share, 0.01) * 100}%` }}
+                  />
+                </span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="ds-briefing-column-axis" aria-hidden="true">
+        {stances.map(({ key, name }) => (
+          <span key={key} className="ds-briefing-stance" data-tone={key}>
+            {name}
+          </span>
+        ))}
+      </div>
+      <p className="ds-briefing-column-sample">
+        분류 {count(from.classified)}건 → {count(to.classified)}건
+      </p>
     </div>
   );
 }
@@ -319,10 +335,20 @@ export function WeeklyChangesCard({
       {keywords.length || mentions.length ? (
         <div className="ds-briefing-arrows">
           {keywords.length > 0 && (
-            <section className="ds-briefing-arrow-group" aria-label="긍정·부정 구성 변화">
-              <Text as="p" size="1" weight="bold" color="gray">
-                긍정·부정 구성 변화
-              </Text>
+            <section className="ds-briefing-arrow-group" aria-label="긍정·부정 비율 변화">
+              <div className="ds-briefing-column-legend">
+                <Text size="1" weight="bold" color="gray">
+                  긍정·부정 비율 변화
+                </Text>
+                <span>
+                  <span className="ds-briefing-legend-swatch" data-week="previous" />
+                  2주 전 {shortDay(pair.previous.start)}
+                </span>
+                <span>
+                  <span className="ds-briefing-legend-swatch" data-week="current" />
+                  지난주 {shortDay(pair.current.start)}
+                </span>
+              </div>
               <ul className="ds-briefing-mix-list">
                 {keywords.map(({ name, from, to, net }) => {
                   const reason = to.negative > from.negative ? reasonOf(name) : undefined;
@@ -361,10 +387,7 @@ export function WeeklyChangesCard({
                           </details>
                         )}
                       </div>
-                      <div className="ds-briefing-mix-bars">
-                        <MixBar label={`2주 전 ${shortDay(pair.previous.start)}`} mix={from} />
-                        <MixBar label={`지난주 ${shortDay(pair.current.start)}`} mix={to} />
-                      </div>
+                      <StanceColumns from={from} to={to} />
                     </li>
                   );
                 })}
@@ -389,8 +412,8 @@ export function WeeklyChangesCard({
       )}
       <Text as="p" size="1" color="gray" mt="3">
         긍정·부정 비율이 10%p 이상, 또는 언급이 10건 이상에서 30% 넘게 움직인 키워드를 보여줍니다.
-        비율은 두 주 모두 분류 {shareSampleMinimum}건 이상일 때만 비교합니다. 막대는 분류된 의견의
-        구성이고, 빨간 테두리는 긍정에서 부정을 뺀 값이 나빠진 키워드입니다.
+        비율은 두 주 모두 분류 {shareSampleMinimum}건 이상일 때만 비교합니다. 막대는 분류된 의견 중
+        부정·긍정 비율이고, 빨간 테두리는 긍정에서 부정을 뺀 값이 나빠진 키워드입니다.
       </Text>
     </ReportSection>
   );
