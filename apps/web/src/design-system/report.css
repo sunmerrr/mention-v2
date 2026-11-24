@@ -853,16 +853,93 @@
 }
 .ds-briefing-change-list {
   display: grid;
-  gap: var(--mention-space-2);
 }
 .ds-briefing-change-list > li {
-  font-size: var(--font-size-3);
-  line-height: 1.6;
+  display: grid;
+  grid-template-columns: minmax(5rem, 1fr) minmax(4.5rem, auto) minmax(7rem, auto) 5.5rem;
+  align-items: center;
+  gap: var(--mention-space-3);
+  padding-block: var(--mention-space-2);
+  border-top: 1px solid var(--mention-border-subtle);
+  font-size: var(--font-size-2);
+}
+.ds-briefing-change-list > li:first-child {
+  border-top: 0;
+}
+.ds-briefing-change-target {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ds-briefing-change-metric {
+  color: var(--mention-text-secondary);
+  font-weight: 600;
+}
+.ds-briefing-values {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--mention-space-1);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ds-briefing-arrow {
+  color: var(--gray-9);
+}
+.ds-briefing-values-from {
+  color: var(--mention-text-secondary);
+}
+.ds-briefing-values-to {
+  font-weight: 700;
+  color: var(--gray-12);
+}
+/* Direction chip: a warning tone for worse sentiment, a calm tone for better, gray for volume. */
+.ds-briefing-delta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  justify-self: end;
+  min-inline-size: 4.5rem;
+  padding: 2px var(--mention-space-2);
+  border-radius: 999px;
+  background: var(--gray-a3);
+  color: var(--gray-11);
+  font-size: var(--font-size-1);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ds-briefing-delta[data-signal="bad"] {
+  background: color-mix(in srgb, var(--mention-chart-negative) 16%, transparent);
+  color: var(--mention-chart-negative-text);
+}
+.ds-briefing-delta[data-signal="good"] {
+  background: color-mix(in srgb, var(--mention-chart-positive) 16%, transparent);
+  color: var(--mention-chart-positive-text);
 }
 .ds-briefing-change-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--mention-space-4);
+  gap: var(--mention-space-2);
+}
+.ds-briefing-change-tile {
+  display: grid;
+  grid-template-columns: minmax(4.5rem, 1fr) auto auto;
+  align-items: center;
+  gap: var(--mention-space-3);
+  padding: var(--mention-space-3);
+  border-radius: var(--mention-radius-control);
+  background: var(--mention-bg-subtle);
+  font-size: var(--font-size-2);
+}
+.ds-briefing-change-tile > .ds-chart-tone-label {
+  font-weight: 600;
+}
+.ds-briefing-change-tile .ds-briefing-values {
+  font-size: var(--font-size-4);
+}
+.ds-briefing-change-empty {
+  grid-column: 2 / -1;
+  justify-self: end;
 }
 .ds-briefing-pair {
   display: grid;
@@ -872,32 +949,74 @@
 .ds-briefing-reason-rows {
   display: grid;
 }
+.ds-briefing-reason-head,
 .ds-briefing-reason-row {
   display: grid;
-  grid-template-columns: minmax(6rem, 0.6fr) minmax(0, 2fr) minmax(0, 2fr);
-  gap: var(--mention-space-4);
-  padding-block: var(--mention-space-3);
-  border-top: 1px solid var(--gray-a4);
+  grid-template-columns: minmax(6rem, 0.5fr) minmax(0, 2fr) minmax(0, 2fr);
+  gap: var(--mention-space-3);
 }
-.ds-briefing-reason-row:first-child {
-  border-top: 0;
-  padding-block-start: 0;
+.ds-briefing-reason-head {
+  padding-block-end: var(--mention-space-2);
+  font-size: var(--font-size-2);
+  font-weight: 700;
+}
+.ds-briefing-reason-row {
+  padding-block: var(--mention-space-3);
+  border-top: 1px solid var(--mention-border-subtle);
+}
+.ds-briefing-reason-target {
+  align-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.ds-briefing-stance {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mention-space-1);
+}
+.ds-briefing-stance::before {
+  content: "";
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 999px;
+  background: var(--mention-chart-positive);
+}
+.ds-briefing-stance[data-tone="positive"] {
+  color: var(--mention-chart-positive-text);
+}
+.ds-briefing-stance[data-tone="negative"] {
+  color: var(--mention-chart-negative-text);
+}
+.ds-briefing-stance[data-tone="negative"]::before {
+  background: var(--mention-chart-negative);
+}
+.ds-briefing-reason-column[data-heading="narrow"] > .ds-briefing-stance {
+  display: none;
 }
 .ds-briefing-reason-columns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--mention-space-5);
+  gap: var(--mention-space-4);
 }
 .ds-briefing-reason-list {
   display: grid;
-  gap: var(--mention-space-3);
+  gap: var(--mention-space-2);
 }
 .ds-briefing-reason {
-  padding-inline-start: var(--mention-space-3);
+  padding: var(--mention-space-2) var(--mention-space-3);
   border-inline-start: 3px solid var(--mention-chart-positive);
+  border-radius: 0 var(--mention-radius-control) var(--mention-radius-control) 0;
+  background: color-mix(in srgb, var(--mention-chart-positive) 7%, transparent);
 }
 .ds-briefing-reason[data-tone="negative"] {
   border-inline-start-color: var(--mention-chart-negative);
+  background: color-mix(in srgb, var(--mention-chart-negative) 7%, transparent);
+}
+.ds-briefing-reason-empty {
+  padding: var(--mention-space-2) var(--mention-space-3);
+  border: 1px dashed var(--gray-a5);
+  border-radius: var(--mention-radius-control);
 }
 .ds-briefing-reason-summary {
   display: -webkit-box;
@@ -906,18 +1025,48 @@
   -webkit-line-clamp: 3;
   overflow-wrap: anywhere;
 }
+.ds-briefing-term-groups {
+  display: grid;
+  gap: var(--mention-space-3);
+}
+.ds-briefing-term-group {
+  display: grid;
+  justify-items: start;
+  gap: var(--mention-space-2);
+}
 .ds-briefing-term-list {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--mention-space-2) var(--mention-space-3);
-}
-.ds-briefing-term-list > li {
-  display: inline-flex;
-  align-items: center;
   gap: var(--mention-space-2);
+}
+.ds-briefing-term {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--mention-space-1) var(--mention-space-2);
   padding: var(--mention-space-2) var(--mention-space-3);
-  border: 1px solid var(--gray-a5);
+  border: 1px solid var(--iris-a5);
   border-radius: var(--mention-radius-control);
+  background: var(--iris-a2);
+}
+.ds-briefing-term[data-kind="rising"] {
+  border-color: var(--amber-a6);
+  background: var(--amber-a2);
+}
+.ds-briefing-term-name {
+  font-size: var(--font-size-3);
+  font-weight: 700;
+  color: var(--gray-12);
+}
+.ds-briefing-term-target {
+  color: var(--mention-text-secondary);
+  font-size: var(--font-size-1);
+}
+.ds-briefing-term-count {
+  display: inline-flex;
+  gap: var(--mention-space-1);
+  font-size: var(--font-size-1);
+  font-variant-numeric: tabular-nums;
 }
 @media (min-width: 1180px) {
   .ds-briefing-pair {
@@ -928,16 +1077,22 @@
   }
 }
 @media (max-width: 720px) {
+  .ds-briefing-reason-head {
+    display: none;
+  }
+  .ds-briefing-reason-column[data-heading="narrow"] > .ds-briefing-stance {
+    display: inline-flex;
+  }
   .ds-briefing-reason-row,
   .ds-briefing-reason-columns {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--mention-space-3);
   }
-  .ds-briefing-change-grid {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--mention-space-3);
+  .ds-briefing-change-list > li {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: var(--mention-space-1);
   }
-  .ds-briefing-term-list > li {
-    flex-wrap: wrap;
+  .ds-briefing-change-list .ds-briefing-values {
+    grid-column: 1;
   }
 }

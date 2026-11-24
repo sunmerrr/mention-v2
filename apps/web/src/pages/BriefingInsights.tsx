@@ -1,12 +1,10 @@
 import type { CombinedPayload } from '@app/shared/monitoring/application/combined';
 import type {
   EmergingTerm,
-  KeywordWeekChange,
-  NotableChange,
   RepresentativeOpinion,
 } from '@app/shared/monitoring/domain/briefing-insights';
 import { shareSampleMinimum } from '@app/shared/monitoring/domain/briefing-insights';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { type BriefingSource, combinedKeywordHref } from '../combined-query';
 import { Badge, ReportSection, Text, TextLink } from '../design-system';
@@ -40,22 +38,39 @@ function mentionDelta(from: number, to: number) {
   return `${rate > 0 ? '+' : rate < 0 ? '−' : '±'}${Math.abs(rate)}%`;
 }
 
-function ChangeLine({ change }: { change: NotableChange }) {
-  if (change.kind === 'mentions')
-    return (
-      <>
-        언급 {count(change.from)} → {count(change.to)}건{' '}
-        <Text weight="bold">({mentionDelta(change.from, change.to)})</Text>
-      </>
-    );
+type Metric = 'mentions' | 'positive' | 'negative';
+const metricLabels: Record<Metric, string> = {
+  mentions: '언급',
+  positive: '긍정 비율',
+  negative: '부정 비율',
+};
+
+/** Rising negative or falling positive share reads as a warning; volume is neutral. */
+function signalOf(metric: Metric, from: number, to: number) {
+  if (to === from || metric === 'mentions') return 'neutral';
+  return to > from === (metric === 'positive') ? 'good' : 'bad';
+}
+
+function DeltaChip({ metric, from, to }: { metric: Metric; from: number; to: number }) {
+  const Icon = to > from ? TrendingUp : to < from ? TrendingDown : Minus;
   return (
-    <>
-      <span className="ds-chart-tone-label" data-tone={change.kind}>
-        {change.kind === 'negative' ? '부정' : '긍정'} 비율
-      </span>{' '}
-      {percent(change.from)} → {percent(change.to)}{' '}
-      <Text weight="bold">({shareDelta(change.from, change.to)})</Text>
-    </>
+    <span className="ds-briefing-delta" data-signal={signalOf(metric, from, to)}>
+      <Icon size={13} aria-hidden="true" />
+      {metric === 'mentions' ? mentionDelta(from, to) : shareDelta(from, to)}
+    </span>
+  );
+}
+
+function Values({ metric, from, to }: { metric: Metric; from: number; to: number }) {
+  const format = (value: number) => (metric === 'mentions' ? `${count(value)}건` : percent(value));
+  return (
+    <span className="ds-briefing-values">
+      <span className="ds-briefing-values-from">{format(from)}</span>
+      <span className="ds-briefing-arrow" aria-hidden="true">
+        →
+      </span>
+      <span className="ds-briefing-values-to">{format(to)}</span>
+    </span>
   );
 }
 
@@ -76,10 +91,17 @@ export function WeeklyChangesCard({
         <ul className="ds-briefing-change-list">
           {insights.notable.map((change) => (
             <li key={`${change.target}:${change.kind}`}>
-              <TextLink asChild weight="bold">
+              <TextLink asChild weight="bold" className="ds-briefing-change-target">
                 <Link to={combinedKeywordHref(change.target, day, source)}>{change.target}</Link>
-              </TextLink>{' '}
-              <ChangeLine change={change} />
+              </TextLink>
+              <span
+                className="ds-briefing-change-metric ds-chart-tone-label"
+                data-tone={change.kind === 'mentions' ? undefined : change.kind}
+              >
+                {metricLabels[change.kind]}
+              </span>
+              <Values metric={change.kind} from={change.from} to={change.to} />
+              <DeltaChip metric={change.kind} from={change.from} to={change.to} />
             </li>
           ))}
         </ul>
@@ -89,28 +111,32 @@ export function WeeklyChangesCard({
         </Text>
       )}
       <Text as="p" size="1" color="gray" mt="3">
-        언급은 10건 이상에서 30% 넘게, 긍정·부정 비율은 10%p 넘게 움직인 경우만 보여줍니다. 비율은
-        두 주 모두 분류 {shareSampleMinimum}건 이상일 때만 비교합니다.
+        언급 10건 이상에서 ±30%, 비율 ±10%p 이상 움직인 경우만 보여줍니다. 비율은 두 주 모두 분류{' '}
+        {shareSampleMinimum}건 이상일 때만 비교합니다.
       </Text>
     </ReportSection>
   );
 }
 
-function ShareCell({ label, value }: { label: string; value: KeywordWeekChange['negativeShare'] }) {
+function ChangeTile({
+  metric,
+  value,
+}: {
+  metric: Metric;
+  value: { from: number; to: number } | null;
+}) {
   return (
-    <div>
-      <Text as="p" size="1" color="gray">
-        {label}
-      </Text>
+    <div className="ds-briefing-change-tile">
+      <span className="ds-chart-tone-label" data-tone={metric === 'mentions' ? undefined : metric}>
+        {metricLabels[metric]}
+      </span>
       {value ? (
-        <Text as="p" size="3" weight="bold">
-          {percent(value.from)} → {percent(value.to)}{' '}
-          <Text size="2" color="gray" weight="regular">
-            {shareDelta(value.from, value.to)}
-          </Text>
-        </Text>
+        <>
+          <Values metric={metric} from={value.from} to={value.to} />
+          <DeltaChip metric={metric} from={value.from} to={value.to} />
+        </>
       ) : (
-        <Text as="p" size="2" color="gray">
+        <Text size="2" color="gray" className="ds-briefing-change-empty">
           표본 부족
         </Text>
       )}
@@ -125,19 +151,9 @@ export function KeywordChangeCard({ insights, target }: { insights: Insights; ta
   return (
     <ReportSection card title="지난주 대비" description={comparisonLabel(insights)}>
       <div className="ds-briefing-change-grid">
-        <div>
-          <Text as="p" size="1" color="gray">
-            언급
-          </Text>
-          <Text as="p" size="3" weight="bold">
-            {count(change.mentions.from)} → {count(change.mentions.to)}건{' '}
-            <Text size="2" color="gray" weight="regular">
-              {mentionDelta(change.mentions.from, change.mentions.to)}
-            </Text>
-          </Text>
-        </div>
-        <ShareCell label="긍정 비율" value={change.positiveShare} />
-        <ShareCell label="부정 비율" value={change.negativeShare} />
+        <ChangeTile metric="mentions" value={change.mentions} />
+        <ChangeTile metric="positive" value={change.positiveShare} />
+        <ChangeTile metric="negative" value={change.negativeShare} />
       </div>
       <Text as="p" size="1" color="gray" mt="3">
         비율은 두 주 모두 분류 {shareSampleMinimum}건 이상일 때만 비교합니다.
@@ -166,19 +182,24 @@ function Reason({ item, origin }: { item: RepresentativeOpinion; origin: string 
   );
 }
 
+const stanceLabels = { positive: '긍정', negative: '부정' } as const;
+
 function ReasonColumn({
   label,
   items,
   origin,
+  heading = true,
 }: {
   label: 'positive' | 'negative';
   items: RepresentativeOpinion[];
   origin: string;
+  /** The index card names the stance once in its header row on wide screens. */
+  heading?: boolean;
 }) {
   return (
-    <div>
-      <Text as="p" size="2" weight="bold" className="ds-chart-tone-label" data-tone={label} mb="2">
-        {label === 'positive' ? '긍정' : '부정'}
+    <div className="ds-briefing-reason-column" data-heading={heading ? 'always' : 'narrow'}>
+      <Text as="p" size="2" weight="bold" className="ds-briefing-stance" data-tone={label} mb="2">
+        {stanceLabels[label]}
       </Text>
       {items.length ? (
         <ul className="ds-briefing-reason-list">
@@ -187,8 +208,8 @@ function ReasonColumn({
           ))}
         </ul>
       ) : (
-        <Text as="p" size="2" color="gray">
-          요약이 저장된 의견이 없습니다.
+        <Text as="p" size="2" color="gray" className="ds-briefing-reason-empty">
+          요약이 저장된 {stanceLabels[label]} 의견이 없습니다.
         </Text>
       )}
     </div>
@@ -216,17 +237,39 @@ export function RepresentativesCard({
   return (
     <ReportSection card title="키워드별 대표 의견" description="긍정·부정으로 분류된 이유입니다.">
       <div className="ds-briefing-reason-rows">
+        <div className="ds-briefing-reason-head" aria-hidden="true">
+          <span />
+          <span className="ds-briefing-stance" data-tone="positive">
+            긍정 이유
+          </span>
+          <span className="ds-briefing-stance" data-tone="negative">
+            부정 이유
+          </span>
+        </div>
         {rows.map(({ target, positive, negative }) => (
           <section
             key={target}
             className="ds-briefing-reason-row"
             aria-label={`${target} 대표 의견`}
           >
-            <TextLink asChild weight="bold">
-              <Link to={combinedKeywordHref(target, day, source)}>{target}</Link>
+            <TextLink asChild weight="bold" size="3" className="ds-briefing-reason-target">
+              <Link to={combinedKeywordHref(target, day, source)}>
+                {target}
+                <ArrowUpRight size={13} aria-hidden="true" />
+              </Link>
             </TextLink>
-            <ReasonColumn label="positive" items={positive.slice(0, 1)} origin={origin} />
-            <ReasonColumn label="negative" items={negative.slice(0, 1)} origin={origin} />
+            <ReasonColumn
+              label="positive"
+              items={positive.slice(0, 1)}
+              origin={origin}
+              heading={false}
+            />
+            <ReasonColumn
+              label="negative"
+              items={negative.slice(0, 1)}
+              origin={origin}
+              heading={false}
+            />
           </section>
         ))}
       </div>
@@ -262,34 +305,57 @@ export function KeywordReasonsCard({
   );
 }
 
-function TermList({ terms, showTarget }: { terms: EmergingTerm[]; showTarget: boolean }) {
+function TermChip({ term, showTarget }: { term: EmergingTerm; showTarget: boolean }) {
   return (
-    <ul className="ds-briefing-term-list">
-      {terms.map((term) => (
-        <li key={`${term.target}:${term.name}`}>
-          <Text size="3" weight="bold">
-            {term.name}
-          </Text>
-          {showTarget && term.target && term.target !== term.name && (
-            <Text size="1" color="gray">
-              {term.target}
-            </Text>
-          )}
-          <Badge size="1" color={term.kind === 'new' ? 'iris' : 'amber'} variant="soft">
-            {term.kind === 'new' ? '새로 등장' : '급증'}
-          </Badge>
-          <Text size="1" color="gray">
-            최근 7일 {count(term.recent)}건
-            {term.kind === 'rising' && ` · 이전 4주 ${count(term.prior)}건`}
-          </Text>
-        </li>
-      ))}
-    </ul>
+    <li className="ds-briefing-term" data-kind={term.kind}>
+      <span className="ds-briefing-term-name">{term.name}</span>
+      {showTarget && term.target && term.target !== term.name && (
+        <span className="ds-briefing-term-target">{term.target}</span>
+      )}
+      <span className="ds-briefing-term-count">
+        {term.kind === 'rising' && (
+          <>
+            <span className="ds-briefing-values-from">4주 {count(term.prior)}</span>
+            <span className="ds-briefing-arrow" aria-hidden="true">
+              →
+            </span>
+          </>
+        )}
+        <span className="ds-briefing-values-to">7일 {count(term.recent)}건</span>
+      </span>
+    </li>
+  );
+}
+
+function TermList({ terms, showTarget }: { terms: EmergingTerm[]; showTarget: boolean }) {
+  const groups = [
+    { kind: 'new' as const, label: '새로 등장', color: 'iris' as const },
+    { kind: 'rising' as const, label: '급증', color: 'amber' as const },
+  ];
+  return (
+    <div className="ds-briefing-term-groups">
+      {groups.map(({ kind, label, color }) => {
+        const items = terms.filter((term) => term.kind === kind);
+        if (!items.length) return null;
+        return (
+          <div key={kind} className="ds-briefing-term-group">
+            <Badge size="2" color={color} variant="soft">
+              {label} {items.length}
+            </Badge>
+            <ul className="ds-briefing-term-list">
+              {items.map((term) => (
+                <TermChip key={`${term.target}:${term.name}`} term={term} showTarget={showTarget} />
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
 const emergingNote =
-  '최근 7일을 그 전 4주와 비교합니다. 새로 등장은 이전 4주 0건에서 2건 이상, 급증은 4건 이상이면서 이전 주 평균의 2배 이상입니다. 평균은 수집 기록이 있는 기간으로만 냅니다.';
+  '새로 등장: 이전 4주 0건 → 최근 7일 2건 이상. 급증: 최근 7일 4건 이상이면서 이전 주 평균의 2배 이상(수집 기록이 있는 주로만 평균).';
 
 function EmptyTerms({ priorWeeks, children }: { priorWeeks: number; children: string }) {
   return (
