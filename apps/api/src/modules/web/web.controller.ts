@@ -13,6 +13,8 @@ const pages = new Set([
   '/',
   '/design-system',
   '/combined',
+  '/kakao',
+  '/trending',
   '/pokergosu',
   '/posts',
   '/conversations',
@@ -71,6 +73,7 @@ export class WebController {
     }
     if (
       !pages.has(url.pathname) &&
+      !/^\/(?:combined|kakao\/keywords|pokergosu\/keywords)\/[^/]{1,600}$/u.test(url.pathname) &&
       !/^\/(?:conversations|posts|pokergosu)\/[a-zA-Z0-9_-]+$/.test(url.pathname)
     )
       throw new NotFoundException();
@@ -103,6 +106,10 @@ export class WebController {
         detail: (id: string) => this.forum.detail(id),
       },
       { read: (scope: Parameters<ForumService['combined']>[0]) => this.forum.combined(scope) },
+      {
+        read: (scope: Parameters<ForumService['topicBriefing']>[0]) =>
+          this.forum.topicBriefing(scope),
+      },
     );
     const state = serializeBootstrap(page.state);
     const template = await readFile(path.join(webRoot, 'dist/index.html'), 'utf8');

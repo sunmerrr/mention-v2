@@ -1,7 +1,9 @@
 import { CombinedQueries } from '@app/shared/monitoring/application/combined';
 import { PokergosuQueries } from '@app/shared/monitoring/application/pokergosu';
+import { TopicBriefingQueries } from '@app/shared/monitoring/application/topic-briefing';
+import type { CombinedScope } from '@app/shared/monitoring/contracts/combined';
 import type { PokergosuListInput } from '@app/shared/monitoring/contracts/pokergosu';
-import type { Scope } from '@app/shared/monitoring/domain/model';
+import type { TopicScope } from '@app/shared/monitoring/contracts/topic-briefing';
 import { Injectable } from '@nestjs/common';
 import { config } from '../../shared/config/index.js';
 import { AppError } from '../../shared/errors/app-error.js';
@@ -14,6 +16,7 @@ import { ForumMedia } from './forum-media.service.js';
 export class ForumService {
   private readonly pgQueries: PokergosuQueries;
   private readonly pgCombined: CombinedQueries;
+  private readonly topics: TopicBriefingQueries;
   constructor(
     private readonly repository: ForumRepository,
     private readonly source: MonitoringRepository,
@@ -26,6 +29,13 @@ export class ForumService {
       kakao: (scope) => projection.overview(scope),
       forum: (scope) => repository.opinions(scope),
       policy: () => settings.policy(),
+      kakaoKeywords: (scope, groups, weeks) => projection.keywordReport(scope, groups, weeks),
+      forumKeywords: (scope, weeks) => repository.keywordReport(scope, weeks),
+    });
+    this.topics = new TopicBriefingQueries({
+      kakao: (from, through) => projection.topicActivity(from, through),
+      pokergosu: async (from, through) =>
+        repository.topicActivity(from, through, (await settings.policy()).policy),
     });
   }
   save(
@@ -55,9 +65,14 @@ export class ForumService {
     return detail ? this.media.decorate(detail) : null;
   }
 
-  combined(scope: Scope) {
+  combined(scope: CombinedScope) {
     return config.MONITORING_EVIDENCE_BACKEND === 'postgres'
       ? this.pgCombined.read(scope)
       : this.source.read('/api/combined', { ...scope });
+  }
+  topicBriefing(scope: TopicScope) {
+    return config.MONITORING_EVIDENCE_BACKEND === 'postgres'
+      ? this.topics.read(scope)
+      : this.source.read('/api/trending', { ...scope });
   }
 }

@@ -3,6 +3,8 @@ import { useLocation } from 'react-router-dom';
 const menuPaths = new Set([
   '/',
   '/combined',
+  '/kakao',
+  '/trending',
   '/pokergosu',
   '/posts',
   '/conversations',
@@ -21,6 +23,9 @@ const menuPaths = new Set([
   '/design-system',
 ]);
 export function selectedMenu(pathname: string, search: string) {
+  if (pathname === '/combined' || pathname.startsWith('/combined/')) return '/';
+  if (pathname.startsWith('/kakao/keywords/')) return '/kakao';
+  if (pathname.startsWith('/pokergosu/keywords/')) return '/pokergosu';
   if (pathname.startsWith('/pokergosu/') || pathname.startsWith('/posts/')) {
     const origin = new URLSearchParams(search).get('nav');
     return origin && menuPaths.has(origin) ? origin : '/posts';

@@ -3,7 +3,15 @@ import { CalendarDays, RotateCcw } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button, FilterBar, Select, TextField } from '../design-system';
-export function Filters({ metadata, children }: { metadata?: Metadata; children?: ReactNode }) {
+export function Filters({
+  metadata,
+  children,
+  showTarget = true,
+}: {
+  metadata?: Metadata;
+  children?: ReactNode;
+  showTarget?: boolean;
+}) {
   const [search, setSearch] = useSearchParams();
   function update(key: string, value: string) {
     const next = new URLSearchParams(search);
@@ -23,22 +31,24 @@ export function Filters({ metadata, children }: { metadata?: Metadata; children?
           <CalendarDays size={14} />
         </TextField.Slot>
       </TextField.Root>
-      <Select.Root
-        value={search.get('target') || 'all'}
-        onValueChange={(v) => update('target', v === 'all' ? '' : v)}
-      >
-        <Select.Trigger aria-label="분석 대상">
-          {search.get('target') || '모든 대상'}
-        </Select.Trigger>
-        <Select.Content>
-          <Select.Item value="all">모든 대상</Select.Item>
-          {metadata?.targets.map((t) => (
-            <Select.Item value={t.name} key={t.name}>
-              {t.name}
-            </Select.Item>
-          ))}
-        </Select.Content>
-      </Select.Root>
+      {showTarget && (
+        <Select.Root
+          value={search.get('target') || 'all'}
+          onValueChange={(v) => update('target', v === 'all' ? '' : v)}
+        >
+          <Select.Trigger aria-label="분석 대상">
+            {search.get('target') || '모든 대상'}
+          </Select.Trigger>
+          <Select.Content>
+            <Select.Item value="all">모든 대상</Select.Item>
+            {metadata?.targets.map((t) => (
+              <Select.Item value={t.name} key={t.name}>
+                {t.name}
+              </Select.Item>
+            ))}
+          </Select.Content>
+        </Select.Root>
+      )}
       {children}
       {(search.get('day') ||
         search.get('target') ||

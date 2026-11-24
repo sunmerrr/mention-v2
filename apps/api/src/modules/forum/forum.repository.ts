@@ -10,6 +10,10 @@ import {
   forumCorrectionSchema,
 } from '@app/shared/monitoring/contracts/forum-opinions';
 import {
+  type KeywordPolicy,
+  sourceKeywords,
+} from '@app/shared/monitoring/contracts/keyword-policy';
+import {
   type PokergosuDetail,
   type PokergosuListInput,
   type PokergosuPage,
@@ -17,13 +21,17 @@ import {
   pokergosuDetailSchema,
   pokergosuSummarySchema,
 } from '@app/shared/monitoring/contracts/pokergosu';
+import { countKeywordRecord } from '@app/shared/monitoring/domain/keyword-mentions';
+import type { Scope } from '@app/shared/monitoring/domain/model';
+import { countRelatedKeywordRecord } from '@app/shared/monitoring/domain/related-keywords';
 import {
   emptyOpinionCounts,
   type SourceOpinion,
 } from '@app/shared/monitoring/domain/source-opinions';
 import { koreanDay } from '@app/shared/monitoring/domain/time';
+import { type ReportingWeeks, WeeklyOpinions } from '@app/shared/monitoring/domain/weekly-opinions';
 import { Injectable } from '@nestjs/common';
-import { and, count, desc, eq, lt, lte, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gte, lt, lte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { createDatabase } from '../../db/client.js';
 import {
@@ -50,6 +58,83 @@ export class ForumRepository {
   }
   async onApplicationShutdown() {
     await this.close();
+  }
+  async topicActivity(from: number, through: number, policy: KeywordPolicy) {
+    const enabled = new Set(sourceKeywords(policy, 'pokergosu'));
+    const rows = await this.db
+      .select({ post: forumPosts.card, keywords: forumPosts.keywords })
+      .from(forumPosts)
+      .where(and(eq(forumPosts.matched, true), gte(forumPosts.checkedDay, koreanDay(from))));
+    const summary = await this.summary();
+    const mentions = rows.flatMap(({ post, keywords }) => {
+      if (!post?.publishedAt) return [];
+      const stamp = post.publishedAt;
+      const at = Date.parse(
+        /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/u.test(stamp)
+          ? `${stamp.replace(' ', 'T')}+09:00`
+          : stamp,
+      );
+      if (!(at >= from && at <= through)) return [];
+      const matches = new Set(keywords.filter((word) => enabled.has(word)));
+      const targets = policy.keyword_groups
+        .filter((group) => group.keywords.some((word) => matches.has(word)))
+        .map((group) => group.name);
+      return targets.length ? [{ id: post.id, title: post.title, at, targets }] : [];
+    });
+    const [latest] = await this.db
+      .select({
+        checked: sql<number | null>`max((${forumPosts.card}->>'checkedAt')::double precision)`,
+      })
+      .from(forumPosts);
+    return { mentions, checkedAt: latest?.checked ?? null, available: summary.available };
+  }
+  async keywordReport(scope: Scope, weeks: ReportingWeeks) {
+    const mentions = new Map<string, number>();
+    const related = new Map<string, number>();
+    const weekly = new WeeklyOpinions(weeks);
+    const evaluation = sql<
+      ForumEvaluation[]
+    >`coalesce(${forumPosts.evaluations},${forumPosts.detail}->'evaluations','[]'::jsonb)`;
+    const rows = await this.db
+      .select({
+        post: sql<
+          PokergosuDetail['post']
+        >`coalesce(${forumPosts.card},${forumPosts.detail}->'post')`,
+        evaluations: evaluation,
+        keywords: forumPosts.keywords,
+      })
+      .from(forumPosts)
+      .where(
+        and(
+          eq(forumPosts.matched, true),
+          scope.target
+            ? sql`${evaluation} @> ${JSON.stringify([{ target: scope.target }])}::jsonb`
+            : undefined,
+        ),
+      );
+    for (const row of rows) {
+      const stamp = row.post.publishedAt;
+      const at = stamp
+        ? Date.parse(
+            /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/u.test(stamp)
+              ? `${stamp.replace(' ', 'T')}+09:00`
+              : stamp,
+          )
+        : NaN;
+      const day = Number.isFinite(at) ? koreanDay(at) : '';
+      const evaluations = row.evaluations.filter(
+        (item) => !scope.target || item.target === scope.target,
+      );
+      for (const item of evaluations) {
+        if (day) weekly.count(day, item.target, item.stale ? 'unreviewed' : item.label);
+      }
+      if (scope.day && scope.day !== day) continue;
+      if (scope.target && !evaluations.some((item) => item.stale || item.label !== 'excluded'))
+        continue;
+      countKeywordRecord(mentions, row.keywords);
+      if (scope.target) countRelatedKeywordRecord(related, [row.post.title, row.post.excerpt]);
+    }
+    return { mentions, related, weekly };
   }
   async aggregateSession(): Promise<import('pg').PoolClient> {
     void this.db;

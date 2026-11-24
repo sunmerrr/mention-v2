@@ -1,6 +1,7 @@
-import { monitoringScopeSchema } from '@app/shared';
+import { combinedScopeSchema } from '@app/shared/monitoring/contracts/combined';
 import { forumCorrectionSchema } from '@app/shared/monitoring/contracts/forum-opinions';
 import { pokergosuId, pokergosuListSchema } from '@app/shared/monitoring/contracts/pokergosu';
+import { topicScopeSchema } from '@app/shared/monitoring/contracts/topic-briefing';
 import { Body, Controller, Get, Param, Post, Query, Req, Res } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -8,7 +9,7 @@ import { AppError } from '../../shared/errors/app-error.js';
 import { mutationScope, requestOriginScope } from '../monitoring/mutation-scope.js';
 import { ForumService } from './forum.service.js';
 import { ForumMedia } from './forum-media.service.js';
-@Controller('api/v1/monitoring')
+@Controller(['api/v1/monitoring', 'api'])
 export class ForumReadController {
   constructor(
     private readonly service: ForumService,
@@ -57,7 +58,10 @@ export class ForumReadController {
     );
   }
   @Get('combined') combined(@Query() query: unknown) {
-    return this.service.combined(monitoringScopeSchema.parse(query));
+    return this.service.combined(combinedScopeSchema.parse(query));
+  }
+  @Get('trending') topics(@Query() query: unknown) {
+    return this.service.topicBriefing(topicScopeSchema.parse(query));
   }
   @Get('pokergosu/summary') summary() {
     return this.service.summary();

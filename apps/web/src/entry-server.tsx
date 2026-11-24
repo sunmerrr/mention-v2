@@ -4,6 +4,7 @@ import {
   type PokergosuQueries,
 } from '@app/shared/monitoring/application/pokergosu';
 import type { MonitoringQueries } from '@app/shared/monitoring/application/queries';
+import type { TopicBriefingQueries } from '@app/shared/monitoring/application/topic-briefing';
 import type { WorkspaceQueries } from '@app/shared/monitoring/application/workspace';
 import { listSchema } from '@app/shared/monitoring/contracts/api';
 import { pokergosuListSchema } from '@app/shared/monitoring/contracts/pokergosu';
@@ -11,7 +12,7 @@ import { dehydrate, HydrationBoundary, QueryClientProvider } from '@tanstack/rea
 import { renderToReadableStream } from 'react-dom/server.browser';
 import { StaticRouter } from 'react-router-dom';
 import { App, preloadRoute } from './App';
-import { combinedQuery } from './combined-query';
+import { combinedQuery, combinedScope, isCombinedPath } from './combined-query';
 import {
   pokergosuDetailQuery,
   pokergosuFilters,
@@ -27,6 +28,7 @@ import {
 } from './queries';
 import { createQueryClient } from './query-client';
 import { RuntimeContext } from './runtime';
+import { topicQuery, topicScope } from './topic-query';
 import { routeFeature, workspaceQuery } from './workspace-query';
 export async function render(
   url: string,
@@ -36,6 +38,7 @@ export async function render(
   local = false,
   pokergosu?: PokergosuQueries,
   combined?: CombinedQueries,
+  topics?: TopicBriefingQueries,
 ) {
   const requestUrl = new URL(url, 'http://localhost'),
     scope = scopeFrom(requestUrl.search),
@@ -48,10 +51,17 @@ export async function render(
   const detail = /^\/conversations\/([^/]+)$/.exec(requestUrl.pathname);
   const feature = routeFeature(requestUrl.pathname);
   const pokergosuId = /^\/(?:pokergosu|posts)\/([1-9][0-9]{0,18})$/.exec(requestUrl.pathname)?.[1];
-  if (requestUrl.pathname === '/combined' && combined) {
+  if (isCombinedPath(requestUrl.pathname) && combined) {
+    const requested = combinedScope(requestUrl.pathname, requestUrl.search);
     await client.fetchQuery({
-      ...combinedQuery(scope),
-      queryFn: () => combined.read(scope),
+      ...combinedQuery(requested),
+      queryFn: () => combined.read(requested),
+    });
+  } else if (requestUrl.pathname === '/trending' && topics) {
+    const requested = topicScope(requestUrl.search);
+    await client.fetchQuery({
+      ...topicQuery(requested),
+      queryFn: () => topics.read(requested),
     });
   } else if (pokergosuId && pokergosu) {
     await client.fetchQuery({
@@ -82,7 +92,7 @@ export async function render(
       ...detailQuery(detail[1] ?? ''),
       queryFn: () => queries.detail(detail[1] ?? ''),
     });
-  else if (['/', '/conversations', '/reviews'].includes(requestUrl.pathname)) {
+  else if (['/', '/kakao', '/conversations', '/reviews'].includes(requestUrl.pathname)) {
     const listInput = listSchema.parse({
       ...scope,
       label: requestUrl.pathname === '/conversations' ? conversationLabel : label,
@@ -93,7 +103,7 @@ export async function render(
         ...overviewQuery(scope),
         queryFn: () => queries.overview(scope),
       }),
-      requestUrl.pathname === '/'
+      requestUrl.pathname === '/' || requestUrl.pathname === '/kakao'
         ? Promise.resolve()
         : requestUrl.pathname === '/reviews'
           ? client.fetchInfiniteQuery({

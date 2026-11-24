@@ -3,6 +3,7 @@ import { BarChart3, ChevronDown, MessagesSquare, RefreshCw, Settings2 } from 'lu
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { isCombinedPath } from './combined-query';
 import { GlobalRenderFailure, PageRenderFailure } from './components/RenderFailure';
 import { Pending } from './components/ui';
 import {
@@ -25,6 +26,7 @@ const imports = {
   designSystem: () => import('./design-system/Catalog'),
   pokergosu: () => import('./pages/Pokergosu'),
   combined: () => import('./pages/Combined'),
+  topics: () => import('./pages/TopicBriefing'),
   overview: () => import('./pages/Overview'),
   conversations: () => import('./pages/Conversations'),
   reviews: () => import('./pages/Reviews'),
@@ -33,6 +35,7 @@ const imports = {
 };
 const DesignSystemCatalog = lazy(imports.designSystem),
   Combined = lazy(imports.combined),
+  TopicBriefing = lazy(imports.topics),
   Overview = lazy(imports.overview),
   Pokergosu = lazy(imports.pokergosu),
   Conversations = lazy(imports.conversations),
@@ -40,7 +43,8 @@ const DesignSystemCatalog = lazy(imports.designSystem),
   Detail = lazy(imports.detail),
   Workspace = lazy(imports.workspace);
 export async function preloadRoute(path: string) {
-  if (path === '/combined') await imports.combined();
+  if (isCombinedPath(path)) await imports.combined();
+  else if (path === '/trending') await imports.topics();
   else if (path === '/design-system') await imports.designSystem();
   else if (
     path === '/pokergosu' ||
@@ -60,8 +64,9 @@ const navGroups: { label: string; Icon: typeof BarChart3; links: [string, string
     label: '분석·브리핑',
     Icon: BarChart3,
     links: [
-      ['/combined', '종합 여론'],
-      ['/', '카톡 여론'],
+      ['/', '종합 여론'],
+      ['/trending', '화제 브리핑'],
+      ['/kakao', '카톡 여론'],
       ['/pokergosu', '포커고수 여론'],
       ['/trends', '동향 분석'],
       ['/briefing', '일일 브리핑'],
@@ -254,8 +259,13 @@ function WorkspaceApp() {
             <Suspense fallback={<Pending />}>
               <Routes>
                 <Route path="/design-system" element={<DesignSystemCatalog />} />
-                <Route path="/" element={<Overview />} />
+                <Route path="/" element={<Combined />} />
+                <Route path="/kakao" element={<Overview />} />
                 <Route path="/combined" element={<Combined />} />
+                <Route path="/combined/:target" element={<Combined />} />
+                <Route path="/kakao/keywords/:target" element={<Combined />} />
+                <Route path="/pokergosu/keywords/:target" element={<Combined />} />
+                <Route path="/trending" element={<TopicBriefing />} />
                 <Route path="/conversations" element={<Conversations />} />
                 <Route path="/conversations/:id" element={<Detail />} />
                 <Route path="/pokergosu" element={<Pokergosu />} />

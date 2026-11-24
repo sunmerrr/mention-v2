@@ -2,15 +2,23 @@ import { createHash } from 'node:crypto';
 import { cursorKey } from '@app/shared/monitoring/application/queries';
 import type { ListInput, OverviewPayload, Page } from '@app/shared/monitoring/contracts/api';
 import {
+  conversationKeywordCounts,
+  type MentionGroups,
+} from '@app/shared/monitoring/domain/keyword-mentions';
+import type { Scope } from '@app/shared/monitoring/domain/model';
+import {
   type Conversation,
   type Dataset,
   koreanDay,
   reviewState,
   summarize,
 } from '@app/shared/monitoring/domain/model';
+import { conversationRelatedKeywords } from '@app/shared/monitoring/domain/related-keywords';
+import { opinionLabels } from '@app/shared/monitoring/domain/source-opinions';
+import { type ReportingWeeks, WeeklyOpinions } from '@app/shared/monitoring/domain/weekly-opinions';
 import { Injectable, type OnApplicationShutdown, type OnModuleInit } from '@nestjs/common';
 import { init } from '@paralleldrive/cuid2';
-import { and, count, desc, eq, exists, inArray, lt, or, sql } from 'drizzle-orm';
+import { and, between, count, desc, eq, exists, inArray, lt, or, sql } from 'drizzle-orm';
 import { createDatabase } from '../../db/client.js';
 import { conversations, generations, labels, state, summaries } from '../../db/schema.js';
 import { config } from '../../shared/config/index.js';
@@ -69,6 +77,86 @@ export class ProjectionRepository implements OnApplicationShutdown, OnModuleInit
         503,
       );
     return row.generation;
+  }
+  async topicActivity(from: number, through: number) {
+    return this.db.transaction(
+      async (tx) => {
+        const generation = await this.active(tx);
+        const mentions = (
+          await tx
+            .select({ body: conversations.body })
+            .from(conversations)
+            .where(
+              and(
+                eq(conversations.generationPk, generation.pk),
+                between(conversations.occurredAt, new Date(from), new Date(through)),
+              ),
+            )
+        ).map(({ body: { id, title, at, targets } }) => ({ id, title, at, targets }));
+        return { mentions, checkedAt: generation.sourceCapturedAt.getTime(), available: true };
+      },
+      { isolationLevel: 'repeatable read', accessMode: 'read only' },
+    );
+  }
+  async keywordReport(scope: Scope, groups: MentionGroups, weeks: ReportingWeeks) {
+    return this.db.transaction(
+      async (tx) => {
+        const { pk } = await this.active(tx);
+        const mentions = conversationKeywordCounts(groups);
+        const related = new Map<string, number>();
+        const weekly = new WeeklyOpinions(weeks);
+        const days = [eq(conversations.generationPk, pk)];
+        if (scope.day) days.push(eq(conversations.day, scope.day));
+        if (scope.target) {
+          days.push(sql`${conversations.body}->'targets' ? ${scope.target}`);
+          days.push(
+            sql`coalesce(${conversations.body}->'evaluations'->${scope.target}->>'label', '') <> 'excluded'`,
+          );
+        }
+        const rows = await tx
+          .select({
+            keywords: sql<Conversation['keywords']>`${conversations.body}->'keywords'`,
+            targets: sql<Conversation['targets']>`${conversations.body}->'targets'`,
+            body: scope.target ? conversations.body : sql<null>`null`,
+          })
+          .from(conversations)
+          .where(and(...days));
+        for (const row of rows) {
+          mentions.add(Object.keys(row.keywords ?? {}), row.targets);
+          if (row.body) {
+            for (const word of conversationRelatedKeywords(row.body))
+              related.set(word, (related.get(word) ?? 0) + 1);
+          }
+        }
+        const first = weeks.at(0),
+          last = weeks.at(-1);
+        if (first && last) {
+          const daily = await tx
+            .select({
+              day: conversations.day,
+              target: labels.target,
+              label: labels.label,
+              n: count(),
+            })
+            .from(labels)
+            .innerJoin(conversations, eq(conversations.pk, labels.conversationPk))
+            .where(
+              and(
+                eq(conversations.generationPk, pk),
+                between(conversations.day, first.start, last.through),
+                scope.target ? eq(labels.target, scope.target) : undefined,
+              ),
+            )
+            .groupBy(conversations.day, labels.target, labels.label);
+          for (const row of daily) {
+            const label = opinionLabels.find((value) => value === row.label);
+            if (label) weekly.count(row.day, row.target, label, row.n);
+          }
+        }
+        return { mentions: mentions.counts, related, weekly };
+      },
+      { isolationLevel: 'repeatable read', accessMode: 'read only' },
+    );
   }
   async replace(dataset: Dataset) {
     // Fetch/validation/computation happen before opening the write transaction.
