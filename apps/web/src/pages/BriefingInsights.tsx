@@ -24,7 +24,7 @@ const dayFormat = new Intl.DateTimeFormat('ko-KR', {
 function comparisonLabel(insights: Insights) {
   const pair = insights.comparison;
   if (!pair) return '';
-  return `${shortDay(pair.current.start)}~${shortDay(pair.current.through)} 주를 그 전 주(${shortDay(pair.previous.start)}~${shortDay(pair.previous.through)})와 비교했습니다.`;
+  return `지난주(${shortDay(pair.current.start)}~${shortDay(pair.current.through)})를 2주 전(${shortDay(pair.previous.start)}~${shortDay(pair.previous.through)})과 비교했습니다.`;
 }
 
 function shareDelta(from: number, to: number) {
@@ -344,8 +344,10 @@ export function WeeklyChangesCard({
                           {mixSentence(from, to)}
                         </Text>
                         {reason && (
-                          <p className="ds-briefing-mix-reason">
-                            <span className="ds-briefing-mix-reason-label">지난주 부정 의견</span>
+                          <details className="ds-briefing-mix-reason">
+                            <summary className="ds-briefing-mix-reason-label">
+                              지난주 부정 의견 보기
+                            </summary>
                             <span className="ds-briefing-reason-summary">{reason.summary}</span>
                             <TextLink asChild size="1">
                               <Link
@@ -356,11 +358,11 @@ export function WeeklyChangesCard({
                                 <ArrowUpRight size={11} aria-hidden="true" />
                               </Link>
                             </TextLink>
-                          </p>
+                          </details>
                         )}
                       </div>
                       <div className="ds-briefing-mix-bars">
-                        <MixBar label={`전주 ${shortDay(pair.previous.start)}`} mix={from} />
+                        <MixBar label={`2주 전 ${shortDay(pair.previous.start)}`} mix={from} />
                         <MixBar label={`지난주 ${shortDay(pair.current.start)}`} mix={to} />
                       </div>
                     </li>
