@@ -76,78 +76,128 @@ function Values({ metric, from, to }: { metric: Metric; from: number; to: number
 
 type Weekly = CombinedPayload['weekly'];
 type WeekValue = NonNullable<Weekly['rows'][number]['values'][number]>;
+type Notable = Insights['notable'][number];
 
-const verbs = {
-  negative: ['부정 비율이 올랐습니다', '부정 비율이 내렸습니다'],
-  positive: ['긍정 비율이 올랐습니다', '긍정 비율이 내렸습니다'],
-  mentions: ['언급이 늘었습니다', '언급이 줄었습니다'],
-} as const;
+const position = (value: number, top: number) => `${Math.min(Math.max(value / top, 0), 1) * 100}%`;
 
-function weekMetric(metric: Metric, value: WeekValue | null) {
-  if (!value) return null;
-  if (metric === 'mentions') return value.mentions;
-  return value.classified >= shareSampleMinimum ? value[metric] / value.classified : null;
+/** One move on a shared axis: a hollow dot for the week before, an arrowhead for last week. */
+function ChangeArrow({ change, top }: { change: Notable; top: number }) {
+  const from = position(change.from, top);
+  const to = position(change.to, top);
+  const rising = change.to >= change.from;
+  return (
+    <span className="ds-briefing-arrow-track">
+      <span
+        className="ds-briefing-arrow-line"
+        style={{
+          insetInlineStart: rising ? from : to,
+          insetInlineEnd: `calc(100% - ${rising ? to : from})`,
+        }}
+      />
+      <span className="ds-briefing-arrow-dot" style={{ insetInlineStart: from }} />
+      <span
+        className="ds-briefing-arrow-head"
+        data-direction={rising ? 'right' : 'left'}
+        style={{ insetInlineStart: to }}
+      />
+    </span>
+  );
 }
 
-/** Weekly bars up to the compared week; the two compared weeks are labeled and colored. */
-function WeekBars({
-  metric,
-  weeks,
-  values,
-  previous,
-  current,
-}: {
-  metric: Metric;
-  weeks: Weekly['weeks'];
-  values: Weekly['rows'][number]['values'];
-  previous: number;
-  current: number;
-}) {
-  // Start at the first week with data, at most eight weeks back, and always include both compared weeks.
-  const earliest = Math.max(0, current - 7);
-  const withData = values.findIndex(
-    (value, index) => index >= earliest && weekMetric(metric, value) !== null,
-  );
-  const first = Math.min(previous, withData < 0 ? previous : withData);
-  const points = weeks.slice(first, current + 1).map((week, offset) => {
-    const index = first + offset;
-    return { week, index, value: weekMetric(metric, values[index] ?? null) };
-  });
-  const top = metric === 'mentions' ? Math.max(1, ...points.map(({ value }) => value ?? 0)) : 1;
-  const format = (value: number) => (metric === 'mentions' ? count(value) : percent(value));
+function Axis({ ticks }: { ticks: { at: number; label: string }[] }) {
   return (
-    <div className="ds-briefing-bars" data-metric={metric}>
-      {points.map(({ week, index, value }) => {
-        const role = index === current ? 'current' : index === previous ? 'previous' : 'other';
-        return (
-          <div key={week.start} className="ds-briefing-bar" data-role={role}>
-            <span className="ds-briefing-bar-value">
-              {role !== 'other' && (value === null ? '표본 부족' : format(value))}
-            </span>
-            <span className="ds-briefing-bar-track">
-              {value !== null && (
-                <span
-                  className="ds-briefing-bar-fill"
-                  style={{ blockSize: `${Math.max(value / top, 0.02) * 100}%` }}
-                />
-              )}
-            </span>
-            <span className="ds-briefing-bar-week">{shortDay(week.start)}</span>
-          </div>
-        );
-      })}
+    <div className="ds-briefing-arrow-row ds-briefing-arrow-axis" aria-hidden="true">
+      <span />
+      <span className="ds-briefing-arrow-scale">
+        {ticks.map(({ at, label }) => (
+          <span key={label} style={{ insetInlineStart: `${at * 100}%` }}>
+            {label}
+          </span>
+        ))}
+      </span>
+      <span />
     </div>
   );
 }
 
-function sampleNote(metric: Metric, value: WeekValue | null) {
+function sampleNote(change: Notable, value: WeekValue | null) {
   if (!value) return '';
-  if (metric === 'mentions')
-    return `언급 ${count(value.mentions)}건 중 분류 ${count(value.classified)}건`;
-  return `분류 ${count(value.classified)}건 중 ${metric === 'negative' ? '부정' : '긍정'} ${count(value[metric])}건`;
+  if (change.kind === 'mentions') return `지난주 분류 ${count(value.classified)}건`;
+  return `지난주 분류 ${count(value.classified)}건 중 ${count(value[change.kind])}건`;
 }
 
-/** Index card: only the material week-over-week moves, each with its weekly trend. */
+function ArrowGroup({
+  title,
+  changes,
+  top,
+  ticks,
+  weekly,
+  current,
+  day,
+  source,
+}: {
+  title: string;
+  changes: Notable[];
+  top: number;
+  ticks: { at: number; label: string }[];
+  weekly: Weekly;
+  current: number;
+  day: string;
+  source?: BriefingSource;
+}) {
+  if (!changes.length) return null;
+  return (
+    <section className="ds-briefing-arrow-group" aria-label={title}>
+      <Text as="p" size="1" weight="bold" color="gray">
+        {title}
+      </Text>
+      <Axis ticks={ticks} />
+      <ul className="ds-briefing-arrow-list">
+        {changes.map((change) => {
+          const row = weekly.rows.find(({ name }) => name === change.target);
+          return (
+            <li
+              key={`${change.target}:${change.kind}`}
+              className="ds-briefing-arrow-row"
+              data-signal={signalOf(change.kind, change.from, change.to)}
+            >
+              <span className="ds-briefing-arrow-label">
+                <span>
+                  <TextLink asChild weight="bold">
+                    <Link to={combinedKeywordHref(change.target, day, source)}>
+                      {change.target}
+                    </Link>
+                  </TextLink>{' '}
+                  <span
+                    className="ds-chart-tone-label ds-briefing-arrow-metric"
+                    data-tone={change.kind === 'mentions' ? undefined : change.kind}
+                  >
+                    {metricLabels[change.kind]}
+                  </span>
+                </span>
+                <span className="ds-briefing-arrow-sample">
+                  {sampleNote(change, row?.values[current] ?? null)}
+                </span>
+              </span>
+              <ChangeArrow change={change} top={top} />
+              <span className="ds-briefing-arrow-value">
+                <Values metric={change.kind} from={change.from} to={change.to} />
+                <DeltaChip metric={change.kind} from={change.from} to={change.to} />
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+function niceTop(value: number) {
+  const step = 10 ** Math.floor(Math.log10(Math.max(value, 1)));
+  return Math.ceil(value / step) * step;
+}
+
+/** Index card: every material week-over-week move as an arrow on a shared axis. */
 export function WeeklyChangesCard({
   insights,
   weekly,
@@ -162,59 +212,38 @@ export function WeeklyChangesCard({
   const pair = insights.comparison;
   if (!pair) return null;
   const current = weekly.weeks.findIndex(({ start }) => start === pair.current.start);
-  const previous = weekly.weeks.findIndex(({ start }) => start === pair.previous.start);
+  const shares = insights.notable.filter(({ kind }) => kind !== 'mentions');
+  const mentions = insights.notable.filter(({ kind }) => kind === 'mentions');
+  const mentionTop = niceTop(Math.max(1, ...mentions.flatMap(({ from, to }) => [from, to])));
+  const shared = { weekly, current, day, source };
   return (
     <ReportSection card title="지난주 달라진 점" description={comparisonLabel(insights)}>
       {insights.notable.length ? (
-        <ul className="ds-briefing-change-cards">
-          {insights.notable.map((change) => {
-            const row = weekly.rows.find(({ name }) => name === change.target);
-            const signal = signalOf(change.kind, change.from, change.to);
-            return (
-              <li
-                key={`${change.target}:${change.kind}`}
-                className="ds-briefing-change-card"
-                data-signal={signal}
-                data-metric={change.kind}
-              >
-                <div className="ds-briefing-change-head">
-                  <TextLink asChild weight="bold" size="3">
-                    <Link to={combinedKeywordHref(change.target, day, source)}>
-                      {change.target}
-                    </Link>
-                  </TextLink>
-                  <DeltaChip metric={change.kind} from={change.from} to={change.to} />
-                </div>
-                <p className="ds-briefing-change-sentence">
-                  {verbs[change.kind][change.to >= change.from ? 0 : 1]}
-                </p>
-                <Values metric={change.kind} from={change.from} to={change.to} />
-                {row && current >= 0 && previous >= 0 && (
-                  <WeekBars
-                    metric={change.kind}
-                    weeks={weekly.weeks}
-                    values={row.values}
-                    previous={previous}
-                    current={current}
-                  />
-                )}
-                <Text as="p" size="1" color="gray">
-                  {shortDay(pair.current.start)} 주{' '}
-                  {sampleNote(change.kind, row?.values[current] ?? null)}
-                </Text>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="ds-briefing-arrows">
+          <ArrowGroup
+            title="긍정·부정 비율"
+            changes={shares}
+            top={1}
+            ticks={[0, 0.25, 0.5, 0.75, 1].map((at) => ({ at, label: percent(at) }))}
+            {...shared}
+          />
+          <ArrowGroup
+            title="언급 수"
+            changes={mentions}
+            top={mentionTop}
+            ticks={[0, 0.5, 1].map((at) => ({ at, label: `${count(mentionTop * at)}건` }))}
+            {...shared}
+          />
+        </div>
       ) : (
         <Text as="p" size="2">
           지난주와 비교해 크게 달라진 키워드가 없습니다.
         </Text>
       )}
       <Text as="p" size="1" color="gray" mt="3">
-        언급 10건 이상에서 ±30%, 비율 ±10%p 이상 움직인 경우만 보여줍니다. 비율은 분류{' '}
-        {shareSampleMinimum}건 이상인 주만 계산합니다. 막대는 주별 값이고, 색이 진한 막대가 비교한
-        두 주입니다.
+        ○ 전주 → ▶ 지난주. 빨강은 나빠진 변화(부정↑·긍정↓), 파랑은 좋아진 변화입니다. 언급 10건
+        이상에서 ±30%, 비율 ±10%p 이상 움직인 경우를 모두 보여주며, 비율은 두 주 모두 분류{' '}
+        {shareSampleMinimum}건 이상일 때만 비교합니다.
       </Text>
     </ReportSection>
   );

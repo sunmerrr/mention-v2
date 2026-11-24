@@ -106,7 +106,7 @@ export type NotableChange =
   | { target: string; kind: 'mentions'; from: number; to: number };
 
 /** Highlights only material moves: ±10%p in a stance share, or ±30% on ten or more mentions. */
-export function notableChanges(changes: readonly KeywordWeekChange[], limit = 5) {
+export function notableChanges(changes: readonly KeywordWeekChange[], limit = Infinity) {
   const negative: NotableChange[] = [];
   const mentions: NotableChange[] = [];
   const positive: NotableChange[] = [];
